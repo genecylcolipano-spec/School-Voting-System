@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" role="img" aria-label="Talent Competition">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="50%" stop-color="#6d28d9"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="160" height="160" rx="28" fill="url(#bg)"/>
+  <rect width="160" height="160" rx="28" fill="url(#sheen)"/>
+  <circle cx="30" cy="28" r="34" fill="#c4b5fd" opacity="0.2"/>
+  <circle cx="138" cy="128" r="30" fill="#a78bfa" opacity="0.16"/>
+  <!-- Stage / spotlight -->
+  <path d="M80 36 L104 92 H56 Z" fill="#ede9fe" opacity="0.9"/>
+  <ellipse cx="80" cy="96" rx="34" ry="10" fill="#ddd6fe" opacity="0.55"/>
+  <rect x="54" y="96" width="52" height="10" rx="3" fill="#c4b5fd"/>
+  <!-- Star -->
+  <path d="M80 52l4.2 8.6 9.5 1.4-6.9 6.7 1.6 9.4L80 73.6l-8.4 4.5 1.6-9.4-6.9-6.7 9.5-1.4Z" fill="#fbbf24"/>
+  <circle cx="118" cy="48" r="5" fill="#fde68a" opacity="0.9"/>
+  <circle cx="46" cy="58" r="3.5" fill="#f5d0fe" opacity="0.85"/>
+</svg>

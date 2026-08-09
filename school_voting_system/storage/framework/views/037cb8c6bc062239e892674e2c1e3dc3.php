@@ -1,0 +1,2 @@
+<?php echo $__env->make('admin.elections.form', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+<?php /**PATH C:\xampp\htdocs\voting system\school_voting_system\resources\views/admin/elections/create.blade.php ENDPATH**/ ?>

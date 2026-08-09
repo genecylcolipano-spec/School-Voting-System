@@ -1,0 +1,2 @@
+<?php echo $__env->make('admin.announcements.form', ['announcement' => $announcement], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+<?php /**PATH C:\xampp\htdocs\voting system\school_voting_system\resources\views/admin/announcements/edit.blade.php ENDPATH**/ ?>

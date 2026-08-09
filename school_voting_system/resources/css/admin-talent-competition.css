@@ -1,0 +1,306 @@
+/* Talent Competition Management — dashboard theme */
+
+.tc-dashboard {
+    color: inherit;
+}
+
+.tc-breadcrumb a {
+    transition: color 0.2s ease;
+}
+
+.tc-card {
+    border-radius: 16px;
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    background: rgba(15, 23, 42, 0.8);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.tc-card:hover {
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.tc-stat-card {
+    border-radius: 16px;
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    background: rgba(15, 23, 42, 0.85);
+    padding: 1rem;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.tc-stat-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, rgba(139, 92, 246, 0.65), rgba(56, 189, 248, 0.35));
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.tc-stat-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+.tc-stat-card:hover::before {
+    opacity: 1;
+}
+
+.tc-stat-card__icon {
+    display: inline-flex;
+    height: 2rem;
+    width: 2rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    background: rgba(139, 92, 246, 0.12);
+    font-size: 1rem;
+}
+
+.tc-stat-card__value {
+    margin-top: 0.75rem;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.tc-stat-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.tc-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    border-radius: 12px;
+    padding: 0.55rem 0.9rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.tc-btn--primary {
+    background: linear-gradient(90deg, #7c3aed, #4f46e5);
+    color: #fff;
+}
+
+.tc-btn--primary:hover {
+    opacity: 0.92;
+}
+
+.tc-btn--success {
+    background: rgba(34, 197, 94, 0.16);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.tc-btn--success:hover {
+    background: rgba(34, 197, 94, 0.24);
+}
+
+.tc-btn--warning {
+    background: rgba(245, 158, 11, 0.14);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.tc-btn--ghost {
+    background: rgba(255, 255, 255, 0.04);
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tc-btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.tc-btn--danger {
+    background: rgba(244, 63, 94, 0.12);
+    color: #fda4af;
+    border: 1px solid rgba(244, 63, 94, 0.28);
+}
+
+/* Compact competition banner on Admin Dashboard overview cards */
+.competition-card-banner--compact {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-height: 140px;
+    overflow: hidden;
+    border-radius: 0.75rem;
+}
+
+.competition-card-banner--compact img {
+    object-fit: cover;
+    object-position: center;
+}
+
+@media (min-width: 640px) {
+    .competition-card-banner--compact {
+        max-height: 180px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .competition-card-banner--compact {
+        max-height: 220px;
+    }
+}
+
+.tc-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+}
+
+.tc-hero__image {
+    /* Absolute fill layer for smart banner (cover or contain+blur). */
+    position: absolute;
+    inset: 0;
+}
+
+.tc-hero__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(2, 6, 23, 0.15) 0%, rgba(2, 6, 23, 0.92) 100%);
+    pointer-events: none;
+}
+
+.tc-hero__content {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1.25rem 1.5rem;
+}
+
+.tc-live-status {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    border-radius: 1rem;
+    padding: 1rem 1.25rem;
+}
+
+.tc-live-status--live {
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    background: rgba(34, 197, 94, 0.08);
+}
+
+.tc-live-status--published {
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    background: rgba(56, 189, 248, 0.08);
+}
+
+.tc-live-status--idle {
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(148, 163, 184, 0.06);
+}
+
+.tc-winner-card {
+    border-radius: 16px;
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(15, 23, 42, 0.9));
+    padding: 1.25rem;
+    transition: transform 0.25s ease;
+}
+
+.tc-winner-card:hover {
+    transform: translateY(-2px);
+}
+
+.tc-winner-card--runner {
+    border-color: rgba(139, 92, 246, 0.2);
+    background: rgba(15, 23, 42, 0.85);
+}
+
+.tc-table-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(51, 65, 85, 0.6);
+}
+
+.tc-table-wrap table {
+    min-width: 960px;
+}
+
+.tc-row-winner td {
+    background: rgba(52, 211, 153, 0.06);
+}
+
+.tc-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    border-radius: 16px;
+    border: 1px dashed rgba(139, 92, 246, 0.2);
+    background: rgba(15, 23, 42, 0.5);
+}
+
+.tc-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.4rem;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    width: 2px;
+    background: linear-gradient(180deg, rgba(139, 92, 246, 0.5) 0%, rgba(139, 92, 246, 0.05) 100%);
+}
+
+.tc-timeline-item {
+    position: relative;
+    padding-left: 1.5rem;
+    padding-bottom: 1rem;
+}
+
+.tc-timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 0.15rem;
+    top: 0.35rem;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 9999px;
+    background: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+.tc-details summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.tc-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.tc-details[open] .tc-details-chevron {
+    transform: rotate(180deg);
+}
+
+@media (min-width: 640px) {
+    .tc-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1280px) {
+    .tc-stat-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}

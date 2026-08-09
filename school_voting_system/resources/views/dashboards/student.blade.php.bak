@@ -1,0 +1,292 @@
+<x-app-layout>
+    @push('styles')\n        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css\" integrity=\"sha512-oB5tixlVfNsH3DdX+DM4lRrMDgckBbThl8jH/9Oc2hggu+VdCIw3b6W5cKPHoFUtjEoKJXgIrVj7mXQbug5wJQ==\" crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\" />\n        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" integrity=\"sha512-3dkvQDW5m2ndAG51aUAMv0kV4gPBM3x7JmV6TmIEQXvA7o9VpQOzVeFnNf7u3tC23jz7wWBF8f7xywG7a1u/Qw==\" crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\" />\n        <link rel=\"preconnect\" href=\"https://fonts.bunny.net\">\n        <link href=\"https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700\" rel=\"stylesheet\">\n        <style>\n            * {\n                color-scheme: dark;\n            }\n            body {\n                background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);\n                color: #e2e8f0;\n                font-family: \"Instrument Sans\", system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;\n            }\n            body > nav {\n                display: none !important;\n            }\n            .dashboard-shell {\n                min-height: 100vh;\n                padding: 0;\n            }\n            .dashboard-sidebar {\n                background: rgba(30, 41, 59, .4);\n                backdrop-filter: blur(16px);\n                border-right: 1px solid rgba(56, 189, 248, .15);\n                min-height: 100vh;\n            }\n            .dashboard-sidebar .nav-link {\n                color: #cbd5e1;\n                font-weight: 500;\n                border-radius: 1rem;\n                transition: all .25s ease;\n            }\n            .dashboard-sidebar .nav-link:hover,\n            .dashboard-sidebar .nav-link.active {\n                background: rgba(56, 189, 248, .15);\n                color: #06b6d4;\n                transform: translateX(4px);\n            }\n            .hero-card {\n                background: linear-gradient(135deg, rgba(7, 89, 133, .8), rgba(34, 197, 94, .15));\n                color: #f1f5f9;\n                border: 1px solid rgba(56, 189, 248, .25);\n                border-radius: 2rem;\n                box-shadow: 0 30px 80px rgba(56, 189, 248, .1);\n            }\n            .glass-card {\n                background: rgba(30, 41, 59, .5);\n                box-shadow: 0 24px 60px rgba(0, 0, 0, .3);\n                border: 1px solid rgba(56, 189, 248, .15);\n                backdrop-filter: blur(18px);\n                color: #e2e8f0;\n            }\n            .glass-card:hover {\n                transform: translateY(-4px);\n                border-color: rgba(56, 189, 248, .3);\n                transition: transform .25s ease, border-color .25s ease;\n            }\n            .icon-badge {\n                width: 56px;\n                height: 56px;\n                display: inline-flex;\n                align-items: center;\n                justify-content: center;\n                border-radius: 1rem;\n                background: rgba(56, 189, 248, .12);\n                color: #06b6d4;\n            }\n            .dashboard-card-title {\n                letter-spacing: .02em;\n                color: #cbd5e1;\n            }\n            .dashboard-section-title {\n                font-size: 1.05rem;\n                font-weight: 700;\n                color: #f1f5f9;\n            }\n            .progress {\n                height: .5rem;\n                border-radius: .75rem;\n                background: rgba(56, 189, 248, .1);\n            }\n            .progress-bar {\n                border-radius: .75rem;\n                background: linear-gradient(90deg, #06b6d4, #38bdf8);\n            }\n            .dashboard-timeline {\n                position: relative;\n            }\n            .dashboard-timeline::before {\n                content: \"\";\n                position: absolute;\n                left: 15px;\n                top: 0;\n                bottom: 0;\n                width: 3px;\n                background: linear-gradient(180deg, #38bdf8, #06b6d4);\n                border-radius: 999px;\n            }\n            .timeline-item {\n                position: relative;\n                padding-left: 3rem;\n                margin-bottom: 2rem;\n            }\n            .timeline-item::before {\n                content: \"\";\n                position: absolute;\n                left: 6px;\n                top: 8px;\n                width: 18px;\n                height: 18px;\n                border-radius: 50%;\n                border: 4px solid #1e293b;\n                background: #06b6d4;\n                box-shadow: 0 0 0 4px rgba(56, 189, 248, .12);\n            }\n            .dashboard-navbar {\n                background: transparent;\n            }\n            .dashboard-navbar .btn {\n                border-radius: 1rem;\n            }\n            .dashboard-navbar .btn-outline-primary {\n                color: #38bdf8;\n                border-color: rgba(56, 189, 248, .3);\n            }\n            .dashboard-navbar .btn-outline-primary:hover {\n                background: rgba(56, 189, 248, .15);\n                border-color: rgba(56, 189, 248, .5);\n            }\n            .dashboard-navbar .btn-primary {\n                background: linear-gradient(135deg, #06b6d4, #38bdf8);\n                border: none;\n            }\n            .dashboard-navbar .btn-primary:hover {\n                background: linear-gradient(135deg, #0891b2, #22d3ee);\n            }\n            .dropdown-menu {\n                background: rgba(15, 23, 42, .95);\n                border: 1px solid rgba(56, 189, 248, .15);\n                backdrop-filter: blur(8px);\n            }\n            .dropdown-menu .dropdown-item {\n                color: #cbd5e1;\n            }\n            .dropdown-menu .dropdown-item:hover {\n                background: rgba(56, 189, 248, .15);\n                color: #06b6d4;\n            }\n            .dashboard-layout {\n                min-height: 100vh;\n                transition: all .3s ease;\n                position: relative;\n            }\n            .dashboard-sidebar {\n                transition: all .3s ease, transform .3s ease;\n                width: 100%;\n                max-width: none;\n            }\n            .dashboard-content {\n                width: 100%;\n                transition: margin .3s ease;\n            }\n            .badge {\n                background: rgba(56, 189, 248, .2);\n                color: #06b6d4;\n            }\n            .text-muted {\n                color: #94a3b8 !important;\n            }\n            @media (min-width: 1200px) {\n                .dashboard-sidebar {\n                    flex: 0 0 280px;\n                    max-width: 280px;\n                }\n                .sidebar-collapsed .dashboard-sidebar {\n                    flex: 0 0 88px;\n                    max-width: 88px;\n                    min-width: 88px;\n                }\n                .sidebar-collapsed .dashboard-content {\n                    margin-left: 0;\n                }\n                .sidebar-collapsed .dashboard-sidebar .mb-5 > div {\n                    justify-content: center;\n                }\n                .sidebar-collapsed .dashboard-sidebar .mb-5 h5,\n                .sidebar-collapsed .dashboard-sidebar .mb-5 small,\n                .sidebar-collapsed .dashboard-sidebar .mb-5 p {\n                    display: none;\n                }\n                .sidebar-collapsed .dashboard-sidebar nav {\n                    gap: .65rem;\n                }\n                .sidebar-collapsed .dashboard-sidebar .nav-link {\n                    justify-content: center;\n                    padding-left: .95rem;\n                    padding-right: .95rem;\n                }\n                .sidebar-collapsed .dashboard-sidebar .nav-link i {\n                    margin-right: 0;\n                }\n                .sidebar-collapsed .dashboard-sidebar .nav-link span {\n                    display: none;\n                }\n                .sidebar-collapsed .dashboard-sidebar .nav-link.active {\n                    transform: none;\n                }\n            }\n            @media (max-width: 1199px) {\n                .dashboard-sidebar {\n                    position: relative;\n                }\n                .sidebar-collapsed .dashboard-sidebar {\n                    transform: translateX(-100%);\n                    position: absolute;\n                    top: 0;\n                    left: 0;\n                    bottom: 0;\n                    z-index: 1050;\n                    width: 100%;\n                }\n                .sidebar-collapsed .dashboard-content {\n                    margin-left: 0;\n                }\n            }\n            .section-spacer {\n                margin-top: 2rem;\n            }\n            @media (max-width: 991px) {\n                .dashboard-sidebar {\n                    min-height: auto;\n                }\n                .dashboard-navbar {\n                    flex-wrap: wrap;\n                }\n                .hero-card {\n                    border-radius: 1.5rem;\n                }\n            }\n        </style>
+
+    @push('scripts')
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const sidebarToggle = document.getElementById('sidebarToggleBtn');
+                const shell = document.querySelector('.dashboard-shell');
+                const storageKey = 'studentDashboardSidebarCollapsed';
+
+                if (!sidebarToggle || !shell) {
+                    return;
+                }
+
+                const setCollapsed = (collapsed) => {
+                    shell.classList.toggle('sidebar-collapsed', collapsed);
+                    sidebarToggle.innerHTML = collapsed ? '<i class="fas fa-chevron-right"></i>' : '<i class="fas fa-chevron-left"></i>';
+                    sidebarToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+                    sessionStorage.setItem(storageKey, collapsed ? 'true' : 'false');
+                };
+
+                const initialState = sessionStorage.getItem(storageKey) === 'true';
+                setCollapsed(initialState);
+
+                sidebarToggle.addEventListener('click', () => {
+                    setCollapsed(sessionStorage.getItem(storageKey) !== 'true');
+                });
+            });
+        </script>
+    @endpush
+
+    <div class="container-fluid dashboard-shell px-0">
+        <div class="dashboard-layout d-flex flex-column flex-xl-row g-0">
+            <aside class="dashboard-sidebar p-4">
+                <div class="mb-5">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="me-3 bg-white rounded-circle shadow-sm" style="width:50px;height:50px;display:grid;place-items:center;">
+                            <i class="fas fa-school text-primary"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-primary">School Voting</h5>
+                            <small class="text-muted">Student Portal</small>
+                        </div>
+                    </div>
+                    <p class="text-muted small">Manage events, stay updated, and join campus voting initiatives.</p>
+                </div>
+
+                <nav class="nav flex-column gap-2">
+                    <a class="nav-link active px-4 py-3" href="#"><i class="fas fa-chart-line me-3"></i><span>Dashboard</span></a>
+                    <a class="nav-link px-4 py-3" href="#events"><i class="fas fa-calendar-alt me-3"></i><span>Events</span></a>
+                    <a class="nav-link px-4 py-3" href="#voting"><i class="fas fa-vote-yea me-3"></i><span>Voting</span></a>
+                    <a class="nav-link px-4 py-3" href="#fundraising"><i class="fas fa-hand-holding-heart me-3"></i><span>Fundraising</span></a>
+                    <a class="nav-link px-4 py-3" href="#announcements"><i class="fas fa-bullhorn me-3"></i><span>Announcements</span></a>
+                    <a class="nav-link px-4 py-3" href="#notifications"><i class="fas fa-bell me-3"></i><span>Notifications</span></a>
+                    <a class="nav-link px-4 py-3" href="#profile"><i class="fas fa-user-circle me-3"></i><span>Profile</span></a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="nav-link px-4 py-3 text-start btn btn-link text-decoration-none"><i class="fas fa-sign-out-alt me-3"></i><span>Logout</span></button>
+                    </form>
+                </nav>
+            </aside>
+
+            <div class="dashboard-content flex-fill px-4 py-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 dashboard-navbar">
+                    <div class="d-flex align-items-center gap-2 mb-3 mb-md-0">
+                        <button id="sidebarToggleBtn" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center" type="button" aria-label="Collapse sidebar">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <div>
+                            <p class="mb-1 text-muted">Welcome back, {{ $user->name }}!</p>
+                            <h1 class="h3 mb-0">Student Dashboard</h1>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mt-3 mt-md-0">
+                        <button class="btn btn-outline-primary btn-sm position-relative">
+                            <i class="fas fa-bell"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">5</span>
+                        </button>
+                        <div class="dropdown">
+                            <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle me-2"></i>{{ $user->name }}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                                <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Profile</a></li>
+                                <li><a class="dropdown-item" href="#notifications">Notifications</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit" class="dropdown-item">Logout</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="mb-5">
+                    <div class="card hero-card p-4 p-lg-5 overflow-hidden">
+                        <div class="row align-items-center">
+                            <div class="col-lg-7">
+                                <span class="badge bg-white text-primary mb-3">Student Portal</span>
+                                <h2 class="display-6 fw-bold">School Voting System</h2>
+                                <p class="lead opacity-90">Participate in school events, vote securely, and stay connected with campus activities.</p>
+                                <div class="d-flex flex-column flex-sm-row gap-3 mt-4">
+                                    <a href="#events" class="btn btn-light btn-lg text-primary">Explore Events</a>
+                                    <a href="#announcements" class="btn btn-outline-light btn-lg text-white border-white">View Announcements</a>
+                                </div>
+                            </div>
+                            <div class="col-lg-5 text-center mt-4 mt-lg-0">
+                                <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=600&q=80" class="img-fluid rounded-4 shadow-lg" alt="Campus life illustration">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="row g-4">
+                    <div class="col-6 col-md-3">
+                        <div class="card glass-card p-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="icon-badge"><i class="fas fa-calendar-check fa-lg"></i></div>
+                                <span class="badge bg-primary bg-opacity-10 text-primary">Active</span>
+                            </div>
+                            <h6 class="dashboard-card-title text-uppercase mb-1">Active Events</h6>
+                            <h3 class="mb-0">{{ $activeEventsCount }}</h3>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card glass-card p-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="icon-badge"><i class="fas fa-vote-yea fa-lg"></i></div>
+                                <span class="badge bg-info bg-opacity-10 text-info">Live</span>
+                            </div>
+                            <h6 class="dashboard-card-title text-uppercase mb-1">Ongoing Voting</h6>
+                            <h3 class="mb-0">{{ $ongoingVotingCount }}</h3>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card glass-card p-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="icon-badge"><i class="fas fa-bell fa-lg"></i></div>
+                                <span class="badge bg-warning bg-opacity-10 text-warning">Updates</span>
+                            </div>
+                            <h6 class="dashboard-card-title text-uppercase mb-1">Notifications</h6>
+                            <h3 class="mb-0">{{ $notificationsCount }}</h3>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card glass-card p-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="icon-badge"><i class="fas fa-hand-holding-heart fa-lg"></i></div>
+                                <span class="badge bg-success bg-opacity-10 text-success">Active</span>
+                            </div>
+                            <h6 class="dashboard-card-title text-uppercase mb-1">Fundraising Campaigns</h6>
+                            <h3 class="mb-0">{{ $fundraisingCampaignCount }}</h3>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="events" class="section-spacer">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h2 class="dashboard-section-title">Upcoming Events</h2>
+                        <a href="#" class="text-primary small">See all events <i class="fas fa-chevron-right ms-1"></i></a>
+                    </div>
+                    <div class="row g-4">
+                        @foreach ($upcomingEvents as $event)
+                            <div class="col-12 col-md-6">
+                                <div class="card glass-card overflow-hidden h-100 shadow-sm">
+                                    <img src="{{ $event['image'] }}" class="card-img-top" alt="{{ $event['title'] }} banner">
+                                    <div class="card-body">
+                                        <span class="badge bg-primary mb-3">{{ $event['status'] }}</span>
+                                        <h5 class="card-title">{{ $event['title'] }}</h5>
+                                        <p class="text-muted mb-1"><i class="fas fa-calendar-day me-2"></i>{{ $event['date'] }}</p>
+                                        <p class="text-muted mb-3"><i class="fas fa-map-marker-alt me-2"></i>{{ $event['location'] }}</p>
+                                        <a href="#" class="btn btn-outline-primary btn-sm">View Event</a>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+
+                <section id="voting" class="section-spacer">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h2 class="dashboard-section-title">Active Voting</h2>
+                        <a href="#" class="text-primary small">Review voting rules <i class="fas fa-chevron-right ms-1"></i></a>
+                    </div>
+                    <div class="row g-4">
+                        @foreach ($activeVoting as $vote)
+                            <div class="col-12 col-md-6">
+                                <div class="card glass-card p-4 h-100">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div>
+                                            <span class="badge bg-info bg-opacity-15 text-info">{{ $vote['status'] }}</span>
+                                        </div>
+                                        <small class="text-muted">{{ $vote['deadline'] }}</small>
+                                    </div>
+                                    <h5 class="mb-2">{{ $vote['name'] }}</h5>
+                                    <p class="text-muted mb-4">{{ $vote['subtitle'] }}</p>
+                                    <a href="#" class="btn btn-primary">Vote Now</a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+
+                <section id="announcements" class="section-spacer">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h2 class="dashboard-section-title">Announcements</h2>
+                        <a href="#" class="text-primary small">View all announcements <i class="fas fa-chevron-right ms-1"></i></a>
+                    </div>
+                    <div class="row g-4">
+                        @foreach ($announcements as $item)
+                            <div class="col-12 col-md-6 col-xl-4">
+                                <div class="card glass-card p-4 h-100">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <h5 class="mb-0">{{ $item['title'] }}</h5>
+                                        <span class="text-muted small">{{ $item['date'] }}</span>
+                                    </div>
+                                    <p class="text-muted mb-4">{{ $item['summary'] }}</p>
+                                    <a href="#" class="btn btn-outline-primary btn-sm">Read More</a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+
+                <section id="fundraising" class="section-spacer">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h2 class="dashboard-section-title">Fundraising</h2>
+                        <a href="#" class="text-primary small">See campaign details <i class="fas fa-chevron-right ms-1"></i></a>
+                    </div>
+                    <div class="row g-4">
+                        @foreach ($fundraisers as $campaign)
+                            <div class="col-12 col-md-6">
+                                <div class="card glass-card p-4 h-100">
+                                    <div class="mb-3">
+                                        <h5 class="mb-2">{{ $campaign['title'] }}</h5>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <small class="text-muted">Raised {{ $campaign['raised'] }}</small>
+                                            <small class="text-muted">Goal {{ $campaign['goal'] }}</small>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $campaign['percent'] }}%;" aria-valuenow="{{ $campaign['percent'] }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                    <a href="#" class="btn btn-primary btn-sm">Donate</a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+
+                <section id="notifications" class="section-spacer">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h2 class="dashboard-section-title">Recent Notifications</h2>
+                        <a href="#" class="text-primary small">Mark all read</a>
+                    </div>
+                    <div class="list-group glass-card p-3">
+                        @foreach ($notifications as $note)
+                            <div class="list-group-item bg-transparent border-0 px-0 py-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <p class="mb-1">{{ $note['message'] }}</p>
+                                    <small class="text-muted">{{ $note['time'] }}</small>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+
+                <section id="schedule" class="section-spacer">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h2 class="dashboard-section-title">Upcoming Schedule</h2>
+                        <a href="#" class="text-primary small">View calendar <i class="fas fa-chevron-right ms-1"></i></a>
+                    </div>
+                    <div class="card glass-card p-4">
+                        <div class="dashboard-timeline">
+                            @foreach ($schedule as $item)
+                                <div class="timeline-item">
+                                    <h6 class="mb-1">{{ $item['event'] }}</h6>
+                                    <p class="text-muted mb-1"><i class="fas fa-calendar-week me-2"></i>{{ $item['date'] }} &middot; {{ $item['time'] }}</p>
+                                    <p class="text-muted small"><i class="fas fa-map-marker-alt me-2"></i>{{ $item['location'] }}</p>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</x-app-layout>

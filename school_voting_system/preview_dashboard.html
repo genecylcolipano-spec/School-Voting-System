@@ -1,0 +1,763 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="uhPbXfZwuTp46gxLYspFkofQKHSrdaQhFZFVj3xK">
+        <meta name="csrf-token" content="uhPbXfZwuTp46gxLYspFkofQKHSrdaQhFZFVj3xK">
+
+        <title>School Voting System</title>
+
+        <!-- Fonts -->
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+
+        <!-- Scripts -->
+        <link rel="preload" as="style" href="http://127.0.0.1:8000/build/assets/app-9h7ZgXbp.css" /><link rel="modulepreload" as="script" href="http://127.0.0.1:8000/build/assets/app-BjMeHjpC.js" /><link rel="stylesheet" href="http://127.0.0.1:8000/build/assets/app-9h7ZgXbp.css" /><script type="module" src="http://127.0.0.1:8000/build/assets/app-BjMeHjpC.js"></script>            </head>
+    <body class="font-sans antialiased">
+        <div class="min-h-screen bg-gray-100">
+            <nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+    <!-- Primary Navigation Menu -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex">
+                <!-- Logo -->
+                <div class="shrink-0 flex items-center">
+                    <a href="http://127.0.0.1:8000/dashboard">
+                        <svg viewBox="0 0 316 316" xmlns="http://www.w3.org/2000/svg" class="block h-9 w-auto fill-current text-gray-800">
+    <path d="M305.8 81.125C305.77 80.995 305.69 80.885 305.65 80.755C305.56 80.525 305.49 80.285 305.37 80.075C305.29 79.935 305.17 79.815 305.07 79.685C304.94 79.515 304.83 79.325 304.68 79.175C304.55 79.045 304.39 78.955 304.25 78.845C304.09 78.715 303.95 78.575 303.77 78.475L251.32 48.275C249.97 47.495 248.31 47.495 246.96 48.275L194.51 78.475C194.33 78.575 194.19 78.725 194.03 78.845C193.89 78.955 193.73 79.045 193.6 79.175C193.45 79.325 193.34 79.515 193.21 79.685C193.11 79.815 192.99 79.935 192.91 80.075C192.79 80.285 192.71 80.525 192.63 80.755C192.58 80.875 192.51 80.995 192.48 81.125C192.38 81.495 192.33 81.875 192.33 82.265V139.625L148.62 164.795V52.575C148.62 52.185 148.57 51.805 148.47 51.435C148.44 51.305 148.36 51.195 148.32 51.065C148.23 50.835 148.16 50.595 148.04 50.385C147.96 50.245 147.84 50.125 147.74 49.995C147.61 49.825 147.5 49.635 147.35 49.485C147.22 49.355 147.06 49.265 146.92 49.155C146.76 49.025 146.62 48.885 146.44 48.785L93.99 18.585C92.64 17.805 90.98 17.805 89.63 18.585L37.18 48.785C37 48.885 36.86 49.035 36.7 49.155C36.56 49.265 36.4 49.355 36.27 49.485C36.12 49.635 36.01 49.825 35.88 49.995C35.78 50.125 35.66 50.245 35.58 50.385C35.46 50.595 35.38 50.835 35.3 51.065C35.25 51.185 35.18 51.305 35.15 51.435C35.05 51.805 35 52.185 35 52.575V232.235C35 233.795 35.84 235.245 37.19 236.025L142.1 296.425C142.33 296.555 142.58 296.635 142.82 296.725C142.93 296.765 143.04 296.835 143.16 296.865C143.53 296.965 143.9 297.015 144.28 297.015C144.66 297.015 145.03 296.965 145.4 296.865C145.5 296.835 145.59 296.775 145.69 296.745C145.95 296.655 146.21 296.565 146.45 296.435L251.36 236.035C252.72 235.255 253.55 233.815 253.55 232.245V174.885L303.81 145.945C305.17 145.165 306 143.725 306 142.155V82.265C305.95 81.875 305.89 81.495 305.8 81.125ZM144.2 227.205L100.57 202.515L146.39 176.135L196.66 147.195L240.33 172.335L208.29 190.625L144.2 227.205ZM244.75 114.995V164.795L226.39 154.225L201.03 139.625V89.825L219.39 100.395L244.75 114.995ZM249.12 57.105L292.81 82.265L249.12 107.425L205.43 82.265L249.12 57.105ZM114.49 184.425L96.13 194.995V85.305L121.49 70.705L139.85 60.135V169.815L114.49 184.425ZM91.76 27.425L135.45 52.585L91.76 77.745L48.07 52.585L91.76 27.425ZM43.67 60.135L62.03 70.705L87.39 85.305V202.545V202.555V202.565C87.39 202.735 87.44 202.895 87.46 203.055C87.49 203.265 87.49 203.485 87.55 203.695V203.705C87.6 203.875 87.69 204.035 87.76 204.195C87.84 204.375 87.89 204.575 87.99 204.745C87.99 204.745 87.99 204.755 88 204.755C88.09 204.905 88.22 205.035 88.33 205.175C88.45 205.335 88.55 205.495 88.69 205.635L88.7 205.645C88.82 205.765 88.98 205.855 89.12 205.965C89.28 206.085 89.42 206.225 89.59 206.325C89.6 206.325 89.6 206.325 89.61 206.335C89.62 206.335 89.62 206.345 89.63 206.345L139.87 234.775V285.065L43.67 229.705V60.135ZM244.75 229.705L148.58 285.075V234.775L219.8 194.115L244.75 179.875V229.705ZM297.2 139.625L253.49 164.795V114.995L278.85 100.395L297.21 89.825V139.625H297.2Z"/>
+</svg>
+                    </a>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                    <a class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition duration-150 ease-in-out" href="http://127.0.0.1:8000/dashboard">
+    Dashboard
+</a>
+                </div>
+            </div>
+
+            <!-- Settings Dropdown -->
+            <div class="hidden sm:flex sm:items-center sm:ms-6">
+                <div class="relative" x-data="{ open: false }" @click.outside="open = false" @close.stop="open = false">
+    <div @click="open = ! open">
+        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                            <div>System Administrator</div>
+
+                            <div class="ms-1">
+                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </button>
+    </div>
+
+    <div x-show="open"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-75"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            class="absolute z-50 mt-2 w-48 rounded-md shadow-lg ltr:origin-top-right rtl:origin-top-left end-0"
+            style="display: none;"
+            @click="open = false">
+        <div class="rounded-md ring-1 ring-black ring-opacity-5 py-1 bg-white">
+            <a class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out" href="http://127.0.0.1:8000/profile">Profile</a>
+
+                        <!-- Authentication -->
+                        <form method="POST" action="http://127.0.0.1:8000/logout">
+                            <input type="hidden" name="_token" value="uhPbXfZwuTp46gxLYspFkofQKHSrdaQhFZFVj3xK" autocomplete="off">
+                            <a class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out" href="http://127.0.0.1:8000/logout" onclick="event.preventDefault();
+                                                this.closest('form').submit();">Log Out</a>
+                        </form>
+        </div>
+    </div>
+</div>
+            </div>
+
+            <!-- Hamburger -->
+            <div class="-me-2 flex items-center sm:hidden">
+                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
+                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Responsive Navigation Menu -->
+    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+        <div class="pt-2 pb-3 space-y-1">
+            <a class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:text-gray-800 focus:bg-gray-50 focus:border-gray-300 transition duration-150 ease-in-out" href="http://127.0.0.1:8000/dashboard">
+    Dashboard
+</a>
+        </div>
+
+        <!-- Responsive Settings Options -->
+        <div class="pt-4 pb-1 border-t border-gray-200">
+            <div class="px-4">
+                <div class="font-medium text-base text-gray-800">System Administrator</div>
+                <div class="font-medium text-sm text-gray-500">admin@school.local</div>
+            </div>
+
+            <div class="mt-3 space-y-1">
+                <a class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:text-gray-800 focus:bg-gray-50 focus:border-gray-300 transition duration-150 ease-in-out" href="http://127.0.0.1:8000/profile">
+    Profile
+</a>
+
+                <!-- Authentication -->
+                <form method="POST" action="http://127.0.0.1:8000/logout">
+                    <input type="hidden" name="_token" value="uhPbXfZwuTp46gxLYspFkofQKHSrdaQhFZFVj3xK" autocomplete="off">
+                    <a class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:text-gray-800 focus:bg-gray-50 focus:border-gray-300 transition duration-150 ease-in-out" href="http://127.0.0.1:8000/logout" onclick="event.preventDefault();
+                                        this.closest('form').submit();">
+    Log Out
+</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</nav>
+
+            <!-- Page Heading -->
+            
+            <!-- Page Content -->
+            <main>
+                <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css\" integrity=\"sha512-oB5tixlVfNsH3DdX+DM4lRrMDgckBbThl8jH/9Oc2hggu+VdCIw3b6W5cKPHoFUtjEoKJXgIrVj7mXQbug5wJQ==\" crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\" />
+        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" integrity=\"sha512-3dkvQDW5m2ndAG51aUAMv0kV4gPBM3x7JmV6TmIEQXvA7o9VpQOzVeFnNf7u3tC23jz7wWBF8f7xywG7a1u/Qw==\" crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\" />
+        <link rel=\"preconnect\" href=\"https://fonts.bunny.net\">
+        <link href=\"https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700\" rel=\"stylesheet\">
+        <style>
+            * {
+                color-scheme: dark;
+            }
+            body {
+                background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+                color: #e2e8f0;
+                font-family: \"Instrument Sans\", system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;
+            }
+            body > nav {
+                display: none !important;
+            }
+            .dashboard-shell {
+                min-height: 100vh;
+                padding: 0;
+            }
+            .dashboard-sidebar {
+                background: rgba(30, 41, 59, .4);
+                backdrop-filter: blur(16px);
+                border-right: 1px solid rgba(56, 189, 248, .15);
+                min-height: 100vh;
+            }
+            .dashboard-sidebar .nav-link {
+                color: #cbd5e1;
+                font-weight: 500;
+                border-radius: 1rem;
+                transition: all .25s ease;
+            }
+            .dashboard-sidebar .nav-link:hover,
+            .dashboard-sidebar .nav-link.active {
+                background: rgba(56, 189, 248, .15);
+                color: #06b6d4;
+                transform: translateX(4px);
+            }
+            .hero-card {
+                background: linear-gradient(135deg, rgba(7, 89, 133, .8), rgba(34, 197, 94, .15));
+                color: #f1f5f9;
+                border: 1px solid rgba(56, 189, 248, .25);
+                border-radius: 2rem;
+                box-shadow: 0 30px 80px rgba(56, 189, 248, .1);
+            }
+            .glass-card {
+                background: rgba(30, 41, 59, .5);
+                box-shadow: 0 24px 60px rgba(0, 0, 0, .3);
+                border: 1px solid rgba(56, 189, 248, .15);
+                backdrop-filter: blur(18px);
+                color: #e2e8f0;
+            }
+            .glass-card:hover {
+                transform: translateY(-4px);
+                border-color: rgba(56, 189, 248, .3);
+                transition: transform .25s ease, border-color .25s ease;
+            }
+            .icon-badge {
+                width: 56px;
+                height: 56px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 1rem;
+                background: rgba(56, 189, 248, .12);
+                color: #06b6d4;
+            }
+            .dashboard-card-title {
+                letter-spacing: .02em;
+                color: #cbd5e1;
+            }
+            .dashboard-section-title {
+                font-size: 1.05rem;
+                font-weight: 700;
+                color: #f1f5f9;
+            }
+            .progress {
+                height: .5rem;
+                border-radius: .75rem;
+                background: rgba(56, 189, 248, .1);
+            }
+            .progress-bar {
+                border-radius: .75rem;
+                background: linear-gradient(90deg, #06b6d4, #38bdf8);
+            }
+            .dashboard-timeline {
+                position: relative;
+            }
+            .dashboard-timeline::before {
+                content: \"\";
+                position: absolute;
+                left: 15px;
+                top: 0;
+                bottom: 0;
+                width: 3px;
+                background: linear-gradient(180deg, #38bdf8, #06b6d4);
+                border-radius: 999px;
+            }
+            .timeline-item {
+                position: relative;
+                padding-left: 3rem;
+                margin-bottom: 2rem;
+            }
+            .timeline-item::before {
+                content: \"\";
+                position: absolute;
+                left: 6px;
+                top: 8px;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                border: 4px solid #1e293b;
+                background: #06b6d4;
+                box-shadow: 0 0 0 4px rgba(56, 189, 248, .12);
+            }
+            .dashboard-navbar {
+                background: transparent;
+            }
+            .dashboard-navbar .btn {
+                border-radius: 1rem;
+            }
+            .dashboard-navbar .btn-outline-primary {
+                color: #38bdf8;
+                border-color: rgba(56, 189, 248, .3);
+            }
+            .dashboard-navbar .btn-outline-primary:hover {
+                background: rgba(56, 189, 248, .15);
+                border-color: rgba(56, 189, 248, .5);
+            }
+            .dashboard-navbar .btn-primary {
+                background: linear-gradient(135deg, #06b6d4, #38bdf8);
+                border: none;
+            }
+            .dashboard-navbar .btn-primary:hover {
+                background: linear-gradient(135deg, #0891b2, #22d3ee);
+            }
+            .dropdown-menu {
+                background: rgba(15, 23, 42, .95);
+                border: 1px solid rgba(56, 189, 248, .15);
+                backdrop-filter: blur(8px);
+            }
+            .dropdown-menu .dropdown-item {
+                color: #cbd5e1;
+            }
+            .dropdown-menu .dropdown-item:hover {
+                background: rgba(56, 189, 248, .15);
+                color: #06b6d4;
+            }
+            .dashboard-layout {
+                min-height: 100vh;
+                transition: all .3s ease;
+                position: relative;
+            }
+            .dashboard-sidebar {
+                transition: all .3s ease, transform .3s ease;
+                width: 100%;
+                max-width: none;
+            }
+            .dashboard-content {
+                width: 100%;
+                transition: margin .3s ease;
+            }
+            .badge {
+                background: rgba(56, 189, 248, .2);
+                color: #06b6d4;
+            }
+            .text-muted {
+                color: #94a3b8 !important;
+            }
+            @media (min-width: 1200px) {
+                .dashboard-sidebar {
+                    flex: 0 0 280px;
+                    max-width: 280px;
+                }
+                .sidebar-collapsed .dashboard-sidebar {
+                    flex: 0 0 88px;
+                    max-width: 88px;
+                    min-width: 88px;
+                }
+                .sidebar-collapsed .dashboard-content {
+                    margin-left: 0;
+                }
+                .sidebar-collapsed .dashboard-sidebar .mb-5 > div {
+                    justify-content: center;
+                }
+                .sidebar-collapsed .dashboard-sidebar .mb-5 h5,
+                .sidebar-collapsed .dashboard-sidebar .mb-5 small,
+                .sidebar-collapsed .dashboard-sidebar .mb-5 p {
+                    display: none;
+                }
+                .sidebar-collapsed .dashboard-sidebar nav {
+                    gap: .65rem;
+                }
+                .sidebar-collapsed .dashboard-sidebar .nav-link {
+                    justify-content: center;
+                    padding-left: .95rem;
+                    padding-right: .95rem;
+                }
+                .sidebar-collapsed .dashboard-sidebar .nav-link i {
+                    margin-right: 0;
+                }
+                .sidebar-collapsed .dashboard-sidebar .nav-link span {
+                    display: none;
+                }
+                .sidebar-collapsed .dashboard-sidebar .nav-link.active {
+                    transform: none;
+                }
+            }
+            @media (max-width: 1199px) {
+                .dashboard-sidebar {
+                    position: relative;
+                }
+                .sidebar-collapsed .dashboard-sidebar {
+                    transform: translateX(-100%);
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    bottom: 0;
+                    z-index: 1050;
+                    width: 100%;
+                }
+                .sidebar-collapsed .dashboard-content {
+                    margin-left: 0;
+                }
+            }
+            .section-spacer {
+                margin-top: 2rem;
+            }
+            @media (max-width: 991px) {
+                .dashboard-sidebar {
+                    min-height: auto;
+                }
+                .dashboard-navbar {
+                    flex-wrap: wrap;
+                }
+                .hero-card {
+                    border-radius: 1.5rem;
+                }
+            }
+        </style>
+
+    
+    <div class="container-fluid dashboard-shell px-0">
+        <div class="dashboard-layout d-flex flex-column flex-xl-row g-0">
+            <aside class="dashboard-sidebar p-4">
+                <div class="mb-5">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="me-3 bg-white rounded-circle shadow-sm" style="width:50px;height:50px;display:grid;place-items:center;">
+                            <i class="fas fa-school text-primary"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-primary">School Voting</h5>
+                            <small class="text-muted">Student Portal</small>
+                        </div>
+                    </div>
+                    <p class="text-muted small">Manage events, stay updated, and join campus voting initiatives.</p>
+                </div>
+
+                <nav class="nav flex-column gap-2">
+                    <a class="nav-link active px-4 py-3" href="#"><i class="fas fa-chart-line me-3"></i><span>Dashboard</span></a>
+                    <a class="nav-link px-4 py-3" href="#events"><i class="fas fa-calendar-alt me-3"></i><span>Events</span></a>
+                    <a class="nav-link px-4 py-3" href="#voting"><i class="fas fa-vote-yea me-3"></i><span>Voting</span></a>
+                    <a class="nav-link px-4 py-3" href="#fundraising"><i class="fas fa-hand-holding-heart me-3"></i><span>Fundraising</span></a>
+                    <a class="nav-link px-4 py-3" href="#announcements"><i class="fas fa-bullhorn me-3"></i><span>Announcements</span></a>
+                    <a class="nav-link px-4 py-3" href="#notifications"><i class="fas fa-bell me-3"></i><span>Notifications</span></a>
+                    <a class="nav-link px-4 py-3" href="#profile"><i class="fas fa-user-circle me-3"></i><span>Profile</span></a>
+                    <form method="POST" action="http://127.0.0.1:8000/logout">
+                        <input type="hidden" name="_token" value="uhPbXfZwuTp46gxLYspFkofQKHSrdaQhFZFVj3xK" autocomplete="off">                        <button type="submit" class="nav-link px-4 py-3 text-start btn btn-link text-decoration-none"><i class="fas fa-sign-out-alt me-3"></i><span>Logout</span></button>
+                    </form>
+                </nav>
+            </aside>
+
+            <div class="dashboard-content flex-fill px-4 py-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 dashboard-navbar">
+                    <div class="d-flex align-items-center gap-2 mb-3 mb-md-0">
+                        <button id="sidebarToggleBtn" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center" type="button" aria-label="Collapse sidebar">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <div>
+                            <p class="mb-1 text-muted">Welcome back, System Administrator!</p>
+                            <h1 class="h3 mb-0">Student Dashboard</h1>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mt-3 mt-md-0">
+                        <button class="btn btn-outline-primary btn-sm position-relative">
+                            <i class="fas fa-bell"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">5</span>
+                        </button>
+                        <div class="dropdown">
+                            <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle me-2"></i>System Administrator
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                                <li><a class="dropdown-item" href="http://127.0.0.1:8000/profile">Profile</a></li>
+                                <li><a class="dropdown-item" href="#notifications">Notifications</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="POST" action="http://127.0.0.1:8000/logout">
+                                        <input type="hidden" name="_token" value="uhPbXfZwuTp46gxLYspFkofQKHSrdaQhFZFVj3xK" autocomplete="off">                                        <button type="submit" class="dropdown-item">Logout</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="mb-5">
+                    <div class="card hero-card p-4 p-lg-5 overflow-hidden">
+                        <div class="row align-items-center">
+                            <div class="col-lg-7">
+                                <span class="badge bg-white text-primary mb-3">Student Portal</span>
+                                <h2 class="display-6 fw-bold">School Voting System</h2>
+                                <p class="lead opacity-90">Participate in school events, vote securely, and stay connected with campus activities.</p>
+                                <div class="d-flex flex-column flex-sm-row gap-3 mt-4">
+                                    <a href="#events" class="btn btn-light btn-lg text-primary">Explore Events</a>
+                                    <a href="#announcements" class="btn btn-outline-light btn-lg text-white border-white">View Announcements</a>
+                                </div>
+                            </div>
+                            <div class="col-lg-5 text-center mt-4 mt-lg-0">
+                                <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=600&q=80" class="img-fluid rounded-4 shadow-lg" alt="Campus life illustration">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="row g-4">
+                    <div class="col-6 col-md-3">
+                        <div class="card glass-card p-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="icon-badge"><i class="fas fa-calendar-check fa-lg"></i></div>
+                                <span class="badge bg-primary bg-opacity-10 text-primary">Active</span>
+                            </div>
+                            <h6 class="dashboard-card-title text-uppercase mb-1">Active Events</h6>
+                            <h3 class="mb-0">12</h3>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card glass-card p-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="icon-badge"><i class="fas fa-vote-yea fa-lg"></i></div>
+                                <span class="badge bg-info bg-opacity-10 text-info">Live</span>
+                            </div>
+                            <h6 class="dashboard-card-title text-uppercase mb-1">Ongoing Voting</h6>
+                            <h3 class="mb-0">3</h3>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card glass-card p-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="icon-badge"><i class="fas fa-bell fa-lg"></i></div>
+                                <span class="badge bg-warning bg-opacity-10 text-warning">Updates</span>
+                            </div>
+                            <h6 class="dashboard-card-title text-uppercase mb-1">Notifications</h6>
+                            <h3 class="mb-0">5</h3>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card glass-card p-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="icon-badge"><i class="fas fa-hand-holding-heart fa-lg"></i></div>
+                                <span class="badge bg-success bg-opacity-10 text-success">Active</span>
+                            </div>
+                            <h6 class="dashboard-card-title text-uppercase mb-1">Fundraising Campaigns</h6>
+                            <h3 class="mb-0">2</h3>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="events" class="section-spacer">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h2 class="dashboard-section-title">Upcoming Events</h2>
+                        <a href="#" class="text-primary small">See all events <i class="fas fa-chevron-right ms-1"></i></a>
+                    </div>
+                    <div class="row g-4">
+                                                    <div class="col-12 col-md-6">
+                                <div class="card glass-card overflow-hidden h-100 shadow-sm">
+                                    <img src="/build/images/event1.jpg" class="card-img-top" alt="Rosemont Idol 2026 banner">
+                                    <div class="card-body">
+                                        <span class="badge bg-primary mb-3">Open</span>
+                                        <h5 class="card-title">Rosemont Idol 2026</h5>
+                                        <p class="text-muted mb-1"><i class="fas fa-calendar-day me-2"></i>May 28, 2026</p>
+                                        <p class="text-muted mb-3"><i class="fas fa-map-marker-alt me-2"></i>Main Hall</p>
+                                        <a href="#" class="btn btn-outline-primary btn-sm">View Event</a>
+                                    </div>
+                                </div>
+                            </div>
+                                                    <div class="col-12 col-md-6">
+                                <div class="card glass-card overflow-hidden h-100 shadow-sm">
+                                    <img src="/build/images/event2.jpg" class="card-img-top" alt="Science Fair 2026 banner">
+                                    <div class="card-body">
+                                        <span class="badge bg-primary mb-3">Open</span>
+                                        <h5 class="card-title">Science Fair 2026</h5>
+                                        <p class="text-muted mb-1"><i class="fas fa-calendar-day me-2"></i>Jun 03, 2026</p>
+                                        <p class="text-muted mb-3"><i class="fas fa-map-marker-alt me-2"></i>Gym</p>
+                                        <a href="#" class="btn btn-outline-primary btn-sm">View Event</a>
+                                    </div>
+                                </div>
+                            </div>
+                                                    <div class="col-12 col-md-6">
+                                <div class="card glass-card overflow-hidden h-100 shadow-sm">
+                                    <img src="/build/images/event3.jpg" class="card-img-top" alt="Student Council Meet banner">
+                                    <div class="card-body">
+                                        <span class="badge bg-primary mb-3">Upcoming</span>
+                                        <h5 class="card-title">Student Council Meet</h5>
+                                        <p class="text-muted mb-1"><i class="fas fa-calendar-day me-2"></i>Jun 10, 2026</p>
+                                        <p class="text-muted mb-3"><i class="fas fa-map-marker-alt me-2"></i>Room 101</p>
+                                        <a href="#" class="btn btn-outline-primary btn-sm">View Event</a>
+                                    </div>
+                                </div>
+                            </div>
+                                                    <div class="col-12 col-md-6">
+                                <div class="card glass-card overflow-hidden h-100 shadow-sm">
+                                    <img src="/build/images/event4.jpg" class="card-img-top" alt="Spring Concert banner">
+                                    <div class="card-body">
+                                        <span class="badge bg-primary mb-3">Upcoming</span>
+                                        <h5 class="card-title">Spring Concert</h5>
+                                        <p class="text-muted mb-1"><i class="fas fa-calendar-day me-2"></i>Jun 15, 2026</p>
+                                        <p class="text-muted mb-3"><i class="fas fa-map-marker-alt me-2"></i>Auditorium</p>
+                                        <a href="#" class="btn btn-outline-primary btn-sm">View Event</a>
+                                    </div>
+                                </div>
+                            </div>
+                                            </div>
+                </section>
+
+                <section id="voting" class="section-spacer">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h2 class="dashboard-section-title">Active Voting</h2>
+                        <a href="#" class="text-primary small">Review voting rules <i class="fas fa-chevron-right ms-1"></i></a>
+                    </div>
+                    <div class="row g-4">
+                                                    <div class="col-12 col-md-6">
+                                <div class="card glass-card p-4 h-100">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div>
+                                            <span class="badge bg-info bg-opacity-15 text-info">Voting Open</span>
+                                        </div>
+                                        <small class="text-muted">Ends in 2 days</small>
+                                    </div>
+                                    <h5 class="mb-2">Rosemont Idol 2026</h5>
+                                    <p class="text-muted mb-4">Audience Choice Voting</p>
+                                    <a href="#" class="btn btn-primary">Vote Now</a>
+                                </div>
+                            </div>
+                                                    <div class="col-12 col-md-6">
+                                <div class="card glass-card p-4 h-100">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div>
+                                            <span class="badge bg-info bg-opacity-15 text-info">Voting Open</span>
+                                        </div>
+                                        <small class="text-muted">Ends in 5 days</small>
+                                    </div>
+                                    <h5 class="mb-2">Council Representative</h5>
+                                    <p class="text-muted mb-4">Elect your representative</p>
+                                    <a href="#" class="btn btn-primary">Vote Now</a>
+                                </div>
+                            </div>
+                                            </div>
+                </section>
+
+                <section id="announcements" class="section-spacer">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h2 class="dashboard-section-title">Announcements</h2>
+                        <a href="#" class="text-primary small">View all announcements <i class="fas fa-chevron-right ms-1"></i></a>
+                    </div>
+                    <div class="row g-4">
+                                                    <div class="col-12 col-md-6 col-xl-4">
+                                <div class="card glass-card p-4 h-100">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <h5 class="mb-0">Campus Closed</h5>
+                                        <span class="text-muted small">May 20, 2026</span>
+                                    </div>
+                                    <p class="text-muted mb-4">Campus will be closed for maintenance.</p>
+                                    <a href="#" class="btn btn-outline-primary btn-sm">Read More</a>
+                                </div>
+                            </div>
+                                                    <div class="col-12 col-md-6 col-xl-4">
+                                <div class="card glass-card p-4 h-100">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <h5 class="mb-0">New Library Hours</h5>
+                                        <span class="text-muted small">May 22, 2026</span>
+                                    </div>
+                                    <p class="text-muted mb-4">Library hours extended to 9pm.</p>
+                                    <a href="#" class="btn btn-outline-primary btn-sm">Read More</a>
+                                </div>
+                            </div>
+                                                    <div class="col-12 col-md-6 col-xl-4">
+                                <div class="card glass-card p-4 h-100">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <h5 class="mb-0">Volunteer Fair</h5>
+                                        <span class="text-muted small">May 25, 2026</span>
+                                    </div>
+                                    <p class="text-muted mb-4">Meet local organizations and sign up.</p>
+                                    <a href="#" class="btn btn-outline-primary btn-sm">Read More</a>
+                                </div>
+                            </div>
+                                            </div>
+                </section>
+
+                <section id="fundraising" class="section-spacer">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h2 class="dashboard-section-title">Fundraising</h2>
+                        <a href="#" class="text-primary small">See campaign details <i class="fas fa-chevron-right ms-1"></i></a>
+                    </div>
+                    <div class="row g-4">
+                                                    <div class="col-12 col-md-6">
+                                <div class="card glass-card p-4 h-100">
+                                    <div class="mb-3">
+                                        <h5 class="mb-2">Music Club Fund</h5>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <small class="text-muted">Raised 1200</small>
+                                            <small class="text-muted">Goal 2000</small>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-primary" role="progressbar" style="width: 60%;" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                    <a href="#" class="btn btn-primary btn-sm">Donate</a>
+                                </div>
+                            </div>
+                                                    <div class="col-12 col-md-6">
+                                <div class="card glass-card p-4 h-100">
+                                    <div class="mb-3">
+                                        <h5 class="mb-2">Robotics Team</h5>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <small class="text-muted">Raised 3500</small>
+                                            <small class="text-muted">Goal 5000</small>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-primary" role="progressbar" style="width: 70%;" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                    <a href="#" class="btn btn-primary btn-sm">Donate</a>
+                                </div>
+                            </div>
+                                            </div>
+                </section>
+
+                <section id="notifications" class="section-spacer">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h2 class="dashboard-section-title">Recent Notifications</h2>
+                        <a href="#" class="text-primary small">Mark all read</a>
+                    </div>
+                    <div class="list-group glass-card p-3">
+                                                    <div class="list-group-item bg-transparent border-0 px-0 py-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <p class="mb-1">Your passkey enrollment was successful.</p>
+                                    <small class="text-muted">2h ago</small>
+                                </div>
+                            </div>
+                                                    <div class="list-group-item bg-transparent border-0 px-0 py-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <p class="mb-1">New event: Science Fair 2026</p>
+                                    <small class="text-muted">1d ago</small>
+                                </div>
+                            </div>
+                                                    <div class="list-group-item bg-transparent border-0 px-0 py-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <p class="mb-1">Vote opened for Rosemont Idol</p>
+                                    <small class="text-muted">3d ago</small>
+                                </div>
+                            </div>
+                                                    <div class="list-group-item bg-transparent border-0 px-0 py-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <p class="mb-1">Library hours updated</p>
+                                    <small class="text-muted">5d ago</small>
+                                </div>
+                            </div>
+                                            </div>
+                </section>
+
+                <section id="schedule" class="section-spacer">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h2 class="dashboard-section-title">Upcoming Schedule</h2>
+                        <a href="#" class="text-primary small">View calendar <i class="fas fa-chevron-right ms-1"></i></a>
+                    </div>
+                    <div class="card glass-card p-4">
+                        <div class="dashboard-timeline">
+                                                            <div class="timeline-item">
+                                    <h6 class="mb-1">Orientation</h6>
+                                    <p class="text-muted mb-1"><i class="fas fa-calendar-week me-2"></i>May 28, 2026 &middot; 09:00</p>
+                                    <p class="text-muted small"><i class="fas fa-map-marker-alt me-2"></i>Main Hall</p>
+                                </div>
+                                                            <div class="timeline-item">
+                                    <h6 class="mb-1">Workshop: Web Dev</h6>
+                                    <p class="text-muted mb-1"><i class="fas fa-calendar-week me-2"></i>May 30, 2026 &middot; 13:00</p>
+                                    <p class="text-muted small"><i class="fas fa-map-marker-alt me-2"></i>Lab 4</p>
+                                </div>
+                                                            <div class="timeline-item">
+                                    <h6 class="mb-1">Exam Period</h6>
+                                    <p class="text-muted mb-1"><i class="fas fa-calendar-week me-2"></i>Jun 05, 2026 &middot; 08:00</p>
+                                    <p class="text-muted small"><i class="fas fa-map-marker-alt me-2"></i>Various</p>
+                                </div>
+                                                            <div class="timeline-item">
+                                    <h6 class="mb-1">Spring Concert</h6>
+                                    <p class="text-muted mb-1"><i class="fas fa-calendar-week me-2"></i>Jun 15, 2026 &middot; 18:00</p>
+                                    <p class="text-muted small"><i class="fas fa-map-marker-alt me-2"></i>Auditorium</p>
+                                </div>
+                                                    </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+            </main>
+        </div>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const sidebarToggle = document.getElementById('sidebarToggleBtn');
+                const shell = document.querySelector('.dashboard-shell');
+                const storageKey = 'studentDashboardSidebarCollapsed';
+
+                if (!sidebarToggle || !shell) {
+                    return;
+                }
+
+                const setCollapsed = (collapsed) => {
+                    shell.classList.toggle('sidebar-collapsed', collapsed);
+                    sidebarToggle.innerHTML = collapsed ? '<i class="fas fa-chevron-right"></i>' : '<i class="fas fa-chevron-left"></i>';
+                    sidebarToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+                    sessionStorage.setItem(storageKey, collapsed ? 'true' : 'false');
+                };
+
+                const initialState = sessionStorage.getItem(storageKey) === 'true';
+                setCollapsed(initialState);
+
+                sidebarToggle.addEventListener('click', () => {
+                    setCollapsed(sessionStorage.getItem(storageKey) !== 'true');
+                });
+            });
+        </script>
+        </body>
+</html>
+
