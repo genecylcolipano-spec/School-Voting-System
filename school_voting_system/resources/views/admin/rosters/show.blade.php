@@ -32,8 +32,10 @@
                     <dd>
                         @if ($record->archived_at)
                             <span class="rounded-full border border-slate-600 bg-slate-800/80 px-2 py-0.5 text-xs font-semibold text-slate-300">Archived</span>
-                        @elseif ($record->is_registered)
+                        @elseif ($record->is_registered || (method_exists($record, 'isFullyRegistered') && $record->isFullyRegistered()))
                             <span class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-200">Registered</span>
+                        @elseif (method_exists($record, 'isEnrollmentPending') && $record->isEnrollmentPending())
+                            <span class="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs font-semibold text-sky-200">Enrollment Pending</span>
                         @else
                             <span class="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-200">Not Registered</span>
                         @endif

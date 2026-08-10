@@ -80,14 +80,20 @@ class StaffAccountService
                 AllowedFaculty::query()
                     ->where('account_id', $accountId)
                     ->where('is_registered', false)
-                    ->update(['is_registered' => true]);
+                    ->get()
+                    ->each(function (AllowedFaculty $row) {
+                        $row->markFullyRegistered();
+                    });
             }
 
             if ($role === UserRole::Admin) {
                 AllowedAdministrator::query()
                     ->where('account_id', $accountId)
                     ->where('is_registered', false)
-                    ->update(['is_registered' => true]);
+                    ->get()
+                    ->each(function (AllowedAdministrator $row) {
+                        $row->markFullyRegistered();
+                    });
             }
 
             return $created;

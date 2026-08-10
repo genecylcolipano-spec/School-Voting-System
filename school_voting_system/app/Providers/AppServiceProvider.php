@@ -86,6 +86,20 @@ class AppServiceProvider extends ServiceProvider
                 ]);
             }
 
+            if ($passkey instanceof Passkey && ! $passkey->isUsable()) {
+                Log::warning('Passkey authorizeLogin rejected: credential not usable.', [
+                    'user_id' => $user->id,
+                    'account_id' => $user->account_id,
+                    'passkey_id' => $passkey->id,
+                    'status' => $passkey->status?->value,
+                    'ip' => $request->ip(),
+                ]);
+
+                throw ValidationException::withMessages([
+                    'credential' => ['This passkey is no longer valid. Request a passkey reset or use another registered device.'],
+                ]);
+            }
+
             Log::debug('Passkey authorizeLogin approved.', [
                 'user_id' => $user->id,
                 'account_id' => $user->account_id,

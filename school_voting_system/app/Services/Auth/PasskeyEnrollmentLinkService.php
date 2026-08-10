@@ -10,8 +10,10 @@ use Throwable;
 
 class PasskeyEnrollmentLinkService
 {
-    public function createSignedUrl(User $user, int $expiresInMinutes = 120): string
+    public function createSignedUrl(User $user, ?int $expiresInMinutes = null): string
     {
+        $expiresInMinutes ??= max(60, (int) config('enrollment.link_expiration_hours', 24) * 60);
+
         return URL::temporarySignedRoute(
             'register.passkey.bootstrap',
             now()->addMinutes($expiresInMinutes),
@@ -22,8 +24,9 @@ class PasskeyEnrollmentLinkService
     /**
      * @return array{url: string, email_sent: bool, email_error: string|null, recipient: string|null}
      */
-    public function sendToUser(User $user, ?string $recipientEmail = null, int $expiresInMinutes = 120): array
+    public function sendToUser(User $user, ?string $recipientEmail = null, ?int $expiresInMinutes = null): array
     {
+        $expiresInMinutes ??= max(60, (int) config('enrollment.link_expiration_hours', 24) * 60);
         $url = $this->createSignedUrl($user, $expiresInMinutes);
         $recipient = $recipientEmail ?: $user->email;
 
@@ -40,7 +43,9 @@ class PasskeyEnrollmentLinkService
             Mail::to($recipient)->send(new PasskeyResetEnrollmentLinkMail(
                 userName: $user->name,
                 enrollmentUrl: $url,
-                expiresInMinutes: $expiresInMinutes,
+                expiresInMinutes: (int) $expiresInMinutes,
+                recoveryRequestId: null,
+                selfService: false,
             ));
 
             return [

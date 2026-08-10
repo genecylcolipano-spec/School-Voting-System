@@ -24,6 +24,11 @@
             <p class="mt-1 text-xs font-medium uppercase tracking-wide text-cyan-700">
                 Role: {{ str($user->role?->value ?? 'unknown')->title() }}
             </p>
+            @if (session()->has(\App\Services\Auth\PasskeyRecoveryTokenService::SESSION_RECOVERY_REQUEST_ID))
+                <p class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    Registering a new passkey will revoke your previous passkeys on this account.
+                </p>
+            @endif
         @elseif (! empty($pending))
             <p class="mt-2 text-sm text-slate-600">
                 Setting up passwordless access for

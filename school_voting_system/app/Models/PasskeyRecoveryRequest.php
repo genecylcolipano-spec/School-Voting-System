@@ -15,6 +15,10 @@ class PasskeyRecoveryRequest extends Model
         'user_id',
         'account_id',
         'email',
+        'token_hash',
+        'expires_at',
+        'used_at',
+        'invalidated_at',
         'status',
         'resolved_by',
         'resolved_at',
@@ -25,8 +29,42 @@ class PasskeyRecoveryRequest extends Model
     protected function casts(): array
     {
         return [
+            'expires_at' => 'datetime',
+            'used_at' => 'datetime',
+            'invalidated_at' => 'datetime',
             'resolved_at' => 'datetime',
         ];
+    }
+
+    public function isTokenUsable(): bool
+    {
+        return $this->token_hash !== null
+            && $this->used_at === null
+            && $this->invalidated_at === null
+            && $this->expires_at !== null
+            && $this->expires_at->isFuture()
+            && $this->user_id !== null;
+    }
+
+    public function tokenFailureReason(): ?string
+    {
+        if ($this->token_hash === null) {
+            return 'invalid';
+        }
+
+        if ($this->used_at !== null || $this->invalidated_at !== null) {
+            return 'used';
+        }
+
+        if ($this->expires_at === null || $this->expires_at->isPast()) {
+            return 'expired';
+        }
+
+        if ($this->user_id === null) {
+            return 'invalid';
+        }
+
+        return null;
     }
 
     public function user(): BelongsTo

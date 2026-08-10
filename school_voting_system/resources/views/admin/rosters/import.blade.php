@@ -24,7 +24,7 @@
             <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5 sm:p-6 lg:col-span-2">
                 <h2 class="text-lg font-semibold text-white">Upload CSV</h2>
                 <p class="mt-1 text-sm text-slate-400">
-                    Existing roster entries are matched by account ID and updated. Records that have already registered cannot be overwritten.
+                    Existing roster entries are matched by account ID and updated. Import never creates login accounts or sends enrollment emails. Records that have already registered cannot be overwritten.
                 </p>
 
                 <form method="POST" action="{{ route($routePrefix.'.import.store') }}" enctype="multipart/form-data" class="mt-6 space-y-5">

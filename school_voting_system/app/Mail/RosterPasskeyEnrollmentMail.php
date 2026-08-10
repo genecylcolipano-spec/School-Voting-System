@@ -6,22 +6,19 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class PasskeyResetEnrollmentLinkMail extends Mailable
+class RosterPasskeyEnrollmentMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public function __construct(
         public string $userName,
         public string $enrollmentUrl,
-        public int $expiresInMinutes,
-        public ?int $recoveryRequestId = null,
-        public bool $selfService = true,
+        public int $expiresInHours,
     ) {}
 
     public function build(): static
     {
-        return $this->subject('Passkey Reset Request')
-            ->view('emails.passkey-reset-enrollment-link');
+        return $this->subject('Complete your School Voting System passkey setup')
+            ->view('emails.roster-passkey-enrollment');
     }
 }
-

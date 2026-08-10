@@ -296,6 +296,34 @@ class LoginController extends Controller
                 );
 
                 if ($request->session()->pull('passkey.bootstrap_user_id')) {
+                    $recoveryRequestId = $request->session()->pull(
+                        \App\Services\Auth\PasskeyRecoveryTokenService::SESSION_RECOVERY_REQUEST_ID
+                    );
+
+                    if ($recoveryRequestId) {
+                        $recovery = \App\Models\PasskeyRecoveryRequest::query()->find($recoveryRequestId);
+                        if ($recovery && (int) $recovery->user_id === (int) $user->id) {
+                            app(\App\Services\Auth\PasskeyRecoveryTokenService::class)->markUsed($recovery);
+                        }
+                    }
+
+                    // True reset: previous credentials can no longer sign in.
+                    $revokedCount = \App\Models\Passkey::revokeOthersForUser(
+                        $user,
+                        (int) $passkey->id,
+                        (int) $user->id,
+                    );
+
+                    if ($revokedCount > 0) {
+                        Log::info('Previous passkeys revoked after reset enrollment.', [
+                            'user_id' => $user->id,
+                            'account_id' => $user->account_id,
+                            'kept_passkey_id' => $passkey->id,
+                            'revoked_count' => $revokedCount,
+                            'ip' => $request->ip(),
+                        ]);
+                    }
+
                     Auth::login($user);
                     $request->session()->regenerate();
                 }

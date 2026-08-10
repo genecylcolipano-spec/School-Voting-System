@@ -66,6 +66,32 @@ class Passkey extends BasePasskey
         return $this->revoked_at === null && $this->marked_lost_at === null;
     }
 
+    /**
+     * Revoke every usable passkey for the user except the newly registered one.
+     * Used after a successful passkey reset / bootstrap enrollment.
+     */
+    public static function revokeOthersForUser(User $user, int $keepPasskeyId, ?int $revokedByUserId = null): int
+    {
+        $ids = static::query()
+            ->where('user_id', $user->id)
+            ->where('id', '!=', $keepPasskeyId)
+            ->whereNull('revoked_at')
+            ->pluck('id');
+
+        if ($ids->isEmpty()) {
+            return 0;
+        }
+
+        return (int) static::query()
+            ->whereIn('id', $ids)
+            ->update([
+                'status' => PasskeyStatus::Revoked->value,
+                'revoked_at' => now(),
+                'revoked_by' => $revokedByUserId ?? $user->id,
+                'updated_at' => now(),
+            ]);
+    }
+
     public function owner(): BelongsTo
     {
         return $this->user();

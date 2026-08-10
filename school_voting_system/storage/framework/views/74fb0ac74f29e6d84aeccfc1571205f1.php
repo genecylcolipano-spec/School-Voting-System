@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
-    <title>Register — <?php echo e(config('app.name')); ?></title>
+    <title>Register — <?php echo e(\App\Support\SchoolBranding::systemName()); ?></title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet">
     <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css']); ?>
@@ -12,9 +12,22 @@
 <body class="min-h-screen bg-slate-950 font-[Instrument_Sans] text-slate-100 antialiased">
     <div class="flex min-h-screen items-center justify-center px-4 py-12">
         <div class="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-xl">
-            <h1 class="text-2xl font-bold text-white">Create portal account</h1>
+            <?php if($registerLogo = \App\Support\SchoolBranding::logoUrl(withFallback: false)): ?>
+                <img src="<?php echo e($registerLogo); ?>" alt="<?php echo e(\App\Support\SchoolBranding::schoolName()); ?>" class="mb-4 h-14 w-14 rounded-xl border border-white/10 object-cover">
+            <?php else: ?>
+                <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-cyan-500 to-sky-400 text-slate-950" aria-hidden="true">
+                    <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                    </svg>
+                </div>
+            <?php endif; ?>
+            <p class="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300/80"><?php echo e(\App\Support\SchoolBranding::systemName()); ?></p>
+            <?php if($poweredBy = \App\Support\SchoolBranding::poweredBy()): ?>
+                <p class="mt-1 text-xs text-slate-500"><?php echo e($poweredBy); ?></p>
+            <?php endif; ?>
+            <h1 class="mt-2 text-2xl font-bold text-white">Create portal account</h1>
             <p class="mt-2 text-sm text-slate-400">
-                No password is used. After signup you will register a passkey on this device.
+                <?php echo e(\App\Support\SchoolBranding::periodLabel()); ?> · Confirm your roster details first. A secure passkey setup link (valid <?php echo e($expirationHours ?? 24); ?> hours) is sent only after verification.
             </p>
 
             <?php if(session('status')): ?>
@@ -85,7 +98,7 @@ unset($__errorArgs, $__bag); ?>
 
                 <button type="submit"
                     class="w-full rounded-xl bg-cyan-500 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-400">
-                    Continue to passkey setup
+                    Confirm &amp; Validate
                 </button>
             </form>
 

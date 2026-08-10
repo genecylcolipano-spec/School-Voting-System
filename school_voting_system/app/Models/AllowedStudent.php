@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Enums\RosterRegistrationStatus;
+use App\Models\Concerns\HasRosterRegistrationStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AllowedStudent extends Model
 {
+    use HasRosterRegistrationStatus;
+
     protected $fillable = [
         'account_id',
         'first_name',
@@ -15,6 +19,9 @@ class AllowedStudent extends Model
         'grade_level',
         'section',
         'is_registered',
+        'registration_status',
+        'enrollment_pending_at',
+        'registered_at',
         'archived_at',
     ];
 
@@ -22,6 +29,9 @@ class AllowedStudent extends Model
     {
         return [
             'is_registered' => 'boolean',
+            'registration_status' => RosterRegistrationStatus::class,
+            'enrollment_pending_at' => 'datetime',
+            'registered_at' => 'datetime',
             'archived_at' => 'datetime',
         ];
     }

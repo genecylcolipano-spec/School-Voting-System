@@ -138,13 +138,31 @@ class StudentRegistrationPasskeyService
 
             $storePasskey($user, $deviceName, $credential, $options);
 
-            $roster->forceFill(['is_registered' => true])->save();
+            if (method_exists($roster, 'markFullyRegistered')) {
+                $roster->markFullyRegistered();
+            } else {
+                $roster->forceFill(['is_registered' => true])->save();
+            }
+
+            if (! empty($pending['enrollment_token_id'])) {
+                $enrollmentToken = \App\Models\EnrollmentToken::query()
+                    ->lockForUpdate()
+                    ->find($pending['enrollment_token_id']);
+
+                if ($enrollmentToken && $enrollmentToken->used_at === null) {
+                    $enrollmentToken->markUsed();
+                }
+            }
 
             event(new Registered($user));
 
             Auth::login($user);
             $request->session()->regenerate();
             $this->clearPendingRegistration($request);
+            $request->session()->forget([
+                \App\Services\Auth\EnrollmentTokenService::SESSION_PLAIN_TOKEN,
+                \App\Services\Auth\EnrollmentTokenService::SESSION_TOKEN_ID,
+            ]);
 
             Log::info('Roster registration completed.', [
                 'user_id' => $user->id,

@@ -27,7 +27,7 @@
             @endif
             <h1 class="mt-2 text-2xl font-bold text-white">Create portal account</h1>
             <p class="mt-2 text-sm text-slate-400">
-                {{ \App\Support\SchoolBranding::periodLabel() }} · No password is used. After signup you will register a passkey on this device.
+                {{ \App\Support\SchoolBranding::periodLabel() }} · Confirm your roster details first. A secure passkey setup link (valid {{ $expirationHours ?? 24 }} hours) is sent only after verification.
             </p>
 
             @if (session('status'))
@@ -70,7 +70,7 @@
 
                 <button type="submit"
                     class="w-full rounded-xl bg-cyan-500 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-400">
-                    Continue to passkey setup
+                    Confirm &amp; Validate
                 </button>
             </form>
 

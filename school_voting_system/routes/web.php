@@ -67,6 +67,17 @@ Route::middleware(['web', 'guest', 'guest.portal', 'passkey.secure'])->group(fun
         ->middleware('throttle:6,1')
         ->name('register.store');
 
+    Route::get('/register/verified', [PortalRegistrationController::class, 'verified'])
+        ->name('register.verified');
+
+    Route::get('/register/enroll/{token}', [PortalRegistrationController::class, 'enroll'])
+        ->where('token', '[A-Za-z0-9]+')
+        ->middleware('throttle:20,1')
+        ->name('register.enroll');
+
+    Route::get('/register/expired', [PortalRegistrationController::class, 'expired'])
+        ->name('register.expired');
+
     Route::get('/register/passkey-setup', [PortalRegistrationController::class, 'passkeySetup'])
         ->name('register.passkey.setup');
 
@@ -83,6 +94,11 @@ Route::middleware(['web', 'guest', 'guest.portal', 'passkey.secure'])->group(fun
 |--------------------------------------------------------------------------
 */
 Route::middleware(['web', 'passkey.secure'])->group(function () {
+    Route::get('/login/recovery/continue/{token}', [PasskeyRecoveryController::class, 'continueWithToken'])
+        ->middleware('throttle:20,1')
+        ->where('token', '[A-Za-z0-9]{32,128}')
+        ->name('login.recovery.continue');
+
     Route::get('/enroll/passkey/{user}', [PasskeyBootstrapController::class, 'show'])
         ->middleware('signed')
         ->name('register.passkey.bootstrap');

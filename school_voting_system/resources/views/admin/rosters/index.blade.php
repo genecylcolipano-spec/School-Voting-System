@@ -51,10 +51,11 @@
             </div>
         @endif
 
-        <div class="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             @foreach ([
                 ['Total Records', $summary['total']],
                 ['Registered', $summary['registered']],
+                ['Enrollment Pending', $summary['enrollment_pending'] ?? 0],
                 ['Not Registered', $summary['pending']],
                 ['Archived', $summary['archived']],
             ] as [$label, $value])
@@ -71,6 +72,7 @@
             <select name="status" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-100">
                 <option value="">Active roster</option>
                 <option value="registered" @selected($statusFilter === 'registered')>Registered</option>
+                <option value="enrollment_pending" @selected($statusFilter === 'enrollment_pending')>Enrollment Pending</option>
                 <option value="not_registered" @selected(in_array($statusFilter, ['pending', 'not_registered'], true))>Not Registered</option>
                 <option value="archived" @selected($statusFilter === 'archived')>Archived</option>
             </select>
@@ -101,8 +103,10 @@
                             <td class="px-4 py-3">
                                 @if ($record->archived_at)
                                     <span class="rounded-full border border-slate-600 bg-slate-800/80 px-2 py-0.5 text-xs font-semibold text-slate-300">Archived</span>
-                                @elseif ($record->is_registered)
+                                @elseif ($record->is_registered || (method_exists($record, 'isFullyRegistered') && $record->isFullyRegistered()))
                                     <span class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-200">Registered</span>
+                                @elseif (method_exists($record, 'isEnrollmentPending') && $record->isEnrollmentPending())
+                                    <span class="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs font-semibold text-sky-200">Enrollment Pending</span>
                                 @else
                                     <span class="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-200">Not Registered</span>
                                 @endif

@@ -60,7 +60,11 @@ trait ManagesInstitutionalRoster
                 });
             })
             ->when($status === 'registered', fn ($q) => $q->where('is_registered', true)->whereNull('archived_at'))
-            ->when(in_array($status, ['pending', 'not_registered'], true), fn ($q) => $q->where('is_registered', false)->whereNull('archived_at'))
+            ->when($status === 'enrollment_pending', fn ($q) => $q->where('is_registered', false)->where('registration_status', 'enrollment_pending')->whereNull('archived_at'))
+            ->when(in_array($status, ['pending', 'not_registered'], true), fn ($q) => $q->where('is_registered', false)->where(function ($inner) {
+                $inner->whereNull('registration_status')
+                    ->orWhere('registration_status', 'not_registered');
+            })->whereNull('archived_at'))
             ->when($status === 'archived', fn ($q) => $q->whereNotNull('archived_at'))
             ->when($status === '', fn ($q) => $q->whereNull('archived_at'))
             ->orderBy('account_id')
@@ -73,7 +77,11 @@ trait ManagesInstitutionalRoster
             'summary' => [
                 'total' => $model::query()->whereNull('archived_at')->count(),
                 'registered' => $model::query()->whereNull('archived_at')->where('is_registered', true)->count(),
-                'pending' => $model::query()->whereNull('archived_at')->where('is_registered', false)->count(),
+                'enrollment_pending' => $model::query()->whereNull('archived_at')->where('is_registered', false)->where('registration_status', 'enrollment_pending')->count(),
+                'pending' => $model::query()->whereNull('archived_at')->where('is_registered', false)->where(function ($inner) {
+                    $inner->whereNull('registration_status')
+                        ->orWhere('registration_status', 'not_registered');
+                })->count(),
                 'archived' => $model::query()->whereNotNull('archived_at')->count(),
             ],
         ]));

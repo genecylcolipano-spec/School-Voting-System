@@ -307,7 +307,7 @@
                                 <?php endif; ?>
                             </div>
                             <div class="flex flex-wrap gap-1">
-                                <?php $__currentLoopData = ['open' => 'Open', 'pause' => 'Pause', 'close' => 'Close', 'annul' => 'Annul', 'rerun' => 'Re-run', 'lock' => 'Lock Results', 'publish_results' => 'Publish Results', 'unpublish_results' => 'Unpublish']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $action => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <?php $__currentLoopData = ['open' => 'Open', 'pause' => 'Pause', 'resume' => 'Resume', 'close' => 'Close', 'annul' => 'Annul', 'rerun' => 'Re-run', 'lock' => 'Lock Results', 'publish_results' => 'Publish Results', 'unpublish_results' => 'Unpublish']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $action => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                     <form method="POST" action="<?php echo e(route('super-admin.elections.action', $election)); ?>"><?php echo csrf_field(); ?><input type="hidden" name="action" value="<?php echo e($action); ?>"><button class="rounded-lg border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:border-violet-500/40 hover:text-white"><?php echo e($label); ?></button></form>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </div>

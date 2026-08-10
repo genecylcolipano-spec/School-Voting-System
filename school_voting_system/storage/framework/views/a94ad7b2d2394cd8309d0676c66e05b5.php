@@ -74,17 +74,27 @@ unset($__defined_vars, $__key, $__value); ?>
         }"
         class="fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-teal-500/15 bg-slate-950 transition-all duration-300"
     >
-        <div class="flex shrink-0 items-center gap-3 border-b border-teal-500/10 px-5 py-5">
-            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-400 text-slate-950 shadow-lg shadow-teal-900/40">
-                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
-                </svg>
-            </div>
-            <div x-show="!collapsed" class="min-w-0">
-                <p class="truncate font-semibold text-white">School Voting</p>
-                <p class="text-xs text-slate-500">Faculty Portal</p>
-            </div>
+        <div class="border-b border-teal-500/10 px-5 py-5">
+            <?php if (isset($component)) { $__componentOriginal3a1587ba40472411c16c01b94592189a = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal3a1587ba40472411c16c01b94592189a = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.school-brand','data' => ['subtitle' => 'Faculty Portal','collapsedAware' => true,'gradient' => 'from-teal-500 to-emerald-400','iconClass' => 'text-slate-950','shadowClass' => 'shadow-teal-900/40']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('school-brand'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['subtitle' => 'Faculty Portal','collapsed-aware' => true,'gradient' => 'from-teal-500 to-emerald-400','icon-class' => 'text-slate-950','shadow-class' => 'shadow-teal-900/40']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal3a1587ba40472411c16c01b94592189a)): ?>
+<?php $attributes = $__attributesOriginal3a1587ba40472411c16c01b94592189a; ?>
+<?php unset($__attributesOriginal3a1587ba40472411c16c01b94592189a); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal3a1587ba40472411c16c01b94592189a)): ?>
+<?php $component = $__componentOriginal3a1587ba40472411c16c01b94592189a; ?>
+<?php unset($__componentOriginal3a1587ba40472411c16c01b94592189a); ?>
+<?php endif; ?>
         </div>
 
         <?php echo $__env->make('faculty.partials.sidebar-nav', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\SystemSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -11,21 +12,26 @@ class RegistrationTest extends TestCase
 
     public function test_registration_screen_can_be_rendered(): void
     {
-        $response = $this->get('/register');
+        SystemSetting::setValue('enable_student_registration', true);
 
-        $response->assertStatus(200);
+        $this->get('/register')
+            ->assertOk()
+            ->assertSee('Create portal account');
     }
 
-    public function test_new_users_can_register(): void
+    public function test_registration_requires_roster_fields_not_password(): void
     {
-        $response = $this->post('/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
-        ]);
+        SystemSetting::setValue('enable_student_registration', true);
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $this->from('/register')
+            ->post('/register', [
+                'name' => 'Test User',
+                'email' => 'test@example.com',
+                'password' => 'password',
+                'password_confirmation' => 'password',
+            ])
+            ->assertSessionHasErrors(['account_id', 'first_name', 'last_name']);
+
+        $this->assertGuest();
     }
 }

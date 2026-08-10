@@ -11,7 +11,7 @@ use Illuminate\Validation\ValidationException;
 
 class RosterVerificationService
 {
-    public const NOT_FOUND_MESSAGE = 'Account ID and Name combination not found in official records.';
+    public const NOT_FOUND_MESSAGE = 'Your information could not be verified against the official school roster. Please check your details and try again.';
 
     public const ALREADY_REGISTERED_MESSAGE = 'An account for this ID has already been registered.';
 
@@ -64,7 +64,10 @@ class RosterVerificationService
             ]);
         }
 
-        if ($match->record->is_registered) {
+        // Fully registered (passkey completed) cannot start again.
+        if (method_exists($match->record, 'isFullyRegistered')
+            ? $match->record->isFullyRegistered()
+            : (bool) $match->record->is_registered) {
             throw ValidationException::withMessages([
                 'account_id' => [self::ALREADY_REGISTERED_MESSAGE],
             ]);
@@ -81,15 +84,13 @@ class RosterVerificationService
 
     public function normalizeKey(?string $value): string
     {
-        $collapsed = preg_replace('/\s+/', ' ', trim((string) $value));
-
-        return mb_strtolower($collapsed ?? '');
+        return strtolower(preg_replace('/\s+/', '', trim((string) $value)) ?? '');
     }
 
     protected function matchesIdentity(object $row, string $accountKey, string $firstKey, string $lastKey): bool
     {
-        return $this->normalizeKey($row->account_id) === $accountKey
-            && $this->normalizeKey($row->first_name) === $firstKey
-            && $this->normalizeKey($row->last_name) === $lastKey;
+        return $this->normalizeKey($row->account_id ?? null) === $accountKey
+            && $this->normalizeKey($row->first_name ?? null) === $firstKey
+            && $this->normalizeKey($row->last_name ?? null) === $lastKey;
     }
 }

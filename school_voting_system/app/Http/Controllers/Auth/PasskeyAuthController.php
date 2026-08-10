@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Passkey;
 use App\Models\User;
 use App\Services\Auth\RoleRedirectService;
 use Illuminate\Auth\AuthenticationException;
@@ -160,6 +161,19 @@ class PasskeyAuthController extends Controller
                 );
 
                 if ($request->session()->pull('passkey.bootstrap_user_id')) {
+                    $recoveryRequestId = $request->session()->pull(
+                        \App\Services\Auth\PasskeyRecoveryTokenService::SESSION_RECOVERY_REQUEST_ID
+                    );
+
+                    if ($recoveryRequestId) {
+                        $recovery = \App\Models\PasskeyRecoveryRequest::query()->find($recoveryRequestId);
+                        if ($recovery && (int) $recovery->user_id === (int) $user->id) {
+                            app(\App\Services\Auth\PasskeyRecoveryTokenService::class)->markUsed($recovery);
+                        }
+                    }
+
+                    Passkey::revokeOthersForUser($user, (int) $passkey->id, (int) $user->id);
+
                     Auth::login($user);
                     $request->session()->regenerate();
                 }
