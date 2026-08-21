@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-faculty-portal title="{{ $event->title }}" :user="$user" :notifications-count="$notificationsCount">
-        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <a href="{{ route('faculty.events.index') }}" class="text-sm font-semibold text-teal-300 hover:text-teal-200">&larr; Back to events</a>
             <span class="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-200">View only</span>
         </div>
@@ -14,15 +14,15 @@
                 :contain="$event->bannerNeedsContainLayout()"
                 :alt="$event->title"
             />
-            <div class="p-6">
-                <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div>
+            <div class="p-4 sm:p-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+                    <div class="min-w-0">
                         <h2 class="text-2xl font-bold text-white">{{ $event->title }}</h2>
                         <p class="mt-1 text-sm text-slate-400">{{ $event->venue }}</p>
                     </div>
-                    <div class="text-right">
+                    <div class="sm:text-right">
                         <p class="text-sm text-slate-300">{{ optional($event->event_date)->format('M d, Y') }}</p>
-                        <p class="text-xs uppercase tracking-wide text-slate-500">{{ $event->status?->value ?? $event->status }}</p>
+                        <p class="text-xs uppercase tracking-wide text-slate-500">{{ $event->displayStatusLabel() }}</p>
                     </div>
                 </div>
 

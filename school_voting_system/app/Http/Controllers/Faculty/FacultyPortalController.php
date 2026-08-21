@@ -27,6 +27,7 @@ class FacultyPortalController extends Controller
     public function elections(Request $request): View
     {
         $elections = Election::query()
+            ->visibleToCampus()
             ->orderByDesc('voting_starts_at')
             ->paginate(10);
 
@@ -38,6 +39,8 @@ class FacultyPortalController extends Controller
 
     public function electionShow(Request $request, Election $election): View
     {
+        abort_unless($election->isVisibleToCampus(), 404);
+
         $election->loadMissing([
             'categories',
             'activeCandidates',
@@ -52,8 +55,10 @@ class FacultyPortalController extends Controller
 
     public function events(Request $request): View
     {
+        Event::markOverdueAsCompleted();
+
         $events = Event::query()
-            ->orderBy('event_date')
+            ->campusListing()
             ->paginate(12);
 
         return view('faculty.events.index', [
@@ -64,6 +69,10 @@ class FacultyPortalController extends Controller
 
     public function eventShow(Request $request, Event $event): View
     {
+        abort_unless($event->isVisibleToCampus(), 404);
+        Event::markOverdueAsCompleted();
+        $event->refresh();
+
         return view('faculty.events.show', [
             ...$this->portalData($request),
             'event' => $event,
@@ -89,11 +98,7 @@ class FacultyPortalController extends Controller
     public function announcementShow(Request $request, Announcement $announcement): View
     {
         abort_unless($announcement->isLive(), 404);
-        abort_unless(
-            $this->announcements->recipientQuery($announcement)->where('id', $request->user()->id)->exists(),
-            403,
-            'You do not have permission to view this announcement.',
-        );
+        abort_unless($this->announcements->userCanView($announcement, $request->user()), 403);
 
         $announcement->load('attachments');
         $this->announcements->recordView($announcement, $request->user());
@@ -111,10 +116,7 @@ class FacultyPortalController extends Controller
     ): StreamedResponse {
         abort_unless($announcement->isLive(), 404);
         abort_unless($attachment->announcement_id === $announcement->id, 404);
-        abort_unless(
-            $this->announcements->recipientQuery($announcement)->where('id', $request->user()->id)->exists(),
-            403,
-        );
+        abort_unless($this->announcements->userCanView($announcement, $request->user()), 403);
         abort_unless(Storage::disk('public')->exists($attachment->path), 404);
 
         $attachment->increment('download_count');

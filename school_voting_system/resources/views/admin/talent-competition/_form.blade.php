@@ -13,6 +13,7 @@
     $registrationMethods = $registrationMethods ?? \App\Enums\TalentRegistrationMethod::cases();
     $submissionMethods = $submissionMethods ?? \App\Enums\TalentSubmissionMethod::cases();
     $rankingMethods = $rankingMethods ?? \App\Enums\TalentRankingMethod::cases();
+    $fileInputClass = 'w-full min-w-0 max-w-full rounded-xl border border-slate-700 bg-slate-950/50 px-3 py-2 text-sm text-slate-100 file:mb-2 file:mr-0 file:block file:w-full file:rounded-lg file:border-0 file:bg-cyan-500/20 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-cyan-300 sm:file:mb-0 sm:file:mr-4 sm:file:inline-block sm:file:w-auto';
 @endphp
 
 <form
@@ -68,7 +69,7 @@
             <div>
                 <label class="block text-sm font-medium text-slate-300">Competition Code <span class="text-slate-500">(optional)</span></label>
                 <input type="text" name="competition_code" value="{{ old('competition_code', $talentEvent?->competition_code) }}" placeholder="e.g. TC-2026-01"
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
                 @error('competition_code')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
             </div>
 
@@ -95,22 +96,8 @@
             <div>
                 <label class="block text-sm font-medium text-slate-300">Organizer <span class="text-slate-500">(optional)</span></label>
                 <input type="text" name="organizer" value="{{ old('organizer', $talentEvent?->organizer) }}" placeholder="Student Affairs Office"
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
                 @error('organizer')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-slate-300">Date & Time</label>
-                <input type="datetime-local" name="event_date" value="{{ old('event_date', optional($talentEvent?->event_date)->format('Y-m-d\TH:i')) }}" required
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
-                @error('event_date')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
-            </div>
-
-            <div class="sm:col-span-2">
-                <label class="block text-sm font-medium text-slate-300">Venue</label>
-                <input type="text" name="venue" value="{{ old('venue', $talentEvent?->venue) }}" required
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
-                @error('venue')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
             </div>
 
             <div class="sm:col-span-2">
@@ -142,7 +129,8 @@
                     :warn-portrait="$bannerWarnPortrait"
                     label="Competition Banner *"
                 >
-                    <input id="event-image-input" type="file" name="image" accept=".jpg,.jpeg,.png,image/jpeg,image/png" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-500/20 file:px-3 file:py-1.5 file:text-sm file:text-cyan-300" @required(! $isEdit)>
+                    <input id="event-image-input" type="file" name="image" accept=".jpg,.jpeg,.png,image/jpeg,image/png" class="mt-1 {{ $fileInputClass }}" @required(! $isEdit)>
+                    <p id="talent-event-image-status" class="mt-1 text-xs text-slate-500"></p>
                     <div class="mt-2 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2 text-xs text-slate-400">
                         <p class="font-semibold text-slate-300">Upload guidelines</p>
                         <ul class="mt-1 list-inside list-disc space-y-0.5">
@@ -168,8 +156,8 @@
                             <div id="competition-poster-placeholder" class="flex h-full w-full items-center justify-center px-2 text-center text-[10px] text-slate-600">9:16 preview</div>
                         @endif
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <input id="competition-poster-input" type="file" name="poster" accept=".jpg,.jpeg,.png,image/jpeg,image/png" class="w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-500/20 file:px-3 file:py-1.5 file:text-sm file:text-cyan-300">
+                    <div class="min-w-0 flex-1 basis-full sm:basis-0">
+                        <input id="competition-poster-input" type="file" name="poster" accept=".jpg,.jpeg,.png,image/jpeg,image/png" class="{{ $fileInputClass }}">
                         <div class="mt-2 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2 text-xs text-slate-400">
                             <p class="font-semibold text-slate-300">Upload guidelines</p>
                             <ul class="mt-1 list-inside list-disc space-y-0.5">
@@ -189,7 +177,7 @@
                 @if ($isEdit && $talentEvent->thumbnail_path)
                     <img src="{{ $talentEvent->thumbnailUrl() }}" alt="" class="mt-2 h-20 w-20 rounded-xl object-cover object-center">
                 @endif
-                <input type="file" name="thumbnail" accept=".jpg,.jpeg,.png,image/jpeg,image/png" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-500/20 file:px-3 file:py-1.5 file:text-sm file:text-cyan-300">
+                <input type="file" name="thumbnail" accept=".jpg,.jpeg,.png,image/jpeg,image/png" class="mt-1 {{ $fileInputClass }}">
                 <p class="mt-1 text-xs text-slate-500">
                     Recommended: <span class="text-slate-300">600 × 600 px</span> · Square (1:1) · JPG or PNG · Max 2MB
                 </p>
@@ -202,37 +190,37 @@
             <div>
                 <label class="block text-sm font-medium text-slate-300">Registration Opens</label>
                 <input type="datetime-local" name="registration_starts_at" value="{{ old('registration_starts_at', optional($talentEvent?->registration_starts_at)->format('Y-m-d\TH:i')) }}"
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
                 @error('registration_starts_at')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-300">Registration Closes</label>
                 <input type="datetime-local" name="registration_ends_at" value="{{ old('registration_ends_at', optional($talentEvent?->registration_ends_at)->format('Y-m-d\TH:i')) }}"
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
                 @error('registration_ends_at')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
             </div>
             <div class="sm:col-span-2">
                 <label class="block text-sm font-medium text-slate-300">Submission Deadline</label>
                 <input type="datetime-local" name="submission_deadline" value="{{ old('submission_deadline', optional($talentEvent?->submission_deadline)->format('Y-m-d\TH:i')) }}"
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
                 @error('submission_deadline')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-300">Voting Opens</label>
                 <input type="datetime-local" name="voting_starts_at" value="{{ old('voting_starts_at', optional($talentEvent?->voting_starts_at)->format('Y-m-d\TH:i')) }}" required
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
                 @error('voting_starts_at')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-300">Voting Closes</label>
                 <input type="datetime-local" name="voting_ends_at" value="{{ old('voting_ends_at', optional($talentEvent?->voting_ends_at)->format('Y-m-d\TH:i')) }}" required
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
                 @error('voting_ends_at')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
             </div>
             <div class="sm:col-span-2">
                 <label class="block text-sm font-medium text-slate-300">Results Publish Date <span class="text-slate-500">(optional)</span></label>
                 <input type="datetime-local" name="results_publish_at" value="{{ old('results_publish_at', optional($talentEvent?->results_publish_at)->format('Y-m-d\TH:i')) }}"
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
                 <p class="mt-1 text-xs text-slate-500">Scheduled target date. Official publish still requires the Publish Results action.</p>
                 @error('results_publish_at')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
             </div>
@@ -252,23 +240,23 @@
             <div x-show="performanceDuration === 'custom'" x-cloak>
                 <label class="block text-sm font-medium text-slate-300">Custom Duration (minutes)</label>
                 <input type="number" name="performance_duration_custom" min="1" max="180" value="{{ $performanceDurationCustom }}"
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-300">Maximum Participants</label>
                 <input type="number" name="max_contestants" min="1" max="500" value="{{ old('max_contestants', $talentEvent?->max_contestants) }}"
                     placeholder="Leave empty for unlimited"
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-300">Maximum Video Duration (minutes)</label>
                 <input type="number" name="max_video_duration_minutes" min="1" max="60" value="{{ $maxVideoMinutes }}" required
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-300">Maximum Upload Size (MB)</label>
                 <input type="number" name="max_upload_size_mb" min="1" max="1024" value="{{ $maxUploadSize }}" required
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
             </div>
             <div class="sm:col-span-2">
                 <label class="block text-sm font-medium text-slate-300">Accepted Video Formats</label>
@@ -326,12 +314,12 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Judge Percentage</label>
                     <input type="number" name="judge_percentage" min="0" max="100" x-model.number="judgePct" @input="syncStudentPct()"
-                        class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                        class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Student Vote Percentage</label>
                     <input type="number" name="student_vote_percentage" min="0" max="100" x-model.number="studentPct" @input="syncJudgePct()"
-                        class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                        class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
                 </div>
             </div>
             <div>
@@ -347,7 +335,7 @@
             <div x-show="winnersCount === 'custom'" x-cloak>
                 <label class="block text-sm font-medium text-slate-300">Custom Number of Winners</label>
                 <input type="number" name="winners_count_custom" min="1" max="50" value="{{ $winnersCountCustom }}"
-                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
             </div>
             <div class="sm:col-span-2">
                 <label class="inline-flex items-center gap-2 text-sm text-slate-300">

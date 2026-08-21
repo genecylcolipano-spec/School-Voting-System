@@ -80,10 +80,16 @@
                     @csrf
                     <button type="submit" class="rounded-xl border border-amber-500/40 px-4 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-500/10">Close Voting</button>
                 </form>
-                @if ($canPublishResults)
+                @if ($canPublishResults && $talentEvent->votingHasClosed() && ! $talentEvent->hasPublishedResults())
                     <form method="POST" action="{{ route('admin.talent.publish-results', $talentEvent) }}">
                         @csrf
                         <button type="submit" class="rounded-xl border border-cyan-500/40 px-4 py-2 text-sm font-semibold text-cyan-200 hover:bg-cyan-500/10">Publish Results</button>
+                    </form>
+                @endif
+                @if ($canPublishResults && $talentEvent->hasPublishedResults())
+                    <form method="POST" action="{{ route('admin.talent.unpublish-results', $talentEvent) }}">
+                        @csrf
+                        <button type="submit" class="rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800">Unpublish Results</button>
                     </form>
                 @endif
                 @unless ($talentEvent->published_to_students)

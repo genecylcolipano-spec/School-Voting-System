@@ -79,43 +79,44 @@ async function compressImageFile(file) {
 }
 
 function initEventImageCompression() {
-    const input = document.querySelector('input[name="image"]');
-    const status = document.getElementById('talent-event-image-status');
+    const inputs = document.querySelectorAll('input[type="file"][name="image"], input[type="file"][name="poster"], input[type="file"][name="thumbnail"]');
 
-    if (!input) {
-        return;
-    }
+    inputs.forEach((input) => {
+        const status = input.name === 'image'
+            ? document.getElementById('talent-event-image-status')
+            : null;
 
-    input.addEventListener('change', async () => {
-        const file = input.files?.[0];
+        input.addEventListener('change', async () => {
+            const file = input.files?.[0];
 
-        if (!file) {
-            if (status) {
-                status.textContent = '';
+            if (!file) {
+                if (status) {
+                    status.textContent = '';
+                }
+                return;
             }
-            return;
-        }
 
-        if (status) {
-            status.textContent = 'Optimizing image…';
-            status.className = 'mt-1 text-xs text-cyan-300';
-        }
+            if (status) {
+                status.textContent = 'Optimizing image…';
+                status.className = 'mt-1 text-xs text-cyan-300';
+            }
 
-        const optimized = await compressImageFile(file);
+            const optimized = await compressImageFile(file);
 
-        if (optimized !== file) {
-            const transfer = new DataTransfer();
-            transfer.items.add(optimized);
-            input.files = transfer.files;
-        }
+            if (optimized !== file) {
+                const transfer = new DataTransfer();
+                transfer.items.add(optimized);
+                input.files = transfer.files;
+            }
 
-        if (status) {
-            const sizeMb = (optimized.size / (1024 * 1024)).toFixed(2);
-            status.textContent = optimized.size > MAX_IMAGE_BYTES
-                ? 'Image is still large; the server will compress it further on save.'
-                : `Ready to upload (${sizeMb} MB).`;
-            status.className = 'mt-1 text-xs text-slate-500';
-        }
+            if (status) {
+                const sizeMb = (optimized.size / (1024 * 1024)).toFixed(2);
+                status.textContent = optimized.size > MAX_IMAGE_BYTES
+                    ? 'Image is still large; the server will compress it further on save.'
+                    : `Ready to upload (${sizeMb} MB).`;
+                status.className = 'mt-1 text-xs text-slate-500';
+            }
+        });
     });
 }
 

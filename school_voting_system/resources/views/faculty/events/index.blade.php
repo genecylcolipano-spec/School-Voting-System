@@ -15,10 +15,13 @@
                         :contain="$event->bannerNeedsContainLayout()"
                         :alt="$event->title"
                     />
-                    <div class="p-5">
-                        <div class="flex items-start justify-between gap-3">
-                            <h2 class="text-lg font-semibold text-white">{{ $event->title }}</h2>
-                            <span class="shrink-0 text-xs text-slate-400">{{ optional($event->event_date)->format('M d, Y') }}</span>
+                    <div class="p-4 sm:p-5">
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <h2 class="min-w-0 text-lg font-semibold text-white">{{ $event->title }}</h2>
+                            <div class="sm:shrink-0 sm:text-right">
+                                <span class="block text-xs text-slate-400">{{ optional($event->event_date)->format('M d, Y') }}</span>
+                                <span class="mt-1 inline-block text-[10px] font-semibold uppercase tracking-wide text-slate-500">{{ $event->displayStatusLabel() }}</span>
+                            </div>
                         </div>
                         <p class="mt-2 text-sm text-slate-400">{{ $event->venue }}</p>
                         @if ($event->description)
@@ -26,7 +29,7 @@
                         @endif
                         <a
                             href="{{ route('faculty.events.show', $event) }}"
-                            class="mt-4 inline-block rounded-xl bg-gradient-to-r from-teal-500 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950"
+                            class="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-gradient-to-r from-teal-500 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 sm:w-auto"
                         >
                             View details
                         </a>
@@ -39,6 +42,6 @@
             @endforelse
         </div>
 
-        <div>{{ $events->links() }}</div>
+        <div class="overflow-x-auto">{{ $events->links() }}</div>
     </x-faculty-portal>
 </x-app-layout>

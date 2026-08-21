@@ -1017,53 +1017,98 @@ function applyAnalyticsCharts(analytics) {
     });
 }
 
+function eventPreviewActions(event) {
+    const manageLink = `<a href="${escapeHtml(event.edit_url)}" class="inline-flex min-h-10 items-center rounded-lg border border-violet-500/30 px-3 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10 md:min-h-8 md:py-1.5 md:text-xs">Manage</a>`;
+    const deleteForm = event.can_delete
+        ? `<form method="POST" action="${escapeHtml(event.delete_url)}" class="inline" onsubmit="return confirm('Delete this event? This cannot be undone.')">
+                <input type="hidden" name="_token" value="${escapeHtml(document.querySelector('meta[name=csrf-token]')?.content ?? '')}">
+                <input type="hidden" name="_method" value="DELETE">
+                <button type="submit" class="inline-flex min-h-10 items-center rounded-lg border border-rose-500/30 px-3 py-2 text-sm font-semibold text-rose-300 hover:bg-rose-500/10 md:min-h-8 md:py-1.5 md:text-xs">Delete</button>
+           </form>`
+        : '';
+
+    return `${manageLink}${deleteForm}`;
+}
+
+function eventPreviewImage(event, sizeClass) {
+    if (event.image_url) {
+        return `<img src="${escapeHtml(event.image_url)}" alt="" class="${sizeClass} shrink-0 rounded-lg object-cover ring-1 ring-slate-700">`;
+    }
+
+    const boxClass = sizeClass.includes('h-12')
+        ? 'flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-[10px] font-bold text-violet-300'
+        : 'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-[10px] font-bold text-violet-300';
+
+    return `<div class="${boxClass}">EV</div>`;
+}
+
 function applyEventsPreview(events) {
+    const empty = document.getElementById('dashboard-events-empty');
+    const cards = document.getElementById('dashboard-events-cards');
+    const table = document.getElementById('dashboard-events-table');
     const tbody = document.getElementById('dashboard-events-tbody');
 
-    if (!tbody) {
+    if (!tbody || !cards) {
         return;
     }
 
-    if (!events?.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-2 py-8 text-center text-slate-500">No events yet. Create a talent competition or school event to populate this table.</td></tr>';
+    const hasEvents = Boolean(events?.length);
+
+    if (empty) {
+        empty.classList.toggle('hidden', hasEvents);
+    }
+
+    cards.classList.toggle('hidden', !hasEvents);
+
+    if (table) {
+        table.classList.add('hidden');
+        table.classList.toggle('md:block', hasEvents);
+    }
+
+    if (!hasEvents) {
+        cards.innerHTML = '';
+        tbody.innerHTML = '';
         return;
     }
 
-    tbody.innerHTML = events.map((event) => {
-        const image = event.image_url
-            ? `<img src="${escapeHtml(event.image_url)}" alt="" class="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-slate-700">`
-            : '<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-[10px] font-bold text-violet-300">EV</div>';
-
-        const deleteForm = event.can_delete
-            ? `<form method="POST" action="${escapeHtml(event.delete_url)}" class="inline" onsubmit="return confirm('Delete this event? This cannot be undone.')">
-                    <input type="hidden" name="_token" value="${escapeHtml(document.querySelector('meta[name=csrf-token]')?.content ?? '')}">
-                    <input type="hidden" name="_method" value="DELETE">
-                    <button type="submit" class="text-xs font-semibold text-rose-300 hover:text-rose-200">Delete</button>
-               </form>`
-            : '';
-
-        return `
-            <tr class="text-slate-200">
-                <td class="px-2 py-3">
-                    <div class="flex items-center gap-2.5">
-                        ${image}
-                        <span class="line-clamp-1 font-medium text-white">${escapeHtml(event.title)}</span>
+    cards.innerHTML = events.map((event) => `
+        <article class="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+            <div class="flex gap-3">
+                ${eventPreviewImage(event, 'h-12 w-12')}
+                <div class="min-w-0 flex-1">
+                    <p class="font-medium text-white">${escapeHtml(event.title)}</p>
+                    <p class="mt-0.5 text-xs text-slate-400">${escapeHtml(event.category)} · ${escapeHtml(event.schedule)}</p>
+                    <div class="mt-2">
+                        <span class="${statusBadgeClass(event.status)}">${escapeHtml(statusLabel(event.status, event.status_label))}</span>
                     </div>
-                </td>
-                <td class="px-2 py-3 text-slate-400">${escapeHtml(event.category)}</td>
-                <td class="px-2 py-3 text-slate-400">${escapeHtml(event.schedule)}</td>
-                <td class="px-2 py-3">
-                    <span class="${statusBadgeClass(event.status)}">${escapeHtml(statusLabel(event.status, event.status_label))}</span>
-                </td>
-                <td class="px-2 py-3 text-right">
-                    <div class="inline-flex items-center gap-3">
-                        <a href="${escapeHtml(event.edit_url)}" class="text-xs font-semibold text-violet-300 hover:text-violet-200">Edit</a>
-                        ${deleteForm}
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                        ${eventPreviewActions(event)}
                     </div>
-                </td>
-            </tr>
-        `;
-    }).join('');
+                </div>
+            </div>
+        </article>
+    `).join('');
+
+    tbody.innerHTML = events.map((event) => `
+        <tr class="text-slate-200">
+            <td class="px-2 py-3">
+                <div class="flex items-center gap-2.5">
+                    ${eventPreviewImage(event, 'h-9 w-9')}
+                    <span class="line-clamp-1 font-medium text-white">${escapeHtml(event.title)}</span>
+                </div>
+            </td>
+            <td class="px-2 py-3 text-slate-400">${escapeHtml(event.category)}</td>
+            <td class="px-2 py-3 whitespace-nowrap text-slate-400">${escapeHtml(event.schedule)}</td>
+            <td class="px-2 py-3">
+                <span class="${statusBadgeClass(event.status)}">${escapeHtml(statusLabel(event.status, event.status_label))}</span>
+            </td>
+            <td class="px-2 py-3 text-right">
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                    ${eventPreviewActions(event)}
+                </div>
+            </td>
+        </tr>
+    `).join('');
 }
 
 function applyFundraisers(fundraisers) {

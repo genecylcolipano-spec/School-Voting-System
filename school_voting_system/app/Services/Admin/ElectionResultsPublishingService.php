@@ -87,6 +87,7 @@ class ElectionResultsPublishingService
             'public_results_published' => false,
             'results_published_at' => null,
             'results_published_by' => null,
+            'results_locked' => false,
         ])->save();
 
         $this->audit->record(

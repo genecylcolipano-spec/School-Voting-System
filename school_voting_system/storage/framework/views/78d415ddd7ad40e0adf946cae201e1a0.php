@@ -10,7 +10,7 @@
 <?php $component->withAttributes([]); ?>
     <div class="min-h-screen bg-slate-950 text-slate-100">
         <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-            <div class="mb-6 flex items-center justify-between gap-4">
+            <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <a href="<?php echo e(route('student.events.index')); ?>" class="text-sm font-semibold text-cyan-300 hover:text-cyan-200">← Back to events</a>
                 <a href="<?php echo e(route('student.dashboard')); ?>" class="text-sm text-slate-300 hover:text-white">Dashboard</a>
             </div>
@@ -36,15 +36,15 @@
 <?php $component = $__componentOriginalb4ae95e62e8615350ae7fdaa410354d0; ?>
 <?php unset($__componentOriginalb4ae95e62e8615350ae7fdaa410354d0); ?>
 <?php endif; ?>
-                <div class="p-6">
-                <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div>
+                <div class="p-4 sm:p-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+                    <div class="min-w-0">
                         <h1 class="text-2xl font-bold text-white"><?php echo e($event->title); ?></h1>
                         <p class="mt-1 text-sm text-slate-400"><?php echo e($event->venue); ?></p>
                     </div>
-                    <div class="text-right">
+                    <div class="sm:text-right">
                         <p class="text-sm text-slate-300"><?php echo e(optional($event->event_date)->format('M d, Y')); ?></p>
-                        <p class="text-xs uppercase tracking-wide text-slate-500"><?php echo e($event->status?->value ?? $event->status); ?></p>
+                        <p class="text-xs uppercase tracking-wide text-slate-500"><?php echo e($event->displayStatusLabel()); ?></p>
                     </div>
                 </div>
 

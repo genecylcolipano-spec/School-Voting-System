@@ -7,14 +7,18 @@ use App\Enums\TalentEventStatus;
 use App\Models\Candidate;
 use App\Models\Election;
 use App\Models\TalentEvent;
-use App\Models\TalentEventEntry;
 use App\Models\User;
+use App\Services\Talent\TalentResultsRankingService;
 use App\Support\EventImageUrl;
 use App\Support\WinnerSpotlightBuilder;
 use Illuminate\Support\Collection;
 
 class StudentResultsService
 {
+    public function __construct(
+        protected TalentResultsRankingService $talentRankingService,
+    ) {}
+
     /**
      * @return Collection<int, array<string, mixed>>
      */
@@ -80,6 +84,7 @@ class StudentResultsService
         }
 
         $latestPublishedElection = Election::query()
+            ->visibleToCampus()
             ->where('public_results_published', true)
             ->orderByDesc('results_published_at')
             ->first();
@@ -98,7 +103,10 @@ class StudentResultsService
 
         $latestPublishedTalent = TalentEvent::query()
             ->publishedToStudents()
-            ->whereIn('status', [TalentEventStatus::ResultsPublished, TalentEventStatus::Completed])
+            ->where(function ($query) {
+                $query->where('status', TalentEventStatus::ResultsPublished)
+                    ->orWhereNotNull('results_published_at');
+            })
             ->orderByDesc('results_published_at')
             ->first();
 
@@ -106,7 +114,7 @@ class StudentResultsService
             return [
                 'mode' => 'published',
                 'title' => 'Official Results Available',
-                'message' => 'The official election results have been published.',
+                'message' => 'The official talent competition results have been published.',
                 'submessage' => 'Congratulations to all winners!',
                 'event_name' => $latestPublishedTalent->title,
                 'button_label' => 'View Results',
@@ -166,6 +174,11 @@ class StudentResultsService
         ];
     }
 
+    public function assertVisibleElection(Election $election): void
+    {
+        abort_unless($this->visibleElections()->contains('id', $election->id), 404);
+    }
+
     public function assertVisibleTalentEvent(TalentEvent $talentEvent): void
     {
         abort_unless($talentEvent->published_to_students, 404);
@@ -223,9 +236,9 @@ class StudentResultsService
         $official = $this->isTalentOfficial($talentEvent);
         $studentStatus = $this->talentStudentStatus($talentEvent);
         $categoryKind = $this->talentCategoryKind($talentEvent);
-        $rawRankings = $official ? $this->talentRankings($talentEvent) : [];
-        $rankings = $this->sanitizeRankingsForStudent($rawRankings);
-        $winners = $official ? $this->sanitizeWinnersForStudent($this->talentWinners($talentEvent, $rawRankings)) : [];
+        $rawRankings = $official ? $this->talentRankingService->rankings($talentEvent) : [];
+        $rankings = $official ? $rawRankings : [];
+        $winners = $official ? $this->talentWinners($talentEvent, $rawRankings) : [];
 
         $topFinalists = [];
         $specialAwards = [];
@@ -258,6 +271,7 @@ class StudentResultsService
             'winners' => $winners,
             'winners_layout' => $categoryKind,
             'rankings' => $rankings,
+            'ranking_metric_label' => $this->talentRankingService->metricLabel($talentEvent),
             'statistics' => $official ? $this->talentStatistics($talentEvent) : null,
             'top_finalists' => $topFinalists,
             'special_awards' => $specialAwards,
@@ -282,7 +296,7 @@ class StudentResultsService
 
     public function isTalentOfficial(TalentEvent $talentEvent): bool
     {
-        return in_array($talentEvent->status, [TalentEventStatus::ResultsPublished, TalentEventStatus::Completed], true);
+        return $talentEvent->hasPublishedResults();
     }
 
     /**
@@ -291,8 +305,9 @@ class StudentResultsService
     protected function visibleElections(): Collection
     {
         return Election::query()
+            ->whereNull('annulled_at')
             ->where(function ($query) {
-                $query->whereNot('status', ElectionStatus::Draft)
+                $query->whereNotIn('status', [ElectionStatus::Draft, ElectionStatus::Archived])
                     ->orWhere('public_results_published', true);
             })
             ->orderByDesc('voting_starts_at')
@@ -525,22 +540,18 @@ class StudentResultsService
                 -$row['votes'],
                 strtolower($row['name']),
             ])
-            ->values();
+            ->values()
+            ->groupBy('position');
 
-        $rankByCategory = [];
         $output = [];
 
-        foreach ($ranked as $row) {
-            $categoryKey = $row['position'];
-            $rankByCategory[$categoryKey] = ($rankByCategory[$categoryKey] ?? 0) + 1;
-            $rank = $rankByCategory[$categoryKey];
-            $maxVotes = $ranked->where('position', $categoryKey)->max('votes');
-            $isWinner = $rank === 1 && $row['votes'] > 0 && $row['votes'] === $maxVotes;
-
-            $output[] = array_merge($row, [
-                'rank' => $rank,
-                'status' => $isWinner ? 'Winner' : ($row['votes'] > 0 ? 'Finalist' : '—'),
-            ]);
+        foreach ($ranked as $rows) {
+            foreach ($this->talentRankingService->assignCompetitionRanks($rows->values()->all(), 'votes') as $row) {
+                $isWinner = (int) $row['rank'] === 1 && (int) $row['votes'] > 0;
+                $output[] = array_merge($row, [
+                    'status' => $isWinner ? 'Winner' : ($row['votes'] > 0 ? 'Finalist' : '—'),
+                ]);
+            }
         }
 
         return $output;
@@ -574,30 +585,7 @@ class StudentResultsService
      */
     protected function talentRankings(TalentEvent $talentEvent): array
     {
-        $entries = $talentEvent->approvedEntries()
-            ->withCount('votes')
-            ->orderByDesc('votes_count')
-            ->orderBy('display_name')
-            ->get();
-
-        $totalVotes = (int) $entries->sum('votes_count');
-
-        return $entries->values()->map(function (TalentEventEntry $entry, int $index) use ($totalVotes) {
-            $votes = (int) $entry->votes_count;
-            $rank = $index + 1;
-
-            return [
-                'id' => $entry->id,
-                'rank' => $rank,
-                'name' => $entry->display_name,
-                'position' => $entry->grade_level
-                    ? 'Grade '.$entry->grade_level.($entry->section ? ' · '.$entry->section : '')
-                    : 'Contestant',
-                'votes' => $votes,
-                'percent' => $totalVotes > 0 ? round(($votes / $totalVotes) * 100, 1) : 0.0,
-                'status' => $rank === 1 && $votes > 0 ? 'Winner' : ($votes > 0 ? 'Finalist' : '—'),
-            ];
-        })->all();
+        return $this->talentRankingService->rankings($talentEvent);
     }
 
     /**
@@ -613,7 +601,7 @@ class StudentResultsService
         }
 
         if ($kind === 'talent_competition') {
-            return $this->talentPlacementWinners($rankings);
+            return $this->talentPlacementWinners($talentEvent, $rankings);
         }
 
         return $this->genericPlacementWinners($rankings, max(3, min(5, count($rankings))));
@@ -623,17 +611,42 @@ class StudentResultsService
      * @param  array<int, array<string, mixed>>  $rankings
      * @return array<int, array<string, mixed>>
      */
-    protected function talentPlacementWinners(array $rankings): array
+    protected function talentPlacementWinners(TalentEvent $talentEvent, array $rankings): array
     {
-        $labels = ['Champion', '1st Runner-up', '2nd Runner-up'];
+        $winnerCount = max(1, (int) ($talentEvent->number_of_winners ?? 3));
+        $labels = ['Champion', '1st Runner-up', '2nd Runner-up', '3rd Runner-up', '4th Runner-up'];
         $winners = [];
+        $labelIndex = 0;
+        $usedRanks = [];
 
-        foreach ($labels as $index => $label) {
-            $row = $rankings[$index] ?? null;
+        foreach ($rankings as $row) {
+            $rank = (int) ($row['rank'] ?? 0);
+
+            if ($rank < 1 || isset($usedRanks[$rank])) {
+                if (isset($usedRanks[$rank])) {
+                    $winners[] = [
+                        'label' => $usedRanks[$rank],
+                        'name' => $row['name'] ?? '—',
+                        'votes' => (float) ($row['votes'] ?? 0),
+                        'percent' => (float) ($row['percent'] ?? 0),
+                    ];
+                }
+
+                continue;
+            }
+
+            if ($labelIndex >= $winnerCount) {
+                break;
+            }
+
+            $label = $labels[$labelIndex] ?? 'Winner '.($labelIndex + 1);
+            $usedRanks[$rank] = $label;
+            $labelIndex++;
+
             $winners[] = [
                 'label' => $label,
                 'name' => $row['name'] ?? '—',
-                'votes' => (int) ($row['votes'] ?? 0),
+                'votes' => (float) ($row['votes'] ?? 0),
                 'percent' => (float) ($row['percent'] ?? 0),
             ];
         }

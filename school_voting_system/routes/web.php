@@ -43,8 +43,13 @@ use App\Http\Controllers\Student\StudentPortalController;
 use App\Http\Controllers\Student\StudentTalentRegistrationController;
 use App\Http\Controllers\TalentVideoStreamController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Webhooks\PayMongoWebhookController;
 use App\Services\Auth\RoleRedirectService;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/webhooks/paymongo', PayMongoWebhookController::class)
+    ->middleware('throttle:60,1')
+    ->name('webhooks.paymongo');
 
 /*
 |--------------------------------------------------------------------------
@@ -224,6 +229,10 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
         Route::post('/fundraising/{fundraiser:slug}/donate', [StudentPortalController::class, 'donate'])
             ->middleware('throttle:20,1')
             ->name('fundraising.donate');
+        Route::get('/fundraising/{fundraiser:slug}/donate/return', [StudentPortalController::class, 'donateReturn'])
+            ->name('fundraising.donate.return');
+        Route::get('/fundraising/{fundraiser:slug}/donate/cancel', [StudentPortalController::class, 'donateCancel'])
+            ->name('fundraising.donate.cancel');
 
         Route::get('/announcements', [StudentPortalController::class, 'announcements'])->name('announcements.index');
         Route::get('/announcements/{announcement:slug}', [StudentPortalController::class, 'announcementShow'])->name('announcements.show');
@@ -280,6 +289,7 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
         Route::post('/posters/{poster}/reject', [AdminActionController::class, 'rejectPoster'])->name('posters.reject');
         Route::post('/talent-events/{talentEvent}/open-voting', [AdminActionController::class, 'openTalentVoting'])->name('talent.open-voting');
         Route::post('/talent-events/{talentEvent}/publish-results', [AdminActionController::class, 'publishTalentResults'])->name('talent.publish-results');
+        Route::post('/talent-events/{talentEvent}/unpublish-results', [AdminActionController::class, 'unpublishTalentResults'])->name('talent.unpublish-results');
         Route::post('/talent-entries/{entry}/approve', [AdminActionController::class, 'approveTalentEntry'])->name('talent.entries.approve');
         Route::post('/talent-entries/{entry}/reject', [AdminActionController::class, 'rejectTalentEntry'])->name('talent.entries.reject');
         Route::post('/talent-entries/{entry}/status', [AdminActionController::class, 'updateTalentEntryStatus'])->name('talent.entries.status');
@@ -328,6 +338,9 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
         Route::resource('announcements', AdminAnnouncementController::class)->except(['show']);
 
         Route::get('/fundraisers/donations', [AdminFundraiserController::class, 'donations'])->name('fundraisers.donations');
+        Route::post('/fundraisers/donations/{donation}/confirm', [AdminFundraiserController::class, 'confirmDonation'])
+            ->middleware('throttle:30,1')
+            ->name('fundraisers.donations.confirm');
         Route::get('/fundraisers/transactions', [AdminFundraiserController::class, 'transactions'])->name('fundraisers.transactions');
         Route::get('/fundraisers/{fundraiser}/preview', [AdminFundraiserController::class, 'preview'])->name('fundraisers.preview');
         Route::resource('fundraisers', AdminFundraiserController::class)->except(['show']);

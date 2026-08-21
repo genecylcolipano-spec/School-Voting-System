@@ -775,7 +775,7 @@ class AdminScopeService
     public function fundraisers(User $admin, int $limit = 6): Collection
     {
         return Fundraiser::query()
-            ->withCount('donations')
+            ->withCount('paidDonations as donations_count')
             ->latest()
             ->limit($limit)
             ->get();
@@ -835,6 +835,8 @@ class AdminScopeService
 
     public function schoolEvents(User $admin): Collection
     {
+        Event::markOverdueAsCompleted();
+
         return Event::query()
             ->latest('event_date')
             ->get();

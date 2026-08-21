@@ -13,4 +13,14 @@ enum ElectionStatus: string
     {
         return $this === self::Active;
     }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Draft => 'Draft',
+            self::Active => 'Active',
+            self::Closed => 'Closed',
+            self::Archived => 'Archived',
+        };
+    }
 }

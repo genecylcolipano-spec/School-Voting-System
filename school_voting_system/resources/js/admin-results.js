@@ -330,12 +330,6 @@ async function pollLive(dashboard) {
     }
 }
 
-function initPrint() {
-    document.querySelector('[data-results-print]')?.addEventListener('click', () => {
-        window.print();
-    });
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     const dashboard = document.getElementById('admin-results-dashboard');
     const initial = readInitialPayload();
@@ -343,8 +337,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (initial) {
         applyDetail(initial);
     }
-
-    initPrint();
 
     if (dashboard?.dataset.isLive === '1') {
         pollLive(dashboard);

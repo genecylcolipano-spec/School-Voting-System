@@ -39,7 +39,7 @@
         >
             <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <a href="<?php echo e($backUrl); ?>" class="text-sm font-semibold text-violet-300 hover:text-violet-200">← Results Dashboard</a>
+                    <a href="<?php echo e($backUrl); ?>" class="text-sm font-semibold text-violet-300 hover:text-violet-200">← <?php echo e($backLabel ?? 'Results Dashboard'); ?></a>
                     <h2 class="mt-2 text-2xl font-bold text-white"><?php echo e($detail['name']); ?></h2>
                     <p class="mt-1 text-sm text-slate-400"><?php echo e($detail['category'] ?? 'Event'); ?></p>
                 </div>
@@ -63,7 +63,9 @@
                         <a href="<?php echo e($exportUrls['pdf']); ?>" class="rs-export-btn">Export PDF</a>
                         <a href="<?php echo e($exportUrls['excel']); ?>" class="rs-export-btn">Export Excel</a>
                         <a href="<?php echo e($exportUrls['csv']); ?>" class="rs-export-btn">Export CSV</a>
-                        <button type="button" data-results-print class="rs-export-btn">Print Results</button>
+                        <?php if(! empty($exportUrls['print'])): ?>
+                            <a href="<?php echo e($exportUrls['print']); ?>" target="_blank" rel="noopener" class="rs-export-btn">Print Results</a>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
             </div>
@@ -303,7 +305,7 @@
                                 <th class="cursor-pointer px-4 py-3 font-medium" data-sort="name">Contestant / Candidate</th>
                                 <th class="cursor-pointer px-4 py-3 font-medium" data-sort="position">Position</th>
                                 <th class="cursor-pointer px-4 py-3 font-medium" data-sort="party">Party</th>
-                                <th class="cursor-pointer px-4 py-3 font-medium" data-sort="votes">Votes</th>
+                                <th class="cursor-pointer px-4 py-3 font-medium" data-sort="votes"><?php echo e($detail['ranking_metric_label'] ?? 'Votes'); ?></th>
                                 <th class="cursor-pointer px-4 py-3 font-medium" data-sort="percent">Percentage</th>
                                 <th class="cursor-pointer px-4 py-3 font-medium" data-sort="status">Status</th>
                             </tr>
@@ -315,7 +317,7 @@
                                     <td class="px-4 py-3 font-medium text-white"><?php echo e($row['name']); ?></td>
                                     <td class="px-4 py-3"><?php echo e($row['position']); ?></td>
                                     <td class="px-4 py-3"><?php echo e($row['party']); ?></td>
-                                    <td class="px-4 py-3"><?php echo e(number_format($row['votes'])); ?></td>
+                                    <td class="px-4 py-3"><?php echo e(number_format($row['votes'], (floor((float) $row['votes']) == (float) $row['votes']) ? 0 : 2)); ?></td>
                                     <td class="px-4 py-3"><?php echo e(number_format($row['percent'], 1)); ?>%</td>
                                     <td class="px-4 py-3">
                                         <span class="<?php echo \Illuminate\Support\Arr::toCssClasses([

@@ -33,6 +33,8 @@ class AdminEventController extends Controller
     public function index(Request $request): View
     {
         $this->authorize('viewAny', Event::class);
+        Event::markOverdueAsCompleted();
+
         $events = Event::query()
             ->orderByDesc('event_date')
             ->paginate(15);
@@ -72,9 +74,9 @@ class AdminEventController extends Controller
         ]);
 
         $this->logAdminAction('Created school event: '.$validated['title'], AuditActionType::Election, 'event');
-        $this->announcements->generateForSchoolEvent($event, $request->user());
 
         if ($event->status === EventStatus::Scheduled) {
+            $this->announcements->generateForSchoolEvent($event, $request->user());
             $this->notifications->schoolEventPublished($event->title, $request->user(), $event->id);
         }
 
@@ -83,7 +85,7 @@ class AdminEventController extends Controller
 
     public function edit(Request $request, Event $event): View
     {
-        $this->authorize('view', $event);
+        $this->authorize('update', $event);
 
         return view('admin.events.edit', [
             'user' => $request->user()->loadCount('passkeys'),
@@ -110,7 +112,9 @@ class AdminEventController extends Controller
 
         $event->update([
             'title' => $validated['title'],
-            'slug' => SlugGenerator::unique($validated['title'], Event::class, $event->id),
+            'slug' => $event->title !== $validated['title']
+                ? SlugGenerator::unique($validated['title'], Event::class, $event->id)
+                : $event->slug,
             'description' => $validated['description'] ?? null,
             'image_path' => $imagePath,
             'image_variants' => $imageVariants,

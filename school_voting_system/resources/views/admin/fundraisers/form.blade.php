@@ -202,15 +202,19 @@
             <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-4 sm:p-5">
                 <h2 class="text-sm font-bold uppercase tracking-wide text-violet-200">Donation Settings</h2>
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                    @php
+                        $defaultMinDonation = \App\Models\Fundraiser::defaultMinimumDonationAmount();
+                    @endphp
                     <div>
                         <label class="block text-sm font-medium text-slate-300">Minimum Donation (₱)</label>
-                        <input type="number" name="min_donation" min="1" step="0.01" value="{{ old('min_donation', $fundraiser?->min_donation) }}" placeholder="Default 1.00"
+                        <input type="number" name="min_donation" min="{{ $defaultMinDonation }}" step="0.01" value="{{ old('min_donation', $fundraiser?->min_donation) }}" placeholder="Default {{ number_format($defaultMinDonation, 2) }}"
                             class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                        <p class="mt-1 text-xs text-slate-500">PayMongo GCash, Maya, and QR Ph require at least ₱{{ number_format($defaultMinDonation, 2) }}.</p>
                         @error('min_donation')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-300">Maximum Donation (₱)</label>
-                        <input type="number" name="max_donation" min="1" step="0.01" value="{{ old('max_donation', $fundraiser?->max_donation) }}" placeholder="Optional"
+                        <input type="number" name="max_donation" min="{{ $defaultMinDonation }}" step="0.01" value="{{ old('max_donation', $fundraiser?->max_donation) }}" placeholder="Optional"
                             class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
                         @error('max_donation')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
                     </div>
@@ -222,6 +226,7 @@
                         ['accept_cash', 'Accept Cash', $fundraiser?->accept_cash ?? true],
                         ['accept_gcash', 'Accept GCash', $fundraiser?->accept_gcash ?? true],
                         ['accept_maya', 'Accept Maya', $fundraiser?->accept_maya ?? true],
+                        ['accept_qrph', 'Accept QR Ph', $fundraiser?->accept_qrph ?? true],
                         ['accept_bank_transfer', 'Accept Bank Transfer', $fundraiser?->accept_bank_transfer ?? true],
                     ] as [$name, $label, $default])
                         <label class="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2 text-sm text-slate-300">

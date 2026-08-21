@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Student;
 
 use App\Enums\AuditActionType;
+use App\Enums\DonationPaymentMethod;
 use App\Exceptions\DonationIntegrityException;
+use App\Exceptions\PayMongoException;
 use App\Exceptions\VoteIntegrityException;
 use App\Http\Controllers\Concerns\ManagesPortalNotifications;
 use App\Http\Controllers\Controller;
@@ -28,6 +30,7 @@ use App\Services\Campaign\StudentCampaignService;
 use App\Services\Election\StudentElectionService;
 use App\Services\Portal\AnnouncementService;
 use App\Services\Portal\PortalNotificationService;
+use App\Services\Payments\DonationCheckoutService;
 use App\Services\Student\StudentResultsService;
 use App\Services\SuperAdmin\AuditLogService;
 use App\Services\Talent\StudentTalentHeroActionResolver;
@@ -52,12 +55,15 @@ class StudentPortalController extends Controller
         protected PortalNotificationService $notifications,
         protected AnnouncementService $announcements,
         protected AuditLogService $audit,
+        protected DonationCheckoutService $donationCheckout,
     ) {}
 
     public function events(Request $request): View
     {
+        Event::markOverdueAsCompleted();
+
         $events = Event::query()
-            ->orderBy('event_date')
+            ->campusListing()
             ->paginate(12);
 
         return view('student.events.index', [
@@ -68,7 +74,11 @@ class StudentPortalController extends Controller
 
     public function statistics(Request $request): View
     {
-        $user = $request->user()->loadCount(['passkeys', 'votes', 'donations']);
+        $user = $request->user()->loadCount([
+            'passkeys',
+            'votes',
+            'donations' => fn ($query) => $query->paid(),
+        ]);
 
         $electionsJoined = (int) $user->votes()->distinct()->count('election_id');
         $competitionsJoined = TalentEventEntry::query()
@@ -76,10 +86,11 @@ class StudentPortalController extends Controller
             ->distinct()
             ->count('talent_event_id');
         $fundraisersSupported = Donation::query()
+            ->paid()
             ->where('user_id', $user->id)
             ->distinct()
             ->count('fundraiser_id');
-        $totalDonated = (float) $user->donations()->sum('amount');
+        $totalDonated = (float) $user->donations()->paid()->sum('amount');
 
         $eligibleElections = Election::query()
             ->whereIn('status', [
@@ -116,12 +127,14 @@ class StudentPortalController extends Controller
             ->first();
 
         $lastDonation = Donation::query()
+            ->paid()
             ->with(['fundraiser:id,title,slug'])
             ->where('user_id', $user->id)
             ->orderByDesc('donated_at')
             ->first();
 
         $recentDonations = Donation::query()
+            ->paid()
             ->with(['fundraiser:id,title,slug'])
             ->where('user_id', $user->id)
             ->orderByDesc('donated_at')
@@ -241,6 +254,7 @@ class StudentPortalController extends Controller
             });
 
         Donation::query()
+            ->paid()
             ->with(['fundraiser:id,title'])
             ->where('user_id', $user->id)
             ->orderByDesc('donated_at')
@@ -280,6 +294,10 @@ class StudentPortalController extends Controller
 
     public function eventShow(Request $request, Event $event): View
     {
+        abort_unless($event->isVisibleToCampus(), 404);
+        Event::markOverdueAsCompleted();
+        $event->refresh();
+
         return view('student.events.show', [
             'user' => $request->user()->loadCount('passkeys'),
             'event' => $event,
@@ -318,6 +336,7 @@ class StudentPortalController extends Controller
     public function voting(Request $request): View
     {
         $elections = Election::query()
+            ->visibleToCampus()
             ->orderByDesc('voting_starts_at')
             ->paginate(10);
 
@@ -331,6 +350,8 @@ class StudentPortalController extends Controller
 
     public function votingShow(Request $request, Election $election): View|RedirectResponse
     {
+        abort_unless($election->isVisibleToCampus(), 404);
+
         $student = $request->user();
 
         if (! $student->is_active || ! $student->canVote()) {
@@ -417,6 +438,8 @@ class StudentPortalController extends Controller
      */
     public function submitBallot(SubmitBallotRequest $request, Election $election): RedirectResponse
     {
+        abort_unless($election->isVisibleToCampus(), 404);
+
         $student = $request->user();
 
         if (! $student->is_active || ! $student->canVote()) {
@@ -609,6 +632,9 @@ class StudentPortalController extends Controller
         return view('student.fundraising.show', [
             'user' => $request->user()->loadCount('passkeys'),
             'fundraiser' => $fundraiser,
+            'paymentMethods' => $fundraiser->acceptedPaymentMethods(),
+            'paymongoConfigured' => $this->donationCheckout->isOnlinePaymentsConfigured(),
+            'onlineMinAmount' => $this->donationCheckout->onlineMinimumAmount(),
         ]);
     }
 
@@ -616,6 +642,10 @@ class StudentPortalController extends Controller
     {
         $min = $fundraiser->minimumDonationAmount();
         $max = $fundraiser->maximumDonationAmount();
+        $accepted = array_map(
+            fn (DonationPaymentMethod $method) => $method->value,
+            $fundraiser->acceptedPaymentMethods(),
+        );
 
         $amountRules = ['required', 'numeric', 'min:'.$min];
         if ($max !== null) {
@@ -626,31 +656,75 @@ class StudentPortalController extends Controller
             'amount' => $amountRules,
             'message' => ['nullable', 'string', 'max:255'],
             'is_anonymous' => ['nullable', 'boolean'],
+            'payment_method' => ['required', 'in:'.implode(',', $accepted)],
         ]);
 
+        $method = DonationPaymentMethod::from($validated['payment_method']);
+
         try {
-            Donation::record(
+            $result = $this->donationCheckout->start(
                 donor: $request->user(),
                 fundraiser: $fundraiser,
                 amount: $validated['amount'],
-                attributes: [
-                    'message' => $validated['message'] ?? null,
-                    'is_anonymous' => (bool) ($validated['is_anonymous'] ?? false),
-                    'currency' => 'PHP',
-                ],
+                method: $method,
+                message: $validated['message'] ?? null,
+                anonymous: (bool) ($validated['is_anonymous'] ?? false),
             );
-        } catch (DonationIntegrityException $exception) {
-            return back()->with('error', $exception->getMessage());
+        } catch (DonationIntegrityException|PayMongoException $exception) {
+            return back()->withInput()->with('error', $exception->getMessage());
         }
 
-        $this->notifications->donationReceived(
-            $fundraiser->title,
-            (float) $validated['amount'],
-            $request->user(),
-            $request->user(),
-        );
+        if (filled($result['checkout_url'])) {
+            return redirect()->away($result['checkout_url']);
+        }
 
-        return back()->with('success', 'Thank you! Your donation has been recorded.');
+        return back()->with('success', $result['message']);
+    }
+
+    public function donateReturn(Request $request, Fundraiser $fundraiser): RedirectResponse
+    {
+        $donation = $this->ownedDonation($request, $fundraiser, $request->query('donation'));
+
+        if ($donation && $donation->payment_method?->isOnline()) {
+            $this->donationCheckout->syncFromPayMongo($donation);
+            $donation->refresh();
+        }
+
+        if ($donation?->isPaid()) {
+            return redirect()
+                ->route('student.fundraising.show', $fundraiser)
+                ->with('success', 'Thank you! Your donation of ₱'.number_format((float) $donation->amount, 2).' was received.');
+        }
+
+        return redirect()
+            ->route('student.fundraising.show', $fundraiser)
+            ->with('success', 'If your payment went through, it will appear here after PayMongo confirms it. This can take a few seconds.');
+    }
+
+    public function donateCancel(Request $request, Fundraiser $fundraiser): RedirectResponse
+    {
+        $donation = $this->ownedDonation($request, $fundraiser, $request->query('donation'));
+
+        if ($donation?->isPending()) {
+            $donation->markCancelled();
+        }
+
+        return redirect()
+            ->route('student.fundraising.show', $fundraiser)
+            ->with('error', 'Payment was cancelled. No amount was charged.');
+    }
+
+    protected function ownedDonation(Request $request, Fundraiser $fundraiser, mixed $donationId): ?Donation
+    {
+        if (! is_numeric($donationId)) {
+            return null;
+        }
+
+        return Donation::query()
+            ->whereKey((int) $donationId)
+            ->where('fundraiser_id', $fundraiser->id)
+            ->where('user_id', $request->user()->id)
+            ->first();
     }
 
     public function announcements(Request $request): View
@@ -673,7 +747,7 @@ class StudentPortalController extends Controller
     {
         abort_unless($announcement->isLive(), 404);
         abort_unless(
-            $this->announcements->recipientQuery($announcement)->where('id', $request->user()->id)->exists(),
+            $this->announcements->userCanView($announcement, $request->user()),
             403,
             'You do not have permission to view this announcement.',
         );
@@ -691,6 +765,11 @@ class StudentPortalController extends Controller
     public function downloadAnnouncementAttachment(Request $request, Announcement $announcement, AnnouncementAttachment $attachment): StreamedResponse
     {
         abort_unless($announcement->isLive(), 404);
+        abort_unless(
+            $this->announcements->userCanView($announcement, $request->user()),
+            403,
+            'You do not have permission to view this announcement.',
+        );
         abort_unless($attachment->announcement_id === $announcement->id, 404);
         abort_unless(Storage::disk('public')->exists($attachment->path), 404);
 
@@ -747,11 +826,7 @@ class StudentPortalController extends Controller
 
     public function resultsShowElection(Request $request, Election $election): View
     {
-        abort_if(
-            $election->status === \App\Enums\ElectionStatus::Draft
-            && ! $this->resultsService->isElectionOfficial($election),
-            404,
-        );
+        $this->resultsService->assertVisibleElection($election);
 
         return view('student.results.show', [
             'user' => $request->user()->loadCount('passkeys'),

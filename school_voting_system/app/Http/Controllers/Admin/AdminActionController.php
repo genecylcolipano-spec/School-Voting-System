@@ -19,9 +19,11 @@ use App\Http\Requests\Admin\Actions\ResolveComplaintRequest;
 use App\Http\Requests\Admin\Actions\ResumeElectionRequest;
 use App\Http\Requests\Admin\Actions\SendRemindersRequest;
 use App\Http\Requests\Admin\Actions\UnpublishElectionResultsRequest;
+use App\Http\Requests\Admin\Actions\UnpublishTalentResultsRequest;
 use App\Http\Requests\Admin\Actions\VerifyCandidateRequest;
 use App\Models\AdminComplaint;
 use App\Services\Admin\ElectionResultsPublishingService;
+use App\Services\Admin\TalentResultsPublishingService;
 use App\Models\AdminVerificationRequest;
 use App\Models\Candidate;
 use App\Models\Election;
@@ -46,6 +48,7 @@ class AdminActionController extends Controller
         protected AuditLogService $audit,
         protected TalentEventPublishingService $publishing,
         protected ElectionResultsPublishingService $electionPublishing,
+        protected TalentResultsPublishingService $talentResultsPublishing,
         protected PortalNotificationService $notifications,
         protected AnnouncementService $announcements,
         protected ElectionLifecycleService $elections,
@@ -283,15 +286,7 @@ class AdminActionController extends Controller
 
     public function publishTalentResults(PublishTalentResultsRequest $request, TalentEvent $talentEvent): RedirectResponse
     {
-        $talentEvent->forceFill([
-            'status' => TalentEventStatus::ResultsPublished,
-            'results_published_at' => now(),
-            'results_published_by' => $request->user()->id,
-        ])->save();
-
-        $this->publishing->publish($talentEvent->fresh(), $request->user());
-
-        $this->notifications->talentResultsPublished($talentEvent->fresh(), $request->user());
+        $this->talentResultsPublishing->publish($talentEvent, $request->user());
         $this->announcements->generateForResultsPublished(
             $talentEvent->title,
             AnnouncementRelatedModule::TalentCompetition,
@@ -299,15 +294,18 @@ class AdminActionController extends Controller
             $request->user(),
         );
 
-        $this->audit->record(
-            $request->user(),
-            "Published talent event results: {$talentEvent->title}",
-            AuditActionType::Election,
-            targetType: 'talent_event',
-            targetId: $talentEvent->id,
-        );
+        return redirect()
+            ->route('admin.results.talent.show', $talentEvent)
+            ->with('success', 'Official talent competition results have been published to students.');
+    }
 
-        return back()->with('success', 'Talent event results published.');
+    public function unpublishTalentResults(UnpublishTalentResultsRequest $request, TalentEvent $talentEvent): RedirectResponse
+    {
+        $this->talentResultsPublishing->unpublish($talentEvent, $request->user());
+
+        return redirect()
+            ->route('admin.results.talent.show', $talentEvent)
+            ->with('success', 'Official talent competition results have been unpublished.');
     }
 
     public function resolveComplaint(ResolveComplaintRequest $request, AdminComplaint $complaint): RedirectResponse

@@ -17,6 +17,40 @@ class PasskeyRecoveryResetTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_recovery_page_shows_form_without_branding_header(): void
+    {
+        $this->get(route('login.recovery'))
+            ->assertOk()
+            ->assertSee('Lost your passkey?', false)
+            ->assertSee('Request a secure recovery link', false)
+            ->assertSee('Need help?', false)
+            ->assertSee('Back to Login', false)
+            ->assertDontSee('Continue to Passkey Setup', false)
+            ->assertDontSee(\App\Support\SchoolBranding::periodLabel(), false);
+    }
+
+    public function test_html_form_request_redirects_with_generic_status(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create([
+            'account_id' => 'HTML-01',
+            'email' => 'html@example.com',
+        ]);
+
+        $this->from(route('login.recovery'))
+            ->post(route('login.recovery.request'), [
+                'account_id' => 'HTML-01',
+                'email' => 'html@example.com',
+            ])
+            ->assertRedirect(route('login.recovery'))
+            ->assertSessionHas('status');
+
+        Mail::assertSent(PasskeyResetEnrollmentLinkMail::class, function (PasskeyResetEnrollmentLinkMail $mail) use ($user) {
+            return $mail->hasTo($user->email);
+        });
+    }
+
     public function test_valid_account_and_matching_email_dispatches_reset_mail(): void
     {
         Mail::fake();
@@ -131,7 +165,7 @@ class PasskeyRecoveryResetTest extends TestCase
 
         $this->get(route('login.recovery.continue', ['token' => $plain]))
             ->assertRedirect(route('login.recovery'))
-            ->assertSessionHas('status', 'The reset link has expired.');
+            ->assertSessionHas('error', 'The reset link has expired.');
 
         $this->assertNull($recovery->fresh()->used_at);
     }
@@ -155,7 +189,7 @@ class PasskeyRecoveryResetTest extends TestCase
 
         $this->get(route('login.recovery.continue', ['token' => $plain]))
             ->assertRedirect(route('login.recovery'))
-            ->assertSessionHas('status', 'The link is no longer valid.');
+            ->assertSessionHas('error', 'The link is no longer valid.');
     }
 
     public function test_valid_token_opens_enrollment_and_mark_used_invalidates_reuse(): void
@@ -191,7 +225,7 @@ class PasskeyRecoveryResetTest extends TestCase
 
         $this->get(route('login.recovery.continue', ['token' => $plain]))
             ->assertRedirect(route('login.recovery'))
-            ->assertSessionHas('status', 'The link is no longer valid.');
+            ->assertSessionHas('error', 'The link is no longer valid.');
     }
 
     public function test_new_reset_request_invalidates_previous_token(): void
@@ -227,7 +261,7 @@ class PasskeyRecoveryResetTest extends TestCase
 
         $this->get(route('login.recovery.continue', ['token' => $firstPlain]))
             ->assertRedirect(route('login.recovery'))
-            ->assertSessionHas('status', 'The link is no longer valid.');
+            ->assertSessionHas('error', 'The link is no longer valid.');
 
         $secondMail = Mail::sent(PasskeyResetEnrollmentLinkMail::class)->last();
         preg_match('#/login/recovery/continue/([A-Za-z0-9]+)#', $secondMail->enrollmentUrl, $secondMatches);

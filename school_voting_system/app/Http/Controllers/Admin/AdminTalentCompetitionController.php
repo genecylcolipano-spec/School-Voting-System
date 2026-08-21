@@ -157,8 +157,8 @@ class AdminTalentCompetitionController extends Controller
                 ? $this->storeTalentEventImage($request->file('thumbnail'), 'talent-events/thumbnails', false)
                 : ($this->lastStoredImageVariants['thumb_path'] ?? null),
             'poster_path' => $this->storeTalentEventImage($request->file('poster'), 'talent-events/posters', false),
-            'event_date' => $validated['event_date'],
-            'venue' => $validated['venue'],
+            'event_date' => $validated['voting_starts_at'],
+            'venue' => 'Online',
             'status' => TalentEventStatus::Scheduled,
             'voting_starts_at' => $validated['voting_starts_at'],
             'voting_ends_at' => $validated['voting_ends_at'],
@@ -336,8 +336,8 @@ class AdminTalentCompetitionController extends Controller
             'image_variants' => $imageVariants,
             'thumbnail_path' => $thumbnailPath,
             'poster_path' => $posterPath,
-            'event_date' => $validated['event_date'],
-            'venue' => $validated['venue'],
+            'event_date' => $validated['voting_starts_at'],
+            'venue' => 'Online',
             'voting_starts_at' => $validated['voting_starts_at'],
             'voting_ends_at' => $validated['voting_ends_at'],
         ])->save();

@@ -41,7 +41,7 @@ unset($__defined_vars, $__key, $__value); ?>
         in_array($normalized, ['approved', 'verified', 'active', 'voting_open', 'resolved', 'success', 'ongoing']) => 'border-emerald-500/30 bg-emerald-500/15 text-emerald-300',
         in_array($normalized, ['draft', 'registration_closed', 'voting_closed', 'voting_paused']) => 'border-slate-500/30 bg-slate-600/40 text-slate-300',
         in_array($normalized, ['archived', 'inactive', 'completed']) => 'border-slate-500/25 bg-slate-600/40 text-slate-400',
-        in_array($normalized, ['rejected', 'failed', 'annulled']) => 'border-rose-500/30 bg-rose-500/15 text-rose-300',
+        in_array($normalized, ['rejected', 'failed', 'annulled', 'cancelled']) => 'border-rose-500/30 bg-rose-500/15 text-rose-300',
         in_array($normalized, ['results_published', 'published']) => 'border-violet-500/30 bg-violet-500/15 text-violet-300',
         default => 'border-slate-600/40 bg-slate-700 text-slate-300',
     };

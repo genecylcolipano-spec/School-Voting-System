@@ -165,6 +165,9 @@
                                         @if (! empty($row['position']))
                                             <span class="text-xs text-slate-500">{{ $row['position'] }}</span>
                                         @endif
+                                        @if (isset($row['votes']))
+                                            <span class="text-xs font-semibold text-cyan-300">{{ number_format($row['votes'], (floor((float) $row['votes']) == (float) $row['votes']) ? 0 : 2) }} · {{ number_format($row['percent'] ?? 0, 1) }}%</span>
+                                        @endif
                                     </li>
                                 @endforeach
                             </ul>

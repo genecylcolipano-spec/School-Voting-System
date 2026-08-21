@@ -291,10 +291,14 @@ unset($__errorArgs, $__bag); ?>
             <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-4 sm:p-5">
                 <h2 class="text-sm font-bold uppercase tracking-wide text-violet-200">Donation Settings</h2>
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                    <?php
+                        $defaultMinDonation = \App\Models\Fundraiser::defaultMinimumDonationAmount();
+                    ?>
                     <div>
                         <label class="block text-sm font-medium text-slate-300">Minimum Donation (₱)</label>
-                        <input type="number" name="min_donation" min="1" step="0.01" value="<?php echo e(old('min_donation', $fundraiser?->min_donation)); ?>" placeholder="Default 1.00"
+                        <input type="number" name="min_donation" min="<?php echo e($defaultMinDonation); ?>" step="0.01" value="<?php echo e(old('min_donation', $fundraiser?->min_donation)); ?>" placeholder="Default <?php echo e(number_format($defaultMinDonation, 2)); ?>"
                             class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                        <p class="mt-1 text-xs text-slate-500">PayMongo GCash, Maya, and QR Ph require at least ₱<?php echo e(number_format($defaultMinDonation, 2)); ?>.</p>
                         <?php $__errorArgs = ['min_donation'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -306,7 +310,7 @@ unset($__errorArgs, $__bag); ?>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-300">Maximum Donation (₱)</label>
-                        <input type="number" name="max_donation" min="1" step="0.01" value="<?php echo e(old('max_donation', $fundraiser?->max_donation)); ?>" placeholder="Optional"
+                        <input type="number" name="max_donation" min="<?php echo e($defaultMinDonation); ?>" step="0.01" value="<?php echo e(old('max_donation', $fundraiser?->max_donation)); ?>" placeholder="Optional"
                             class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
                         <?php $__errorArgs = ['max_donation'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -325,6 +329,7 @@ unset($__errorArgs, $__bag); ?>
                         ['accept_cash', 'Accept Cash', $fundraiser?->accept_cash ?? true],
                         ['accept_gcash', 'Accept GCash', $fundraiser?->accept_gcash ?? true],
                         ['accept_maya', 'Accept Maya', $fundraiser?->accept_maya ?? true],
+                        ['accept_qrph', 'Accept QR Ph', $fundraiser?->accept_qrph ?? true],
                         ['accept_bank_transfer', 'Accept Bank Transfer', $fundraiser?->accept_bank_transfer ?? true],
                     ]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as [$name, $label, $default]): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <label class="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2 text-sm text-slate-300">

@@ -676,6 +676,18 @@ class PortalNotificationService
         );
     }
 
+    public function talentResultsUnpublished(TalentEvent $event, User $actor): void
+    {
+        $this->notifyAllPortalAdmins(
+            'Talent Results Unpublished',
+            "Official results for {$event->title} have been unpublished.",
+            'admin_talent_results_unpublished',
+            $actor,
+            NotificationModule::Competition,
+            $event->id,
+        );
+    }
+
     public function talentSubmissionReceived(TalentEventEntry $entry, User $actor): void
     {
         $event = $entry->talentEvent;

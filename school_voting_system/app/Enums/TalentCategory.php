@@ -19,6 +19,7 @@ enum TalentCategory: string
     case ShortFilm = 'short_film';
     case MultimediaPerformance = 'multimedia_performance';
     case BandPerformance = 'band_performance';
+    case LakanAtLakambiniNgRhmc = 'lakan_at_lakambini_ng_rhmc';
     case OpenTalent = 'open_talent';
 
     public function label(): string
@@ -39,6 +40,7 @@ enum TalentCategory: string
             self::ShortFilm => 'Short Film',
             self::MultimediaPerformance => 'Multimedia Performance',
             self::BandPerformance => 'Band Performance',
+            self::LakanAtLakambiniNgRhmc => 'Lakan at Lakambini ng RHMC',
             self::OpenTalent => 'Open Talent',
         };
     }

@@ -7,7 +7,10 @@ use App\Enums\AnnouncementCategory;
 use App\Enums\AnnouncementPriority;
 use App\Enums\AnnouncementRelatedModule;
 use App\Enums\AnnouncementStatus;
+use App\Enums\ElectionStatus;
 use App\Enums\UserRole;
+use App\Jobs\FanOutAnnouncementNotificationsJob;
+use App\Mail\AnnouncementPublishedMail;
 use App\Models\Announcement;
 use App\Models\AnnouncementAttachment;
 use App\Models\AnnouncementView;
@@ -18,7 +21,6 @@ use App\Models\Event;
 use App\Models\Fundraiser;
 use App\Models\TalentEvent;
 use App\Models\TalentEventEntry;
-use App\Mail\AnnouncementPublishedMail;
 use App\Models\User;
 use App\Support\SlugGenerator;
 use Illuminate\Database\Eloquent\Builder;
@@ -60,16 +62,21 @@ class AnnouncementService
      */
     public function payloadFromValidated(array $validated): array
     {
-        $isPublished = (bool) ($validated['is_published'] ?? false);
         $status = AnnouncementStatus::tryFrom((string) ($validated['status'] ?? AnnouncementStatus::Draft->value))
             ?? AnnouncementStatus::Draft;
+        $isPublished = (bool) ($validated['is_published'] ?? false);
 
-        if ($isPublished && $status === AnnouncementStatus::Draft) {
+        if ($status === AnnouncementStatus::Archived) {
+            $isPublished = false;
+        } elseif ($isPublished && $status === AnnouncementStatus::Draft) {
             $status = AnnouncementStatus::Published;
+        } elseif (! $isPublished) {
+            $status = AnnouncementStatus::Draft;
         }
 
-        if (! $isPublished) {
-            $status = AnnouncementStatus::Draft;
+        $publishedAt = $validated['published_at'] ?? null;
+        if ($isPublished && blank($publishedAt)) {
+            $publishedAt = now();
         }
 
         return [
@@ -83,7 +90,7 @@ class AnnouncementService
             'target_section' => $validated['target_section'] ?? null,
             'related_module' => $validated['related_module'] ?? AnnouncementRelatedModule::None->value,
             'related_id' => $this->resolveRelatedId($validated),
-            'published_at' => $validated['published_at'] ?? null,
+            'published_at' => $publishedAt,
             'expires_at' => $validated['expires_at'] ?? null,
             'is_published' => $isPublished,
             'status' => $status->value,
@@ -112,50 +119,70 @@ class AnnouncementService
             return 0;
         }
 
-        $recipients = $this->recipientUsers($announcement);
+        $recipientCount = $this->recipientQuery($announcement)->count();
 
-        if ($recipients->isEmpty()) {
+        if ($recipientCount === 0) {
             return 0;
         }
 
-        $sent = 0;
-
-        foreach ($recipients as $recipient) {
-            $delivered = false;
-
-            if ($announcement->notify_in_app) {
-                $this->notifications->notifyUser(
-                    $recipient,
-                    'New Announcement',
-                    $announcement->title,
-                    $recipient->isStudent() ? 'student_announcement' : 'admin_announcement',
-                    $actor,
-                    \App\Enums\NotificationModule::Announcement,
-                    $announcement->id,
-                    $announcement->id,
-                );
-                $delivered = true;
-            }
-
-            if ($announcement->send_email && filled($recipient->email)) {
-                Mail::to($recipient->email)->queue(new AnnouncementPublishedMail(
-                    $announcement,
-                    (string) $recipient->name,
-                    $this->urlForRecipient($announcement, $recipient),
-                ));
-                $delivered = true;
-            }
-
-            if ($delivered) {
-                $sent++;
-            }
-        }
-
         $announcement->forceFill([
-            'notifications_sent_count' => $announcement->notifications_sent_count + $sent,
+            'notifications_sent_count' => $announcement->notifications_sent_count + $recipientCount,
         ])->save();
 
+        FanOutAnnouncementNotificationsJob::dispatch(
+            $announcement->id,
+            $actor->id,
+            (bool) $announcement->notify_in_app,
+            (bool) $announcement->send_email,
+        );
+
+        return $recipientCount;
+    }
+
+    public function deliverToRecipients(
+        Announcement $announcement,
+        User $actor,
+        bool $sendInApp,
+        bool $sendEmail,
+    ): int {
+        $sent = 0;
+
+        $this->recipientQuery($announcement)
+            ->select(['id', 'name', 'email', 'role'])
+            ->orderBy('id')
+            ->chunkById(200, function (Collection $recipients) use ($announcement, $actor, $sendInApp, $sendEmail, &$sent) {
+                foreach ($recipients as $recipient) {
+                    if ($sendInApp) {
+                        $this->notifications->notifyUser(
+                            $recipient,
+                            'New Announcement',
+                            $announcement->title,
+                            $recipient->isStudent() ? 'student_announcement' : 'admin_announcement',
+                            $actor,
+                            \App\Enums\NotificationModule::Announcement,
+                            $announcement->id,
+                            $announcement->id,
+                        );
+                    }
+
+                    if ($sendEmail && filled($recipient->email)) {
+                        Mail::to($recipient->email)->queue(new AnnouncementPublishedMail(
+                            $announcement,
+                            (string) $recipient->name,
+                            $this->urlForRecipient($announcement, $recipient),
+                        ));
+                    }
+
+                    $sent++;
+                }
+            });
+
         return $sent;
+    }
+
+    public function userCanView(Announcement $announcement, User $user): bool
+    {
+        return $this->recipientQuery($announcement)->whereKey($user->id)->exists();
     }
 
     public function urlForRecipient(Announcement $announcement, User $recipient): string
@@ -258,7 +285,13 @@ class AnnouncementService
         int $autoSourceId,
         User $actor,
         AnnouncementPriority $priority = AnnouncementPriority::Normal,
+        bool $publish = false,
+        array $audiences = [],
     ): Announcement {
+        $audiences = $this->normalizeAudiences($audiences === []
+            ? [AnnouncementAudience::Students->value]
+            : $audiences);
+
         return Announcement::query()->create([
             'title' => $title,
             'slug' => SlugGenerator::unique($title, Announcement::class),
@@ -266,12 +299,14 @@ class AnnouncementService
             'body' => $body,
             'category' => $category,
             'priority' => $priority,
-            'target_audiences' => [AnnouncementAudience::AllUsers->value],
+            'target_audiences' => $audiences,
             'related_module' => $relatedModule,
             'related_id' => $relatedId,
-            'is_published' => false,
-            'status' => AnnouncementStatus::Draft,
-            'notify_in_app' => true,
+            'is_published' => $publish,
+            'status' => $publish ? AnnouncementStatus::Published : AnnouncementStatus::Draft,
+            'published_at' => $publish ? now() : null,
+            'notify_in_app' => ! $publish,
+            'send_email' => false,
             'show_on_dashboard' => true,
             'is_auto_generated' => true,
             'auto_source_type' => $autoSourceType,
@@ -293,6 +328,7 @@ class AnnouncementService
             autoSourceType: 'election_created',
             autoSourceId: $election->id,
             actor: $actor,
+            publish: $election->status === ElectionStatus::Active,
         );
     }
 
@@ -308,6 +344,7 @@ class AnnouncementService
             autoSourceType: 'talent_registration_open',
             autoSourceId: $event->id,
             actor: $actor,
+            publish: true,
         );
     }
 
@@ -323,6 +360,7 @@ class AnnouncementService
             autoSourceType: 'fundraiser_started',
             autoSourceId: $fundraiser->id,
             actor: $actor,
+            publish: $fundraiser->isAcceptingDonations(),
         );
     }
 
@@ -343,6 +381,7 @@ class AnnouncementService
             autoSourceId: $relatedId,
             actor: $actor,
             priority: AnnouncementPriority::High,
+            publish: true,
         );
     }
 
@@ -358,6 +397,11 @@ class AnnouncementService
             autoSourceType: 'school_event_created',
             autoSourceId: $event->id,
             actor: $actor,
+            publish: true,
+            audiences: [
+                AnnouncementAudience::Students->value,
+                AnnouncementAudience::Faculty->value,
+            ],
         );
     }
 
@@ -377,71 +421,99 @@ class AnnouncementService
             return User::query()->where('is_active', true);
         }
 
-        return User::query()
-            ->where('is_active', true)
-            ->where(function (Builder $query) use ($audiences, $announcement) {
-                if (in_array(AnnouncementAudience::Students->value, $audiences, true)) {
-                    $query->orWhere('role', UserRole::Student);
-                }
+        $query = User::query()->where('is_active', true)->where(function (Builder $query) use ($audiences, $announcement) {
+            $matched = false;
+            $includeStudents = in_array(AnnouncementAudience::Students->value, $audiences, true)
+                || in_array(AnnouncementAudience::SpecificGrade->value, $audiences, true)
+                || in_array(AnnouncementAudience::SpecificSection->value, $audiences, true);
 
-                if (in_array(AnnouncementAudience::Faculty->value, $audiences, true)) {
-                    $query->orWhere('role', UserRole::Faculty);
-                }
+            if ($includeStudents) {
+                $matched = true;
+                $query->orWhere(function (Builder $students) use ($audiences, $announcement) {
+                    $students->where('role', UserRole::Student);
 
-                if (in_array(AnnouncementAudience::Administrators->value, $audiences, true)) {
-                    $query->orWhere('role', UserRole::Admin);
-                }
-
-                if (in_array(AnnouncementAudience::SuperAdministrators->value, $audiences, true)) {
-                    $query->orWhere('role', UserRole::SuperAdmin);
-                }
-
-                if (in_array(AnnouncementAudience::SpecificGrade->value, $audiences, true) && $announcement->target_grade_level) {
-                    $query->orWhere(function (Builder $inner) use ($announcement) {
-                        $inner->where('role', UserRole::Student)
-                            ->where('grade_level', $announcement->target_grade_level);
-                    });
-                }
-
-                if (in_array(AnnouncementAudience::SpecificSection->value, $audiences, true) && $announcement->target_section) {
-                    $query->orWhere(function (Builder $inner) use ($announcement) {
-                        $inner->where('role', UserRole::Student)
-                            ->where('section', $announcement->target_section);
-                    });
-                }
-
-                if (in_array(AnnouncementAudience::ElectionCandidates->value, $audiences, true)) {
-                    $candidateUserIds = Candidate::query()
-                        ->where('is_active', true)
-                        ->whereNotNull('user_id')
-                        ->pluck('user_id');
-
-                    if ($candidateUserIds->isNotEmpty()) {
-                        $query->orWhereIn('id', $candidateUserIds);
+                    if (in_array(AnnouncementAudience::SpecificGrade->value, $audiences, true) && $announcement->target_grade_level) {
+                        $students->where('grade_level', $announcement->target_grade_level);
                     }
-                }
 
-                if (in_array(AnnouncementAudience::TalentParticipants->value, $audiences, true)) {
-                    $participantUserIds = TalentEventEntry::query()
-                        ->whereNotNull('user_id')
-                        ->pluck('user_id');
-
-                    if ($participantUserIds->isNotEmpty()) {
-                        $query->orWhereIn('id', $participantUserIds);
+                    if (in_array(AnnouncementAudience::SpecificSection->value, $audiences, true) && $announcement->target_section) {
+                        $students->where('section', $announcement->target_section);
                     }
+                });
+            }
+
+            if (in_array(AnnouncementAudience::Faculty->value, $audiences, true)) {
+                $matched = true;
+                $query->orWhere('role', UserRole::Faculty);
+            }
+
+            if (in_array(AnnouncementAudience::Administrators->value, $audiences, true)) {
+                $matched = true;
+                $query->orWhere('role', UserRole::Admin);
+            }
+
+            if (in_array(AnnouncementAudience::SuperAdministrators->value, $audiences, true)) {
+                $matched = true;
+                $query->orWhere('role', UserRole::SuperAdmin);
+            }
+
+            if (in_array(AnnouncementAudience::ElectionCandidates->value, $audiences, true)) {
+                $candidateQuery = Candidate::query()
+                    ->where('is_active', true)
+                    ->whereNotNull('user_id');
+
+                if ($announcement->related_module === AnnouncementRelatedModule::Election && $announcement->related_id) {
+                    $candidateQuery->where('election_id', $announcement->related_id);
                 }
 
-                if (in_array(AnnouncementAudience::FundraisingDonors->value, $audiences, true)) {
-                    $donorUserIds = Donation::query()
-                        ->whereNotNull('user_id')
-                        ->distinct()
-                        ->pluck('user_id');
+                $candidateUserIds = $candidateQuery->pluck('user_id');
 
-                    if ($donorUserIds->isNotEmpty()) {
-                        $query->orWhereIn('id', $donorUserIds);
-                    }
+                if ($candidateUserIds->isNotEmpty()) {
+                    $matched = true;
+                    $query->orWhereIn('id', $candidateUserIds);
                 }
-            });
+            }
+
+            if (in_array(AnnouncementAudience::TalentParticipants->value, $audiences, true)) {
+                $participantQuery = TalentEventEntry::query()
+                    ->where('status', TalentEventEntry::STATUS_APPROVED)
+                    ->whereNotNull('user_id');
+
+                if ($announcement->related_module === AnnouncementRelatedModule::TalentCompetition && $announcement->related_id) {
+                    $participantQuery->where('talent_event_id', $announcement->related_id);
+                }
+
+                $participantUserIds = $participantQuery->pluck('user_id');
+
+                if ($participantUserIds->isNotEmpty()) {
+                    $matched = true;
+                    $query->orWhereIn('id', $participantUserIds);
+                }
+            }
+
+            if (in_array(AnnouncementAudience::FundraisingDonors->value, $audiences, true)) {
+                $donorQuery = Donation::query()
+                    ->paid()
+                    ->whereNotNull('user_id');
+
+                if ($announcement->related_module === AnnouncementRelatedModule::Fundraising && $announcement->related_id) {
+                    $donorQuery->where('fundraiser_id', $announcement->related_id);
+                }
+
+                $donorUserIds = $donorQuery->distinct()->pluck('user_id');
+
+                if ($donorUserIds->isNotEmpty()) {
+                    $matched = true;
+                    $query->orWhereIn('id', $donorUserIds);
+                }
+            }
+
+            if (! $matched) {
+                $query->whereRaw('0 = 1');
+            }
+        });
+
+        return $query;
     }
 
     /**
@@ -454,7 +526,7 @@ class AnnouncementService
             $audiences,
         )));
 
-        return $values === [] ? [AnnouncementAudience::AllUsers->value] : $values;
+        return $values === [] ? [AnnouncementAudience::Students->value] : $values;
     }
 
     /**

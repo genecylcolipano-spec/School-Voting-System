@@ -14,11 +14,14 @@
         || $statusValue === 'results_published'
         || $statusValue === 'archived';
 
+    $rankingRows = collect(app(\App\Services\Talent\TalentResultsRankingService::class)->rankings($event))->keyBy('id');
     $rankedEntries = $event->entries
-        ->sortByDesc(fn ($entry) => (int) ($entry->votes_count ?? 0))
+        ->filter(fn ($entry) => $rankingRows->has($entry->id))
+        ->sortBy(fn ($entry) => (int) $rankingRows[$entry->id]['rank'])
         ->values()
-        ->map(function ($entry, $index) {
-            $entry->setAttribute('computed_rank', $index + 1);
+        ->map(function ($entry) use ($rankingRows) {
+            $entry->setAttribute('computed_rank', (int) $rankingRows[$entry->id]['rank']);
+            $entry->setAttribute('ranking_metric', $rankingRows[$entry->id]['votes']);
             return $entry;
         });
 
@@ -243,7 +246,7 @@
                 </form>
             @endif
 
-            @if ($canPublishTalentResults && in_array($statusValue, ['voting_open', 'voting_closed', 'voting_paused'], true))
+            @if ($canPublishTalentResults && $event->votingHasClosed() && ! $event->hasPublishedResults())
                 <form method="POST" action="{{ route('admin.talent.publish-results', $event) }}" data-confirm-sensitive data-confirm-title="Publish official results?" class="inline">
                     @csrf
                     <button type="submit" class="tc-btn tc-btn--primary">🏆 Publish Results</button>

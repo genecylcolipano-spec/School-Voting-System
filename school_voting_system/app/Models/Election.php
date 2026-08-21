@@ -124,6 +124,45 @@ class Election extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function isVisibleToCampus(): bool
+    {
+        if ($this->annulled_at) {
+            return false;
+        }
+
+        return ! in_array($this->status, [ElectionStatus::Draft, ElectionStatus::Archived], true);
+    }
+
+    public function scopeVisibleToCampus(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('annulled_at')
+            ->whereNotIn('status', [ElectionStatus::Draft, ElectionStatus::Archived]);
+    }
+
+    /**
+     * Keep the scheduler in sync with the voting window on the election form.
+     *
+     * @return array{scheduled_open_at: mixed, scheduled_close_at: mixed}
+     */
+    public static function scheduleAttributes(ElectionStatus $status, mixed $starts, mixed $ends): array
+    {
+        return match ($status) {
+            ElectionStatus::Draft => [
+                'scheduled_open_at' => $starts,
+                'scheduled_close_at' => $ends,
+            ],
+            ElectionStatus::Active => [
+                'scheduled_open_at' => null,
+                'scheduled_close_at' => $ends,
+            ],
+            default => [
+                'scheduled_open_at' => null,
+                'scheduled_close_at' => null,
+            ],
+        };
+    }
+
     public function resultsPublisher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'results_published_by');

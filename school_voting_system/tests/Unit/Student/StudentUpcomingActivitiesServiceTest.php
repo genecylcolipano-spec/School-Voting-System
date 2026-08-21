@@ -130,6 +130,44 @@ class StudentUpcomingActivitiesServiceTest extends TestCase
         $this->assertTrue($rows->where('title', 'Draft Drive')->isEmpty());
     }
 
+    public function test_cancelled_school_event_is_hidden_from_upcoming(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        Event::query()->create([
+            'title' => 'Cancelled Intramurals',
+            'slug' => 'cancelled-intramurals',
+            'event_date' => now()->addDays(4),
+            'venue' => 'Main Gym',
+            'status' => EventStatus::Cancelled,
+            'created_by' => $admin->id,
+        ]);
+
+        $rows = $this->service->forDashboard();
+
+        $this->assertTrue($rows->where('title', 'Cancelled Intramurals')->isEmpty());
+    }
+
+    public function test_past_scheduled_school_event_shows_as_completed(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        Event::query()->create([
+            'title' => 'Last Week Assembly',
+            'slug' => 'last-week-assembly',
+            'event_date' => now()->subDays(3),
+            'venue' => 'AVR',
+            'status' => EventStatus::Scheduled,
+            'created_by' => $admin->id,
+        ]);
+
+        $row = $this->service->forDashboard()->firstWhere('title', 'Last Week Assembly');
+
+        $this->assertNotNull($row);
+        $this->assertSame('completed', $row['status_key']);
+        $this->assertSame('Completed', $row['status_label']);
+    }
+
     public function test_active_fundraiser_shows_donate_action(): void
     {
         $admin = User::factory()->admin()->create();

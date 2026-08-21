@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\ElectionStatus;
 use App\Enums\UserRole;
 use App\Models\Election;
+use App\Models\Event;
 use App\Models\User;
 use App\Services\SuperAdmin\ElectionLifecycleService;
 use Illuminate\Console\Command;
@@ -13,10 +14,16 @@ class ProcessScheduledElectionsCommand extends Command
 {
     protected $signature = 'portal:process-scheduled-elections';
 
-    protected $description = 'Open or close elections whose scheduled_open_at / scheduled_close_at have elapsed';
+    protected $description = 'Open or close elections whose scheduled or voting window times have elapsed';
 
     public function handle(ElectionLifecycleService $lifecycle): int
     {
+        $completedEvents = Event::markOverdueAsCompleted();
+
+        if ($completedEvents > 0) {
+            $this->line("Marked {$completedEvents} overdue school event(s) as completed.");
+        }
+
         $actor = User::query()
             ->where('role', UserRole::SuperAdmin)
             ->where('is_active', true)
@@ -34,10 +41,18 @@ class ProcessScheduledElectionsCommand extends Command
         $now = now();
 
         Election::query()
-            ->whereNotNull('scheduled_open_at')
-            ->where('scheduled_open_at', '<=', $now)
             ->whereNull('annulled_at')
-            ->whereIn('status', [ElectionStatus::Draft])
+            ->where('status', ElectionStatus::Draft)
+            ->where(function ($query) use ($now) {
+                $query->where(function ($scheduled) use ($now) {
+                    $scheduled->whereNotNull('scheduled_open_at')
+                        ->where('scheduled_open_at', '<=', $now);
+                })->orWhere(function ($window) use ($now) {
+                    $window->whereNull('scheduled_open_at')
+                        ->whereNotNull('voting_starts_at')
+                        ->where('voting_starts_at', '<=', $now);
+                });
+            })
             ->orderBy('id')
             ->each(function (Election $election) use ($lifecycle, $actor, &$opened) {
                 $lifecycle->open($election, $actor);
@@ -46,10 +61,18 @@ class ProcessScheduledElectionsCommand extends Command
             });
 
         Election::query()
-            ->whereNotNull('scheduled_close_at')
-            ->where('scheduled_close_at', '<=', $now)
             ->whereNull('annulled_at')
             ->where('status', ElectionStatus::Active)
+            ->where(function ($query) use ($now) {
+                $query->where(function ($scheduled) use ($now) {
+                    $scheduled->whereNotNull('scheduled_close_at')
+                        ->where('scheduled_close_at', '<=', $now);
+                })->orWhere(function ($window) use ($now) {
+                    $window->whereNull('scheduled_close_at')
+                        ->whereNotNull('voting_ends_at')
+                        ->where('voting_ends_at', '<=', $now);
+                });
+            })
             ->orderBy('id')
             ->each(function (Election $election) use ($lifecycle, $actor, &$closed) {
                 $lifecycle->close($election, $actor);

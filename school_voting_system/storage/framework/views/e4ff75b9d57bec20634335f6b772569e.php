@@ -186,6 +186,9 @@
                                         <?php if(! empty($row['position'])): ?>
                                             <span class="text-xs text-slate-500"><?php echo e($row['position']); ?></span>
                                         <?php endif; ?>
+                                        <?php if(isset($row['votes'])): ?>
+                                            <span class="text-xs font-semibold text-cyan-300"><?php echo e(number_format($row['votes'], (floor((float) $row['votes']) == (float) $row['votes']) ? 0 : 2)); ?> · <?php echo e(number_format($row['percent'] ?? 0, 1)); ?>%</span>
+                                        <?php endif; ?>
                                     </li>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </ul>

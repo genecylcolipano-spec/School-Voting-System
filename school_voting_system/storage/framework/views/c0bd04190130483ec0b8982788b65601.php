@@ -36,7 +36,7 @@ unset($__defined_vars, $__key, $__value); ?>
         <?php endif; ?>
     </div>
     <?php if($action && $actionLabel && $showAction): ?>
-        <a href="<?php echo e($action); ?>" class="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:opacity-90">
+        <a href="<?php echo e($action); ?>" class="inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 sm:w-auto">
             <?php echo e($actionLabel); ?>
 
         </a>

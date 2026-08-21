@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\DonationPaymentMethod;
+use App\Enums\DonationStatus;
 use App\Enums\FundraiserCategory;
 use App\Enums\FundraiserStatus;
 use App\Enums\FundraiserVisibility;
@@ -36,6 +38,7 @@ class Fundraiser extends Model
         'accept_cash',
         'accept_gcash',
         'accept_maya',
+        'accept_qrph',
         'accept_bank_transfer',
         'banner_path',
         'banner_variants',
@@ -63,6 +66,7 @@ class Fundraiser extends Model
             'accept_cash' => 'boolean',
             'accept_gcash' => 'boolean',
             'accept_maya' => 'boolean',
+            'accept_qrph' => 'boolean',
             'accept_bank_transfer' => 'boolean',
             'is_featured' => 'boolean',
             'accept_donations' => 'boolean',
@@ -86,6 +90,22 @@ class Fundraiser extends Model
     public function donations(): HasMany
     {
         return $this->hasMany(Donation::class);
+    }
+
+    public function paidDonations(): HasMany
+    {
+        return $this->donations()->paid();
+    }
+
+    /**
+     * @return list<DonationPaymentMethod>
+     */
+    public function acceptedPaymentMethods(): array
+    {
+        return array_values(array_filter(
+            DonationPaymentMethod::cases(),
+            fn (DonationPaymentMethod $method) => $method->isAcceptedBy($this),
+        ));
     }
 
     public function progressPercent(): float
@@ -127,7 +147,7 @@ class Fundraiser extends Model
             return (int) $this->attributes['unique_donors_count'];
         }
 
-        return (int) $this->donations()->distinct('user_id')->count('user_id');
+        return (int) $this->paidDonations()->distinct('user_id')->count('user_id');
     }
 
     /**
@@ -191,11 +211,17 @@ class Fundraiser extends Model
         return true;
     }
 
+    public static function defaultMinimumDonationAmount(): float
+    {
+        return max(1.0, (float) config('services.paymongo.min_amount', 20));
+    }
+
     public function minimumDonationAmount(): float
     {
         $min = (float) ($this->min_donation ?? 0);
+        $default = static::defaultMinimumDonationAmount();
 
-        return $min > 0 ? $min : 1.0;
+        return $min > 0 ? max($default, $min) : $default;
     }
 
     public function maximumDonationAmount(): ?float
@@ -221,18 +247,23 @@ class Fundraiser extends Model
      */
     public function donationStatistics(): array
     {
-        $query = $this->donations();
-        $total = (int) (clone $query)->count();
-        $sum = (float) (clone $query)->sum('amount');
-        $largest = (float) (clone $query)->max('amount');
+        $rows = $this->donations()
+            ->selectRaw('status, COUNT(*) as aggregate_count, SUM(amount) as aggregate_sum, MAX(amount) as aggregate_max')
+            ->groupBy('status')
+            ->get()
+            ->keyBy(fn ($row) => $row->status?->value ?? (string) $row->status);
+
+        $countFor = fn (string $status): int => (int) ($rows[$status]->aggregate_count ?? 0);
+        $successful = $countFor(DonationStatus::Paid->value);
+        $sum = (float) ($rows[DonationStatus::Paid->value]->aggregate_sum ?? 0);
+        $largest = (float) ($rows[DonationStatus::Paid->value]->aggregate_max ?? 0);
 
         return [
-            'total' => $total,
-            // Current donations table has no pending/cancelled states — all recorded rows are successful.
-            'successful' => $total,
-            'pending' => 0,
-            'cancelled' => 0,
-            'average' => $total > 0 ? round($sum / $total, 2) : 0.0,
+            'total' => $rows->sum(fn ($row) => (int) $row->aggregate_count),
+            'successful' => $successful,
+            'pending' => $countFor(DonationStatus::Pending->value),
+            'cancelled' => $countFor(DonationStatus::Cancelled->value) + $countFor(DonationStatus::Failed->value),
+            'average' => $successful > 0 ? round($sum / $successful, 2) : 0.0,
             'largest' => $largest,
         ];
     }

@@ -136,7 +136,7 @@ class AdminReportController extends Controller
                 'campaigns' => $fundraisers->count(),
                 'total_goal' => (float) $fundraisers->sum(fn (Fundraiser $f) => (float) $f->goal_amount),
                 'total_raised' => (float) $fundraisers->sum(fn (Fundraiser $f) => (float) $f->amount_raised),
-                'total_donations' => Donation::query()->count(),
+                'total_donations' => Donation::query()->paid()->count(),
             ],
         ]);
     }

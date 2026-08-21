@@ -367,6 +367,20 @@ class PortalNotificationDeliveryTest extends TestCase
         );
     }
 
+    public function test_scheduled_election_command_closes_when_voting_end_elapsed(): void
+    {
+        User::factory()->superAdmin()->create();
+        $election = Election::factory()->active()->create([
+            'title' => 'Should Close',
+            'voting_ends_at' => now()->subMinute(),
+            'scheduled_close_at' => null,
+        ]);
+
+        Artisan::call('portal:process-scheduled-elections');
+
+        $this->assertSame(ElectionStatus::Closed, $election->fresh()->status);
+    }
+
     public function test_prune_notifications_removes_old_read_rows(): void
     {
         $student = User::factory()->create();

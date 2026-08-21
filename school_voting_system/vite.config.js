@@ -10,6 +10,7 @@ export default defineConfig({
                 'resources/css/admin-results.css',
                 'resources/css/admin-talent-competition.css',
                 'resources/js/app.js',
+                'resources/js/auto-capitalize.js',
                 'resources/js/passkey-auth.js',
                 'resources/js/passkey-register.js',
                 'resources/js/passkey-devices.js',

@@ -1,12 +1,12 @@
 <x-app-layout>
     <div class="min-h-screen bg-slate-950 text-slate-100">
         <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-            <div class="mb-6 flex items-center justify-between gap-4">
+            <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 class="text-2xl font-bold text-white">Voting</h1>
                     <p class="mt-1 text-sm text-slate-400">Open elections and voting history.</p>
                 </div>
-                <a href="{{ route('student.dashboard') }}" class="rounded-xl border border-cyan-500/25 bg-slate-900 px-4 py-2 text-sm font-semibold text-cyan-300 hover:bg-slate-800">
+                <a href="{{ route('student.dashboard') }}" class="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-cyan-500/25 bg-slate-900 px-4 py-2 text-sm font-semibold text-cyan-300 hover:bg-slate-800 sm:w-auto">
                     Back to dashboard
                 </a>
             </div>
@@ -26,15 +26,15 @@
             <div class="space-y-4">
                 @forelse ($elections as $election)
                     <article class="rounded-2xl border border-cyan-500/15 bg-slate-900/70 p-5">
-                        <div class="flex flex-wrap items-start justify-between gap-4">
-                            <div>
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="min-w-0">
                                 <h2 class="text-lg font-semibold text-white">{{ $election->title }}</h2>
                                 @if ($election->description)
                                     <p class="mt-1 text-sm text-slate-300 line-clamp-2">{{ $election->description }}</p>
                                 @endif
                             </div>
-                            <div class="text-right">
-                                <p class="text-xs uppercase tracking-wide text-slate-500">{{ $election->status?->value ?? $election->status }}</p>
+                            <div class="sm:shrink-0 sm:text-right">
+                                <p class="text-xs uppercase tracking-wide text-slate-500">{{ $election->status?->label() ?? $election->status }}</p>
                                 <p class="mt-1 text-xs text-slate-400">
                                     @if ($election->voting_starts_at)
                                         Starts: {{ $election->voting_starts_at->format('M d, Y g:i A') }}
@@ -60,7 +60,7 @@
                                     <p class="mt-1 text-sm text-emerald-100/70">{{ $availability['submessage'] }}</p>
                                 @endif
                             </div>
-                            <a href="{{ route('student.voting.show', $election) }}" class="mt-4 inline-block rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-4 py-2 text-sm font-semibold text-slate-950">
+                            <a href="{{ route('student.voting.show', $election) }}" class="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 sm:w-auto">
                                 Vote Now
                             </a>
                         @elseif ($availability['state'] === 'voted')
@@ -81,7 +81,7 @@
                                     <p class="mt-1 text-sm text-emerald-100/70">{{ $availability['submessage'] }}</p>
                                 @endif
                             </div>
-                            <a href="{{ route('student.results.election.show', $election) }}" class="mt-4 inline-block rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-4 py-2 text-sm font-semibold text-slate-950">
+                            <a href="{{ route('student.results.election.show', $election) }}" class="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 sm:w-auto">
                                 View Results
                             </a>
                         @elseif ($availability['state'] === 'not_started')

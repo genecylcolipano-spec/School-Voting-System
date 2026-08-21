@@ -37,7 +37,7 @@ class PasskeyRecoveryController extends Controller
         ]);
     }
 
-    public function requestReset(Request $request): JsonResponse
+    public function requestReset(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'account_id' => ['required', 'string', 'max:50'],
@@ -62,9 +62,11 @@ class PasskeyRecoveryController extends Controller
                 'ip' => $ip,
             ]);
 
-            return response()->json([
-                'message' => 'Too many reset requests. Please wait a few minutes and try again.',
-            ], 429);
+            return $this->resetRequestResponse(
+                $request,
+                'Too many reset requests. Please wait a few minutes and try again.',
+                429,
+            );
         }
 
         RateLimiter::hit($accountLimiterKey, 600);
@@ -91,7 +93,7 @@ class PasskeyRecoveryController extends Controller
                 'ip' => $ip,
             ]);
 
-            return response()->json(['message' => $genericMessage]);
+            return $this->resetRequestResponse($request, $genericMessage);
         }
 
         $cooldownKey = 'passkey-recovery-cooldown:'.$user->id;
@@ -103,7 +105,7 @@ class PasskeyRecoveryController extends Controller
                 'ip' => $ip,
             ]);
 
-            return response()->json(['message' => $genericMessage]);
+            return $this->resetRequestResponse($request, $genericMessage);
         }
 
         $issued = $this->recoveryTokens->issueAndEmail(
@@ -114,15 +116,39 @@ class PasskeyRecoveryController extends Controller
         );
 
         if (! $issued['email_sent']) {
-            return response()->json([
-                'message' => 'We could not deliver a reset email right now. Please try again later or contact an administrator.',
-                'delivery_failed' => true,
-            ], 503);
+            return $this->resetRequestResponse(
+                $request,
+                'We could not deliver a reset email right now. Please try again later or contact an administrator.',
+                503,
+                ['delivery_failed' => true],
+            );
         }
 
         RateLimiter::hit($cooldownKey, 120);
 
-        return response()->json(['message' => $genericMessage]);
+        return $this->resetRequestResponse($request, $genericMessage);
+    }
+
+    /**
+     * JSON for the recovery page script; HTML redirect when JavaScript is unavailable.
+     *
+     * @param  array<string, mixed>  $extra
+     */
+    protected function resetRequestResponse(
+        Request $request,
+        string $message,
+        int $status = 200,
+        array $extra = [],
+    ): JsonResponse|RedirectResponse {
+        if ($request->expectsJson()) {
+            return response()->json(array_merge(['message' => $message], $extra), $status);
+        }
+
+        if ($status >= 400) {
+            return back()->withInput()->with('error', $message);
+        }
+
+        return back()->with('status', $message);
     }
 
     /**
@@ -139,7 +165,7 @@ class PasskeyRecoveryController extends Controller
             ]);
 
             return redirect()->route('login.recovery')->with(
-                'status',
+                'error',
                 'The link is no longer valid.',
             );
         }
@@ -156,12 +182,12 @@ class PasskeyRecoveryController extends Controller
                 ? 'The reset link has expired.'
                 : 'The link is no longer valid.';
 
-            return redirect()->route('login.recovery')->with('status', $message);
+            return redirect()->route('login.recovery')->with('error', $message);
         }
 
         $user = $recovery->user;
         if (! $user) {
-            return redirect()->route('login.recovery')->with('status', 'The link is no longer valid.');
+            return redirect()->route('login.recovery')->with('error', 'The link is no longer valid.');
         }
 
         if ($request->user()) {

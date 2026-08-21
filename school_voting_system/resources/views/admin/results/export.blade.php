@@ -145,16 +145,16 @@
         }
 
         .logo-wrap {
-            width: 90px;
-            height: 90px;
+            width: 240px;
+            height: 170px;
             margin: 0 auto 0.65rem;
             display: block;
             text-align: center;
         }
 
         .logo-wrap img {
-            width: 90px;
-            height: 90px;
+            width: 240px;
+            height: 170px;
             object-fit: contain;
             object-position: center;
             display: inline-block;
@@ -167,7 +167,7 @@
         .institution .school-name {
             margin: 0;
             font-family: 'Monotype Corsiva', 'Apple Chancery', cursive;
-            font-size: 18pt;
+            font-size: 32pt;
             font-weight: normal;
             letter-spacing: 0.02em;
             color: #1e3a8a;
@@ -523,8 +523,8 @@
                 <img
                     src="{{ $schoolLogoSrc }}"
                     alt="{{ $schoolName }} logo"
-                    width="80"
-                    height="80"
+                    width="220"
+                    height="170"
                 >
             </div>
             <div class="institution">
@@ -625,7 +625,7 @@
                         <th>Contestant / Candidate</th>
                         <th>Position</th>
                         <th>Party</th>
-                        <th>Votes</th>
+                        <th>{{ $detail['ranking_metric_label'] ?? 'Votes' }}</th>
                         <th>Percentage</th>
                         <th>Status</th>
                     </tr>
@@ -637,7 +637,7 @@
                             <td>{{ $row['name'] }}</td>
                             <td>{{ $row['position'] }}</td>
                             <td>{{ $row['party'] }}</td>
-                            <td>{{ number_format($row['votes']) }}</td>
+                            <td>{{ number_format($row['votes'], (floor((float) ($row['votes'] ?? 0)) == (float) ($row['votes'] ?? 0)) ? 0 : 2) }}</td>
                             <td>{{ number_format($row['percent'], 1) }}%</td>
                             <td>
                                 @if (($row['status'] ?? '') === 'Winner')

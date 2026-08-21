@@ -70,6 +70,12 @@ class AdminElectionController extends Controller
     public function store(StoreElectionRequest $request): RedirectResponse
     {
         $validated = $request->validated();
+        $requestedStatus = $validated['status'] instanceof ElectionStatus
+            ? $validated['status']
+            : ElectionStatus::from((string) $validated['status']);
+        $initialStatus = $requestedStatus === ElectionStatus::Active
+            ? ElectionStatus::Draft
+            : $requestedStatus;
 
         $election = Election::query()->create([
             'title' => $validated['title'],
@@ -77,8 +83,13 @@ class AdminElectionController extends Controller
             'description' => $validated['description'] ?? null,
             'voting_starts_at' => $validated['voting_starts_at'] ?? null,
             'voting_ends_at' => $validated['voting_ends_at'] ?? null,
-            'status' => $validated['status'],
+            'status' => $initialStatus,
             'created_by' => $request->user()->id,
+            ...Election::scheduleAttributes(
+                $initialStatus,
+                $validated['voting_starts_at'] ?? null,
+                $validated['voting_ends_at'] ?? null,
+            ),
         ]);
 
         $this->setup->syncOnCreate($election, $validated);
@@ -95,17 +106,32 @@ class AdminElectionController extends Controller
             $this->scope->assignElectionToAdmin($request->user(), $election, $request->user()->id);
         }
 
-        $this->notifications->electionCreated($election, $request->user());
-        $this->announcements->generateForElectionCreated($election, $request->user());
+        $actor = $request->user();
+
+        if ($requestedStatus === ElectionStatus::Active) {
+            $this->elections->open($election->fresh(), $actor);
+            $opened = $election->fresh();
+            $opened->forceFill(Election::scheduleAttributes(
+                ElectionStatus::Active,
+                $opened->voting_starts_at,
+                $validated['voting_ends_at'] ?? $opened->voting_ends_at,
+            ))->save();
+        } else {
+            $this->notifications->electionCreated($election, $actor);
+        }
+
+        $this->announcements->generateForElectionCreated($election->fresh(), $actor);
 
         return redirect()->route('admin.elections.edit', $election)->with('success', 'Election created with positions and candidates.');
     }
 
     public function edit(Request $request, Election $election): View
     {
-        $this->authorize('view', $election);
+        $this->authorize('update', $election);
 
-        $election->load(['categories', 'candidates.category', 'candidates.partylist', 'partylists']);
+        $election->load(['candidates.category', 'candidates.partylist', 'partylists']);
+        $election->loadCount(['votes']);
+        $election->load(['categories' => fn ($query) => $query->withCount('votes')]);
 
         $attachedIds = $election->partylists->pluck('id');
 
@@ -135,7 +161,9 @@ class AdminElectionController extends Controller
 
         $election->update([
             'title' => $validated['title'],
-            'slug' => SlugGenerator::unique($validated['title'], Election::class, $election->id),
+            'slug' => $election->title !== $validated['title']
+                ? SlugGenerator::unique($validated['title'], Election::class, $election->id)
+                : $election->slug,
             'description' => $validated['description'] ?? null,
             'voting_starts_at' => $validated['voting_starts_at'] ?? null,
             'voting_ends_at' => $validated['voting_ends_at'] ?? null,
@@ -163,6 +191,13 @@ class AdminElectionController extends Controller
             $election->forceFill(['status' => $newStatus])->save();
             $this->notifications->electionUpdated($election->fresh(), $actor);
         }
+
+        $election = $election->fresh();
+        $election->forceFill(Election::scheduleAttributes(
+            $election->status,
+            $election->voting_starts_at,
+            $election->voting_ends_at,
+        ))->save();
 
         return back()->with('success', 'Election updated.');
     }

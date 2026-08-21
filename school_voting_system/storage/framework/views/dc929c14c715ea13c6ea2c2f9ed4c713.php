@@ -28,6 +28,14 @@ foreach ($attributes->all() as $__key => $__value) {
 
 unset($__defined_vars, $__key, $__value); ?>
 
+<?php
+    $inputClass = 'mt-1 w-full min-w-0 rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30';
+
+    if (in_array($type, ['datetime-local', 'date', 'time'], true)) {
+        $inputClass .= ' [color-scheme:dark]';
+    }
+?>
+
 <div>
     <label for="<?php echo e($name); ?>" class="block text-sm font-medium text-slate-300"><?php echo e($label); ?></label>
     <input
@@ -37,7 +45,7 @@ unset($__defined_vars, $__key, $__value); ?>
         value="<?php echo e(old($name, $value)); ?>"
         <?php if($required): ?> required <?php endif; ?>
         <?php if($maxlength): ?> maxlength="<?php echo e($maxlength); ?>" <?php endif; ?>
-        <?php echo e($attributes->merge(['class' => 'mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30'])); ?>
+        <?php echo e($attributes->merge(['class' => $inputClass])); ?>
 
     />
     <?php $__errorArgs = [$name];

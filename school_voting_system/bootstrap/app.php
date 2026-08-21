@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule): void {
         $schedule->job(new \App\Jobs\SendTalentVotingClosingSoonJob(24))->hourly();
         $schedule->command('portal:process-scheduled-elections')->everyMinute();
+        $schedule->command('portal:process-scheduled-announcements')->everyMinute();
         $schedule->command('portal:prune-notifications')->dailyAt('03:15');
     })
     ->withMiddleware(function (Middleware $middleware): void {
@@ -22,6 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo('/dashboard');
         $middleware->web(append: [
             \App\Http\Middleware\RedirectPasskeyHostToLocalhost::class,
+        ]);
+
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/paymongo',
         ]);
 
         $middleware->alias([

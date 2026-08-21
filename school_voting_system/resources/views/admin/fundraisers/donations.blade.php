@@ -46,9 +46,12 @@
                     <tr>
                         <th class="px-4 py-3">Donor</th>
                         <th class="px-4 py-3">Campaign</th>
+                        <th class="px-4 py-3">Method</th>
+                        <th class="px-4 py-3">Status</th>
                         <th class="px-4 py-3">Message</th>
                         <th class="px-4 py-3">Date</th>
                         <th class="px-4 py-3 text-right">Amount</th>
+                        <th class="px-4 py-3"></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-800">
@@ -58,12 +61,29 @@
                                 {{ $donation->is_anonymous ? 'Anonymous' : ($donation->donor?->name ?? '—') }}
                             </td>
                             <td class="px-4 py-3">{{ $donation->fundraiser?->title ?? '—' }}</td>
+                            <td class="px-4 py-3 text-xs text-slate-400">{{ $donation->payment_method?->label() ?? '—' }}</td>
+                            <td class="px-4 py-3">
+                                @php $status = $donation->status; @endphp
+                                <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold
+                                    {{ $status === \App\Enums\DonationStatus::Paid ? 'bg-emerald-500/10 text-emerald-200' : '' }}
+                                    {{ $status === \App\Enums\DonationStatus::Pending ? 'bg-amber-500/10 text-amber-200' : '' }}
+                                    {{ in_array($status, [\App\Enums\DonationStatus::Failed, \App\Enums\DonationStatus::Cancelled], true) ? 'bg-slate-800 text-slate-400' : '' }}
+                                ">{{ $status?->label() ?? '—' }}</span>
+                            </td>
                             <td class="max-w-xs truncate px-4 py-3 text-slate-400">{{ $donation->message ?: '—' }}</td>
                             <td class="px-4 py-3 text-xs text-slate-400">{{ optional($donation->donated_at)->format('M d, Y g:i A') }}</td>
                             <td class="px-4 py-3 text-right font-bold text-emerald-300">₱{{ number_format((float) $donation->amount, 2) }}</td>
+                            <td class="px-4 py-3 text-right">
+                                @if ($donation->isPending() && ! $donation->payment_method?->isOnline())
+                                    <form method="POST" action="{{ route('admin.fundraisers.donations.confirm', $donation) }}">
+                                        @csrf
+                                        <button type="submit" class="text-xs font-semibold text-violet-300 hover:text-violet-200">Confirm</button>
+                                    </form>
+                                @endif
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="px-4 py-10 text-center text-slate-400">No donations recorded yet.</td></tr>
+                        <tr><td colspan="8" class="px-4 py-10 text-center text-slate-400">No donations recorded yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>

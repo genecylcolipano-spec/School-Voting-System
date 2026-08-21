@@ -10,12 +10,12 @@
 <?php $component->withAttributes([]); ?>
     <div class="min-h-screen bg-slate-950 text-slate-100">
         <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-            <div class="mb-6 flex items-center justify-between gap-4">
+            <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 class="text-2xl font-bold text-white">Events</h1>
                     <p class="mt-1 text-sm text-slate-400">Browse school events and announcements.</p>
                 </div>
-                <a href="<?php echo e(route('student.dashboard')); ?>" class="rounded-xl border border-cyan-500/25 bg-slate-900 px-4 py-2 text-sm font-semibold text-cyan-300 hover:bg-slate-800">
+                <a href="<?php echo e(route('student.dashboard')); ?>" class="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-cyan-500/25 bg-slate-900 px-4 py-2 text-sm font-semibold text-cyan-300 hover:bg-slate-800 sm:w-auto">
                     Back to dashboard
                 </a>
             </div>
@@ -43,16 +43,19 @@
 <?php $component = $__componentOriginalb4ae95e62e8615350ae7fdaa410354d0; ?>
 <?php unset($__componentOriginalb4ae95e62e8615350ae7fdaa410354d0); ?>
 <?php endif; ?>
-                        <div class="p-5">
-                            <div class="flex items-start justify-between gap-3">
-                                <h2 class="text-lg font-semibold text-white"><?php echo e($event->title); ?></h2>
-                                <span class="shrink-0 text-xs text-slate-400"><?php echo e(optional($event->event_date)->format('M d, Y')); ?></span>
+                        <div class="p-4 sm:p-5">
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <h2 class="min-w-0 text-lg font-semibold text-white"><?php echo e($event->title); ?></h2>
+                            <div class="sm:shrink-0 sm:text-right">
+                                <span class="block text-xs text-slate-400"><?php echo e(optional($event->event_date)->format('M d, Y')); ?></span>
+                                <span class="mt-1 inline-block text-[10px] font-semibold uppercase tracking-wide text-slate-500"><?php echo e($event->displayStatusLabel()); ?></span>
                             </div>
+                        </div>
                             <p class="mt-2 text-sm text-slate-400"><?php echo e($event->venue); ?></p>
                             <?php if($event->description): ?>
                                 <p class="mt-3 text-sm text-slate-300 line-clamp-3"><?php echo e($event->description); ?></p>
                             <?php endif; ?>
-                            <a href="<?php echo e(route('student.events.show', $event)); ?>" class="mt-4 inline-block rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-4 py-2 text-sm font-semibold text-slate-950">
+                            <a href="<?php echo e(route('student.events.show', $event)); ?>" class="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 sm:w-auto">
                                 View details
                             </a>
                         </div>
@@ -64,7 +67,7 @@
                 <?php endif; ?>
             </div>
 
-            <div class="mt-6">
+            <div class="mt-6 overflow-x-auto">
                 <?php echo e($events->links()); ?>
 
             </div>

@@ -1,12 +1,12 @@
 <x-app-layout>
     <div class="min-h-screen bg-slate-950 text-slate-100">
         <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-            <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+            <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 class="text-2xl font-bold text-white">Results</h1>
                     <p class="mt-1 text-sm text-slate-400">View official results of student elections and voting events.</p>
                 </div>
-                <a href="{{ route('student.dashboard') }}" class="rounded-xl border border-cyan-500/25 bg-slate-900 px-4 py-2 text-sm font-semibold text-cyan-300 transition hover:bg-slate-800">
+                <a href="{{ route('student.dashboard') }}" class="inline-flex w-full items-center justify-center rounded-xl border border-cyan-500/25 bg-slate-900 px-4 py-2 text-sm font-semibold text-cyan-300 transition hover:bg-slate-800 sm:w-auto">
                     Back to dashboard
                 </a>
             </div>

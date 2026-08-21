@@ -20,6 +20,8 @@ class AdminEventsTalentController extends Controller
     {
         $election = $this->scope->assignedElection($request->user());
 
+        Event::markOverdueAsCompleted();
+
         $talentQuery = TalentEvent::query()->withCount('entries')->latest('event_date');
         $eventsQuery = Event::query()->latest('event_date');
 

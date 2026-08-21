@@ -235,6 +235,8 @@ class StudentUpcomingActivitiesService
      */
     protected function pushSchoolEvents(Collection $items): void
     {
+        Event::markOverdueAsCompleted();
+
         Event::query()
             ->where('status', '!=', EventStatus::Cancelled)
             ->where(function ($query) {
@@ -277,8 +279,9 @@ class StudentUpcomingActivitiesService
     protected function mapSchoolEventAction(Event $event): array
     {
         $showUrl = route('student.events.show', $event);
+        $status = $event->displayStatus();
 
-        if ($event->status === EventStatus::Completed) {
+        if ($status === EventStatus::Completed) {
             return [
                 'status_key' => 'completed',
                 'status_label' => 'Completed',

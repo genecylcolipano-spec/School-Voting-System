@@ -24,7 +24,7 @@
                     @endif
                 </div>
                 <div class="text-right">
-                    <p class="text-xs uppercase tracking-wide text-slate-500">{{ $election->status?->value ?? $election->status }}</p>
+                    <p class="text-xs uppercase tracking-wide text-slate-500">{{ $election->status?->label() ?? $election->status }}</p>
                     @if ($election->voting_starts_at)
                         <p class="mt-1 text-xs text-slate-400">Starts {{ $election->voting_starts_at->format('M d, Y g:i A') }}</p>
                     @endif

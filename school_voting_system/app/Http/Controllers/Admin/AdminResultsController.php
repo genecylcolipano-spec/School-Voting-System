@@ -83,7 +83,8 @@ class AdminResultsController extends Controller
             'detail' => $detail,
             'liveUrl' => route('admin.results.election.live', $election),
             'exportUrls' => $this->exportUrls('election', $election),
-            'backUrl' => route('admin.results.index'),
+            'backUrl' => route('admin.results.elections'),
+            'backLabel' => 'Election Results',
         ]);
     }
 
@@ -97,7 +98,8 @@ class AdminResultsController extends Controller
             'detail' => $detail,
             'liveUrl' => route('admin.results.talent.live', $talentEvent),
             'exportUrls' => $this->exportUrls('talent', $talentEvent),
-            'backUrl' => route('admin.results.index'),
+            'backUrl' => route('admin.results.competitions'),
+            'backLabel' => 'Talent Competition Results',
         ]);
     }
 
@@ -209,7 +211,8 @@ class AdminResultsController extends Controller
         ];
 
         return match ($format) {
-            'csv', 'excel' => $this->csvExport($detail, $filenameBase, $format === 'excel'),
+            'csv' => $this->csvExport($detail, $filenameBase),
+            'excel' => $this->excelExport($detail, $filenameBase),
             'pdf' => $this->downloadResultsPdf(
                 array_merge($viewData, ['forPdf' => true]),
                 $filenameBase.'.pdf',
@@ -249,16 +252,15 @@ class AdminResultsController extends Controller
             ->download($filename);
     }
 
-    protected function csvExport(array $detail, string $filenameBase, bool $asExcel): StreamedResponse
+    protected function csvExport(array $detail, string $filenameBase): StreamedResponse
     {
+        $metricLabel = $detail['ranking_metric_label'] ?? 'Votes';
         $headers = [
-            'Content-Type' => $asExcel
-                ? 'application/vnd.ms-excel; charset=UTF-8'
-                : 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filenameBase.($asExcel ? '.xls' : '.csv').'"',
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.csv"',
         ];
 
-        return response()->stream(function () use ($detail) {
+        return response()->stream(function () use ($detail, $metricLabel) {
             $handle = fopen('php://output', 'w');
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
 
@@ -266,7 +268,7 @@ class AdminResultsController extends Controller
             fputcsv($handle, ['Category', $detail['category'] ?? '']);
             fputcsv($handle, ['Status', $detail['voting_status'] ?? '']);
             fputcsv($handle, []);
-            fputcsv($handle, ['Rank', 'Name', 'Position', 'Party', 'Votes', 'Percentage', 'Status']);
+            fputcsv($handle, ['Rank', 'Name', 'Position', 'Party', $metricLabel, 'Percentage', 'Status']);
 
             foreach ($detail['rankings'] ?? [] as $row) {
                 fputcsv($handle, [
@@ -281,6 +283,58 @@ class AdminResultsController extends Controller
             }
 
             fclose($handle);
+        }, 200, $headers);
+    }
+
+    protected function excelExport(array $detail, string $filenameBase): StreamedResponse
+    {
+        $metricLabel = $detail['ranking_metric_label'] ?? 'Votes';
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
+        ];
+
+        return response()->stream(function () use ($detail, $metricLabel) {
+            $escape = static function (mixed $value): string {
+                return htmlspecialchars((string) $value, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+            };
+
+            echo '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+            echo '<?mso-application progid="Excel.Sheet"?>'."\n";
+            echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
+            echo '<Worksheet ss:Name="Results"><Table>';
+
+            $rows = [
+                ['Event', $detail['name'] ?? ''],
+                ['Category', $detail['category'] ?? ''],
+                ['Status', $detail['voting_status'] ?? ''],
+                [],
+                ['Rank', 'Name', 'Position', 'Party', $metricLabel, 'Percentage', 'Status'],
+            ];
+
+            foreach ($detail['rankings'] ?? [] as $row) {
+                $rows[] = [
+                    $row['rank'] ?? '',
+                    $row['name'] ?? '',
+                    $row['position'] ?? '',
+                    $row['party'] ?? '',
+                    $row['votes'] ?? 0,
+                    ($row['percent'] ?? 0).'%',
+                    $row['status'] ?? '',
+                ];
+            }
+
+            foreach ($rows as $cells) {
+                echo '<Row>';
+                foreach ($cells as $cell) {
+                    $numeric = is_numeric($cell) && ! str_ends_with((string) $cell, '%');
+                    $type = $numeric ? 'Number' : 'String';
+                    echo '<Cell><Data ss:Type="'.$type.'">'.$escape($cell).'</Data></Cell>';
+                }
+                echo '</Row>';
+            }
+
+            echo '</Table></Worksheet></Workbook>';
         }, 200, $headers);
     }
 }

@@ -4,6 +4,7 @@
  */
 
 import { bufferToBase64url, base64urlToBuffer } from './passkey-helpers.js';
+import './auto-capitalize.js';
 
 const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 

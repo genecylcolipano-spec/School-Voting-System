@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\Vote;
 use App\Services\Election\ElectionIntegrityService;
 use App\Services\Talent\StudentTalentService;
+use App\Services\Talent\TalentResultsRankingService;
 use App\Support\EventImageUrl;
 use App\Support\SchoolBranding;
 use App\Support\WinnerSpotlightBuilder;
@@ -29,6 +30,8 @@ class AdminResultsService
         protected AdminLiveVotingService $liveVoting,
         protected StudentTalentService $talentService,
         protected ElectionResultsPublishingService $electionPublishing,
+        protected TalentResultsPublishingService $talentPublishing,
+        protected TalentResultsRankingService $talentRankingService,
         protected ElectionIntegrityService $integrity,
     ) {}
 
@@ -165,6 +168,7 @@ class AdminResultsService
             'lifecycle_steps' => $this->electionLifecycleSteps($election),
             'winners_layout' => 'election',
             'rankings' => $rankings,
+            'ranking_metric_label' => 'Votes',
             'charts' => $this->electionCharts($rankings),
             'activity' => $this->electionActivity($election),
             'updated_at' => now()->toIso8601String(),
@@ -185,6 +189,7 @@ class AdminResultsService
     public function talentDetail(TalentEvent $talentEvent, User $admin): array
     {
         $this->assertCanViewTalentEvent($admin, $talentEvent);
+        $talentEvent->loadMissing('resultsPublisher');
 
         $isLive = $this->isTalentLive($talentEvent);
         $isFinal = $this->isTalentFinal($talentEvent);
@@ -194,7 +199,7 @@ class AdminResultsService
             abort(403, 'Unauthorized to view live vote totals.');
         }
 
-        $rankings = $this->talentRankings($talentEvent);
+        $rankings = $this->talentRankingService->rankings($talentEvent);
         $winners = $this->talentWinners($talentEvent, $rankings);
         $stats = $this->talentStats($talentEvent, $admin);
         $categoryKind = $this->talentCategoryKind($talentEvent);
@@ -202,6 +207,10 @@ class AdminResultsService
         $charts = $this->talentCharts($rankings);
         $charts['hourly'] = $timeline['hourly'];
         $charts['daily'] = $timeline['daily'];
+        $isPublished = $this->talentPublishing->isPublished($talentEvent);
+        $isReadyForReview = $this->talentPublishing->isReadyForReview($talentEvent);
+        $canPublish = $this->scope->canPublishTalentResults($admin) && $isReadyForReview;
+        $canUnpublish = $this->scope->canPublishTalentResults($admin) && $isPublished;
 
         return [
             'type' => 'talent',
@@ -221,7 +230,16 @@ class AdminResultsService
             'is_live' => $isLive,
             'is_paused' => (bool) $talentEvent->is_paused,
             'is_final' => $isFinal,
-            'live_banner' => $talentEvent->is_paused ? 'paused' : ($isLive ? 'live' : ($isFinal ? 'final' : 'idle')),
+            'is_published' => $isPublished,
+            'is_ready_for_review' => $isReadyForReview || $isPublished,
+            'can_publish' => $canPublish,
+            'can_unpublish' => $canUnpublish,
+            'publish_url' => route('admin.talent.publish-results', $talentEvent),
+            'unpublish_url' => route('admin.talent.unpublish-results', $talentEvent),
+            'results_published_at' => $talentEvent->results_published_at?->format('M d, Y g:i A'),
+            'results_published_by' => $talentEvent->resultsPublisher?->name,
+            'ranking_metric_label' => $this->talentRankingService->metricLabel($talentEvent),
+            'live_banner' => $talentEvent->is_paused ? 'paused' : ($isPublished ? 'published' : ($isLive ? 'live' : ($isFinal ? 'review' : 'idle'))),
             'summary' => [
                 'total_votes' => $stats['total_votes'],
                 'turnout_percent' => $stats['turnout_percent'],
@@ -535,22 +553,18 @@ class AdminResultsService
                 -$row['votes'],
                 strtolower($row['name']),
             ])
-            ->values();
+            ->values()
+            ->groupBy('position');
 
-        $rankByCategory = [];
         $output = [];
 
-        foreach ($ranked as $row) {
-            $categoryKey = $row['position'];
-            $rankByCategory[$categoryKey] = ($rankByCategory[$categoryKey] ?? 0) + 1;
-            $rank = $rankByCategory[$categoryKey];
-            $maxVotes = $ranked->where('position', $categoryKey)->max('votes');
-            $isWinner = $rank === 1 && $row['votes'] > 0 && $row['votes'] === $maxVotes;
-
-            $output[] = array_merge($row, [
-                'rank' => $rank,
-                'status' => $isWinner ? 'Winner' : ($row['votes'] > 0 ? 'Trailing' : 'No votes'),
-            ]);
+        foreach ($ranked as $rows) {
+            foreach ($this->talentRankingService->assignCompetitionRanks($rows->values()->all(), 'votes') as $row) {
+                $isWinner = (int) $row['rank'] === 1 && (int) $row['votes'] > 0;
+                $output[] = array_merge($row, [
+                    'status' => $isWinner ? 'Winner' : ($row['votes'] > 0 ? 'Trailing' : 'No votes'),
+                ]);
+            }
         }
 
         return $output;
@@ -589,35 +603,7 @@ class AdminResultsService
      */
     protected function talentRankings(TalentEvent $talentEvent): array
     {
-        $entries = $talentEvent->approvedEntries()
-            ->withCount('votes')
-            ->orderByDesc('votes_count')
-            ->orderBy('display_name')
-            ->get();
-
-        $totalVotes = (int) $entries->sum('votes_count');
-
-        return $entries->values()->map(function (TalentEventEntry $entry, int $index) use ($totalVotes, $talentEvent) {
-            $votes = (int) $entry->votes_count;
-            $rank = $index + 1;
-
-            return [
-                'id' => $entry->id,
-                'rank' => $rank,
-                'name' => $entry->display_name,
-                'position' => $entry->grade_level
-                    ? 'Grade '.$entry->grade_level.($entry->section ? ' · '.$entry->section : '')
-                    : 'Contestant',
-                'category' => $entry->talentCategoryLabel()
-                    ?? $talentEvent->talent_category?->label()
-                    ?? '—',
-                'party' => '—',
-                'votes' => $votes,
-                'percent' => $totalVotes > 0 ? round(($votes / $totalVotes) * 100, 1) : 0.0,
-                'status' => $rank === 1 && $votes > 0 ? 'Winner' : ($votes > 0 ? 'Finalist' : 'No votes'),
-                'photo' => $entry->photoUrl(),
-            ];
-        })->all();
+        return $this->talentRankingService->rankings($talentEvent);
     }
 
     /**
@@ -648,13 +634,37 @@ class AdminResultsService
         $winnerCount = max(1, (int) ($talentEvent->number_of_winners ?? 3));
         $labels = ['Champion', '1st Runner-up', '2nd Runner-up', '3rd Runner-up', '4th Runner-up'];
         $winners = [];
+        $labelIndex = 0;
+        $usedRanks = [];
 
-        for ($index = 0; $index < $winnerCount; $index++) {
-            $row = $rankings[$index] ?? null;
+        foreach ($rankings as $row) {
+            $rank = (int) ($row['rank'] ?? 0);
+
+            if ($rank < 1 || isset($usedRanks[$rank])) {
+                if (isset($usedRanks[$rank])) {
+                    $winners[] = [
+                        'label' => $usedRanks[$rank],
+                        'name' => $row['name'] ?? '—',
+                        'votes' => (float) ($row['votes'] ?? 0),
+                        'percent' => (float) ($row['percent'] ?? 0),
+                    ];
+                }
+
+                continue;
+            }
+
+            if ($labelIndex >= $winnerCount) {
+                break;
+            }
+
+            $label = $labels[$labelIndex] ?? 'Winner '.($labelIndex + 1);
+            $usedRanks[$rank] = $label;
+            $labelIndex++;
+
             $winners[] = [
-                'label' => $labels[$index] ?? 'Winner '.($index + 1),
+                'label' => $label,
                 'name' => $row['name'] ?? '—',
-                'votes' => (int) ($row['votes'] ?? 0),
+                'votes' => (float) ($row['votes'] ?? 0),
                 'percent' => (float) ($row['percent'] ?? 0),
             ];
         }

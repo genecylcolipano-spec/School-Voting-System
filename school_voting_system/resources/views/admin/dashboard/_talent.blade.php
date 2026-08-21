@@ -63,7 +63,7 @@
                             </form>
                         @endif
 
-                        @if ($canPublishTalentResults && in_array($talentEvent->currentStatusKey(), ['voting_open', 'voting_closed', 'voting_paused'], true))
+                        @if ($canPublishTalentResults && $talentEvent->votingHasClosed() && ! $talentEvent->hasPublishedResults())
                             <form method="POST" action="{{ route('admin.talent.publish-results', $talentEvent) }}" data-confirm-sensitive data-confirm-title="Publish results?" class="inline">
                                 @csrf
                                 <button type="submit" class="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-500">Publish Results</button>

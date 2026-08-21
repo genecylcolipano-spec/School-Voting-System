@@ -23,6 +23,9 @@ class UpdateElectionRequest extends ElectionFormRequest
             $this->participatingCampaignRules(),
             $this->candidateRules('new_candidates', useCategoryId: true),
             [
+                'existing_positions' => ['nullable', 'array'],
+                'existing_positions.*.name' => ['nullable', 'string', 'max:255'],
+                'existing_positions.*.remove' => ['nullable', 'boolean'],
                 'existing_candidates' => ['nullable', 'array'],
                 'existing_candidates.*.display_name' => ['nullable', 'string', 'max:255'],
                 'existing_candidates.*.election_category_id' => ['nullable', 'exists:election_categories,id'],

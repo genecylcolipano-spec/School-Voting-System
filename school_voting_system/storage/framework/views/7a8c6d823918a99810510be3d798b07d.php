@@ -120,7 +120,7 @@
                             </form>
                         <?php endif; ?>
 
-                        <?php if($canPublishTalentResults && in_array($talentEvent->currentStatusKey(), ['voting_open', 'voting_closed', 'voting_paused'], true)): ?>
+                        <?php if($canPublishTalentResults && $talentEvent->votingHasClosed() && ! $talentEvent->hasPublishedResults()): ?>
                             <form method="POST" action="<?php echo e(route('admin.talent.publish-results', $talentEvent)); ?>" data-confirm-sensitive data-confirm-title="Publish results?" class="inline">
                                 <?php echo csrf_field(); ?>
                                 <button type="submit" class="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-500">Publish Results</button>

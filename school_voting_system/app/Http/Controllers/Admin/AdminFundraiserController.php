@@ -63,9 +63,9 @@ class AdminFundraiserController extends Controller
             ->withQueryString();
 
         $summary = [
-            'total_raised' => (float) Donation::query()->sum('amount'),
-            'total_donations' => Donation::query()->count(),
-            'unique_donors' => Donation::query()->distinct('user_id')->count('user_id'),
+            'total_raised' => (float) Donation::query()->paid()->sum('amount'),
+            'total_donations' => Donation::query()->paid()->count(),
+            'unique_donors' => Donation::query()->paid()->distinct('user_id')->count('user_id'),
             'active_fundraisers' => Fundraiser::query()->where('status', FundraiserStatus::Active)->count(),
         ];
 
@@ -209,6 +209,40 @@ class AdminFundraiserController extends Controller
         return redirect()->route('admin.fundraisers.index')->with('success', 'Activity deleted successfully.');
     }
 
+    public function confirmDonation(Request $request, Donation $donation): RedirectResponse
+    {
+        $this->authorize('update', $donation->fundraiser);
+
+        if ($donation->isPaid()) {
+            return back()->with('success', 'This donation is already confirmed.');
+        }
+
+        if ($donation->payment_method?->isOnline()) {
+            return back()->with('error', 'Online donations are confirmed by PayMongo, not manually.');
+        }
+
+        $newlyPaid = $donation->markPaid();
+
+        if ($newlyPaid) {
+            $donation->refresh()->loadMissing(['fundraiser', 'donor']);
+            $this->notifications->donationReceived(
+                $donation->fundraiser?->title ?? 'Fundraising campaign',
+                (float) $donation->amount,
+                $donation->donor,
+                $request->user(),
+                $donation->id,
+            );
+            $this->logAdminAction(
+                'Confirmed donation #'.$donation->id,
+                AuditActionType::Election,
+                'donation',
+                $donation->id,
+            );
+        }
+
+        return back()->with('success', 'Donation confirmed and added to the campaign total.');
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -244,6 +278,7 @@ class AdminFundraiserController extends Controller
             'accept_cash' => (bool) ($validated['accept_cash'] ?? true),
             'accept_gcash' => (bool) ($validated['accept_gcash'] ?? true),
             'accept_maya' => (bool) ($validated['accept_maya'] ?? true),
+            'accept_qrph' => (bool) ($validated['accept_qrph'] ?? true),
             'accept_bank_transfer' => (bool) ($validated['accept_bank_transfer'] ?? true),
             'visibility' => $validated['visibility'] ?? FundraiserVisibility::Public->value,
             'is_featured' => (bool) ($validated['is_featured'] ?? false),

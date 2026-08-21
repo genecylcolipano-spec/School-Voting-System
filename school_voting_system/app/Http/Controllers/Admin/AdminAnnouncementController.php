@@ -37,6 +37,10 @@ class AdminAnnouncementController extends Controller
 
         $announcements = Announcement::query()
             ->with(['author', 'updater'])
+            ->when(
+                ! $request->user()->can('viewAll', Announcement::class),
+                fn ($query) => $query->where('created_by', $request->user()->id),
+            )
             ->latest()
             ->paginate(15);
 

@@ -51,4 +51,14 @@ class ElectionFactory extends Factory
             'is_paused' => false,
         ]);
     }
+
+    public function draft(): static
+    {
+        return $this->state(fn () => [
+            'status' => ElectionStatus::Draft,
+            'voting_starts_at' => now()->addDay(),
+            'voting_ends_at' => now()->addDays(2),
+            'is_paused' => false,
+        ]);
+    }
 }

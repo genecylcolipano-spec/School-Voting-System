@@ -17,5 +17,5 @@
         ])
     </x-admin-portal>
 
-    @vite(['resources/js/regular-admin-dashboard.js', 'resources/js/event-image-preview.js'])
+    @vite(['resources/js/regular-admin-dashboard.js', 'resources/js/event-image-preview.js', 'resources/js/talent-competition-create.js'])
 </x-app-layout>

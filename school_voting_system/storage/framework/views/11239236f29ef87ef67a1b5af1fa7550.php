@@ -42,7 +42,28 @@
                             <td class="px-4 py-3"><?php echo e($event->title); ?></td>
                             <td class="px-4 py-3"><?php echo e(optional($event->event_date)->format('M d, Y g:i A')); ?></td>
                             <td class="px-4 py-3"><?php echo e($event->venue); ?></td>
-                            <td class="px-4 py-3"><?php echo e($event->status?->value); ?></td>
+                            <td class="px-4 py-3">
+                                <?php if (isset($component)) { $__componentOriginal8f4964f6c5a17b269675c114ea0c864c = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal8f4964f6c5a17b269675c114ea0c864c = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin-status-badge','data' => ['status' => $event->displayStatus()->value,'label' => $event->displayStatusLabel()]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('admin-status-badge'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['status' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($event->displayStatus()->value),'label' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($event->displayStatusLabel())]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal8f4964f6c5a17b269675c114ea0c864c)): ?>
+<?php $attributes = $__attributesOriginal8f4964f6c5a17b269675c114ea0c864c; ?>
+<?php unset($__attributesOriginal8f4964f6c5a17b269675c114ea0c864c); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal8f4964f6c5a17b269675c114ea0c864c)): ?>
+<?php $component = $__componentOriginal8f4964f6c5a17b269675c114ea0c864c; ?>
+<?php unset($__componentOriginal8f4964f6c5a17b269675c114ea0c864c); ?>
+<?php endif; ?>
+                            </td>
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('update', $event)): ?>
                                     <a href="<?php echo e(route('admin.events.edit', $event)); ?>" class="text-violet-300 hover:text-violet-200">Manage</a>

@@ -73,6 +73,7 @@ class AdminAnalyticsService
         $yearEnd = Carbon::create($year, 12, 31)->endOfYear();
 
         $totalsByMonth = Donation::query()
+            ->paid()
             ->whereBetween('donated_at', [$yearStart, $yearEnd])
             ->selectRaw('MONTH(donated_at) as month, SUM(amount) as total')
             ->groupBy('month')

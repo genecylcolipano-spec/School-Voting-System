@@ -9,6 +9,7 @@ use App\Models\Election;
 use App\Models\Fundraiser;
 use App\Models\Partylist;
 use App\Models\User;
+use App\Policies\AnnouncementPolicy;
 use App\Policies\CandidatePolicy;
 use App\Policies\ElectionPolicy;
 use App\Policies\PortalContentPolicy;
@@ -113,7 +114,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Election::class, ElectionPolicy::class);
         Gate::policy(Candidate::class, CandidatePolicy::class);
         Gate::policy(Event::class, PortalContentPolicy::class);
-        Gate::policy(Announcement::class, PortalContentPolicy::class);
+        Gate::policy(Announcement::class, AnnouncementPolicy::class);
         Gate::policy(Fundraiser::class, PortalContentPolicy::class);
         Gate::policy(Partylist::class, PortalContentPolicy::class);
         Gate::define('viewAnyStudents', [UserPolicy::class, 'viewAnyStudents']);

@@ -40,10 +40,13 @@
                         <label class="block text-sm font-medium text-slate-300">Status</label>
                         <select name="status" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
                             @foreach ($statuses as $status)
-                                <option value="{{ $status->value }}" @selected(old('status', optional($election)->status?->value) === $status->value)>{{ ucfirst($status->value) }}</option>
+                                <option value="{{ $status->value }}" @selected(old('status', optional($election)->status?->value) === $status->value)>{{ $status->label() }}</option>
                             @endforeach
                         </select>
                     </div>
+                    <p class="md:col-span-2 text-xs text-slate-500">
+                        Draft elections stay hidden from students and open automatically at the voting start time. Saving as Active opens voting immediately (or at the start time if it is still in the future).
+                    </p>
                 </div>
             </section>
 
@@ -61,13 +64,36 @@
                 </div>
 
                 @if ($isEdit && $election->categories->isNotEmpty())
-                    <div class="mb-4 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+                    <div class="mb-4 space-y-3">
                         <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Current positions</p>
-                        <div class="mt-2 flex flex-wrap gap-2">
-                            @foreach ($election->categories as $category)
-                                <span class="rounded-full bg-violet-500/15 px-3 py-1 text-xs font-medium text-violet-200">{{ $category->name }}</span>
-                            @endforeach
-                        </div>
+                        <p class="text-xs text-slate-500">Rename a position or mark it for removal. Positions with votes cannot be removed; removing a position also deletes its candidates.</p>
+                        @foreach ($election->categories as $category)
+                            @php
+                                $hasVotes = (int) ($category->votes_count ?? 0) > 0;
+                            @endphp
+                            <div class="grid gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-4 md:grid-cols-[1fr_auto]">
+                                <input
+                                    type="text"
+                                    name="existing_positions[{{ $category->id }}][name]"
+                                    value="{{ old("existing_positions.{$category->id}.name", $category->name) }}"
+                                    class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100"
+                                />
+                                @if ($hasVotes)
+                                    <p class="self-center text-xs text-slate-500">Has votes — cannot remove</p>
+                                @else
+                                    <label class="flex items-center gap-2 self-center text-xs font-semibold text-rose-300">
+                                        <input
+                                            type="checkbox"
+                                            name="existing_positions[{{ $category->id }}][remove]"
+                                            value="1"
+                                            @checked(old("existing_positions.{$category->id}.remove"))
+                                            class="rounded border-slate-700 bg-slate-950/50 text-rose-500"
+                                        />
+                                        Remove
+                                    </label>
+                                @endif
+                            </div>
+                        @endforeach
                     </div>
                 @endif
 
@@ -189,11 +215,11 @@
                 ></div>
             </section>
 
-            <div class="flex flex-wrap gap-3">
-                <button type="submit" class="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90">
+            <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 sm:w-auto">
                     {{ $isEdit ? 'Save changes' : 'Create election' }}
                 </button>
-                <a href="{{ route('admin.elections.index') }}" class="rounded-xl border border-slate-700 px-6 py-2.5 text-sm text-slate-300 hover:bg-slate-800">Cancel</a>
+                <a href="{{ route('admin.elections.index') }}" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-700 px-6 py-2.5 text-sm text-slate-300 hover:bg-slate-800 sm:w-auto">Cancel</a>
             </div>
         </form>
     </x-admin-portal>

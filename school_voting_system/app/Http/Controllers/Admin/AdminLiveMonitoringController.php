@@ -57,6 +57,7 @@ class AdminLiveMonitoringController extends Controller
             'schoolYears' => $this->monitoring->schoolYearOptions($user),
             'statusOptions' => $this->electionStatusOptions(),
             'pollUrl' => route('admin.live.election.poll'),
+            'canManage' => $this->scope->canPauseElection($user),
             'isSuperAdmin' => $isSuper,
         ]);
     }

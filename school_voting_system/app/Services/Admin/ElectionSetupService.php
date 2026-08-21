@@ -27,6 +27,7 @@ class ElectionSetupService
     public function syncOnUpdate(Election $election, array $data): void
     {
         $this->syncPartylists($election, $data['partylists'] ?? []);
+        $this->syncExistingPositions($election, $data['existing_positions'] ?? []);
         $this->createPositions($election, $data['new_positions'] ?? []);
 
         foreach ($data['existing_candidates'] ?? [] as $id => $row) {
@@ -95,6 +96,44 @@ class ElectionSetupService
         ));
 
         $election->partylists()->sync($ids);
+    }
+
+    /**
+     * Rename or remove existing positions. Positions that already have votes
+     * cannot be deleted (the unique vote constraint is per category).
+     *
+     * @param  array<int|string, mixed>  $rows
+     */
+    protected function syncExistingPositions(Election $election, array $rows): void
+    {
+        foreach ($rows as $id => $row) {
+            $category = $election->categories()->whereKey($id)->first();
+
+            if (! $category) {
+                continue;
+            }
+
+            if (! empty($row['remove'])) {
+                if ($category->votes()->exists()) {
+                    continue;
+                }
+
+                $category->delete();
+
+                continue;
+            }
+
+            $name = trim((string) ($row['name'] ?? ''));
+
+            if ($name === '' || $name === $category->name) {
+                continue;
+            }
+
+            $category->update([
+                'name' => $name,
+                'slug' => $this->uniqueCategorySlug($election->id, $name, $category->id),
+            ]);
+        }
     }
 
     /**
@@ -183,13 +222,19 @@ class ElectionSetupService
         return [$partylistId, $name ?? $fallbackLabel];
     }
 
-    protected function uniqueCategorySlug(int $electionId, string $name): string
+    protected function uniqueCategorySlug(int $electionId, string $name, ?int $ignoreId = null): string
     {
         $base = Str::slug($name) ?: 'position';
         $slug = $base;
         $counter = 1;
 
-        while (ElectionCategory::query()->where('election_id', $electionId)->where('slug', $slug)->exists()) {
+        while (
+            ElectionCategory::query()
+                ->where('election_id', $electionId)
+                ->where('slug', $slug)
+                ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
+                ->exists()
+        ) {
             $slug = $base.'-'.$counter;
             $counter++;
         }

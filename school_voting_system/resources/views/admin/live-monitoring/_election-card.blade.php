@@ -83,6 +83,20 @@
             @if (! empty($card['show_results_shortcut']))
                 <a href="{{ $card['results_url'] }}" class="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">View Results</a>
             @endif
+
+            @if (($canManage ?? false) && ! empty($card['can_manage_live']))
+                @if (! empty($card['is_paused']))
+                    <form method="POST" action="{{ $card['actions']['resume'] }}">
+                        @csrf
+                        <button type="submit" class="rounded-xl border border-emerald-500/40 px-3 py-1.5 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/10">Resume</button>
+                    </form>
+                @else
+                    <form method="POST" action="{{ $card['actions']['pause'] }}">
+                        @csrf
+                        <button type="submit" class="rounded-xl border border-amber-500/40 px-3 py-1.5 text-sm font-semibold text-amber-200 hover:bg-amber-500/10">Pause</button>
+                    </form>
+                @endif
+            @endif
         </div>
     </div>
 </article>

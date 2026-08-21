@@ -13,6 +13,12 @@
         $minDonation = $fundraiser->minimumDonationAmount();
         $maxDonation = $fundraiser->maximumDonationAmount();
         $accepting = ! $preview && $fundraiser->isAcceptingDonations();
+        $paymentMethods = $paymentMethods ?? $fundraiser->acceptedPaymentMethods();
+        $paymongoConfigured = $paymongoConfigured ?? filled(config('services.paymongo.secret_key'));
+        $hasOnlineMethod = collect($paymentMethods)->contains(fn ($method) => $method->isOnline());
+        $defaultPaymentMethod = collect($paymentMethods)
+            ->first(fn ($method) => ! ($method->isOnline() && ! $paymongoConfigured))
+            ?->value;
     ?>
     <div class="min-h-screen bg-slate-950 text-slate-100">
         <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -121,6 +127,11 @@
                         <?php endif; ?>
                     </p>
                 <?php elseif($accepting): ?>
+                    <?php if($paymentMethods === []): ?>
+                        <p class="mt-3 text-sm text-slate-400">This campaign has no payment methods enabled.</p>
+                    <?php elseif($hasOnlineMethod && ! $paymongoConfigured): ?>
+                        <p class="mt-3 text-sm text-amber-200">Online payments are not configured yet. Cash and bank transfer can still be submitted for confirmation if this campaign accepts them.</p>
+                    <?php endif; ?>
                     <form method="POST" action="<?php echo e(route('student.fundraising.donate', $fundraiser)); ?>" class="mt-4 space-y-4">
                         <?php echo csrf_field(); ?>
 
@@ -156,6 +167,48 @@ endif;
 unset($__errorArgs, $__bag); ?>
                         </div>
 
+                        <fieldset>
+                            <legend class="block text-sm font-medium text-slate-300">Payment method</legend>
+                            <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                                <?php $__currentLoopData = $paymentMethods; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $method): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php
+                                        $disabled = $method->isOnline() && ! $paymongoConfigured;
+                                    ?>
+                                    <label class="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2 text-sm <?php echo e($disabled ? 'cursor-not-allowed text-slate-500' : 'text-slate-300'); ?>">
+                                        <input
+                                            type="radio"
+                                            name="payment_method"
+                                            value="<?php echo e($method->value); ?>"
+                                            <?php if(old('payment_method', $defaultPaymentMethod) === $method->value): echo 'checked'; endif; ?>
+                                            <?php if($disabled): echo 'disabled'; endif; ?>
+                                            required
+                                            class="border-slate-700 bg-slate-950/50 text-cyan-500 focus:ring-cyan-500/30"
+                                        />
+                                        <span>
+                                            <?php echo e($method->label()); ?>
+
+                                            <?php if($method->isOnline()): ?>
+                                                <span class="text-xs text-slate-500">via PayMongo</span>
+                                            <?php else: ?>
+                                                <span class="text-xs text-slate-500">pending confirmation</span>
+                                            <?php endif; ?>
+                                        </span>
+                                    </label>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </div>
+                            <?php $__errorArgs = ['payment_method'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <p class="mt-1 text-sm text-rose-300"><?php echo e($message); ?></p>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                            <p class="mt-2 text-xs text-slate-500">GCash, Maya, and QR Ph open a PayMongo checkout page. Your donation is counted only after payment succeeds.</p>
+                        </fieldset>
+
                         <div>
                             <label class="block text-sm font-medium text-slate-300">Message (optional)</label>
                             <input
@@ -179,13 +232,13 @@ unset($__errorArgs, $__bag); ?>
 
                         <?php if($fundraiser->allow_anonymous !== false): ?>
                             <label class="flex items-center gap-2 text-sm text-slate-300">
-                                <input type="checkbox" name="is_anonymous" value="1" class="rounded border-slate-700 bg-slate-950/50 text-cyan-500 focus:ring-cyan-500/30" />
+                                <input type="checkbox" name="is_anonymous" value="1" <?php if(old('is_anonymous')): echo 'checked'; endif; ?> class="rounded border-slate-700 bg-slate-950/50 text-cyan-500 focus:ring-cyan-500/30" />
                                 Donate anonymously
                             </label>
                         <?php endif; ?>
 
                         <button type="submit" class="inline-flex rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-5 py-2.5 text-sm font-semibold text-slate-950">
-                            Donate
+                            Continue to payment
                         </button>
                     </form>
                 <?php else: ?>

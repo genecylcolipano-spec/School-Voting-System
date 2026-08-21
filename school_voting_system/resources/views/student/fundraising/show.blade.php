@@ -4,6 +4,12 @@
         $minDonation = $fundraiser->minimumDonationAmount();
         $maxDonation = $fundraiser->maximumDonationAmount();
         $accepting = ! $preview && $fundraiser->isAcceptingDonations();
+        $paymentMethods = $paymentMethods ?? $fundraiser->acceptedPaymentMethods();
+        $paymongoConfigured = $paymongoConfigured ?? filled(config('services.paymongo.secret_key'));
+        $hasOnlineMethod = collect($paymentMethods)->contains(fn ($method) => $method->isOnline());
+        $defaultPaymentMethod = collect($paymentMethods)
+            ->first(fn ($method) => ! ($method->isOnline() && ! $paymongoConfigured))
+            ?->value;
     @endphp
     <div class="min-h-screen bg-slate-950 text-slate-100">
         <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -97,6 +103,11 @@
                         @endif
                     </p>
                 @elseif ($accepting)
+                    @if ($paymentMethods === [])
+                        <p class="mt-3 text-sm text-slate-400">This campaign has no payment methods enabled.</p>
+                    @elseif ($hasOnlineMethod && ! $paymongoConfigured)
+                        <p class="mt-3 text-sm text-amber-200">Online payments are not configured yet. Cash and bank transfer can still be submitted for confirmation if this campaign accepts them.</p>
+                    @endif
                     <form method="POST" action="{{ route('student.fundraising.donate', $fundraiser) }}" class="mt-4 space-y-4">
                         @csrf
 
@@ -123,6 +134,40 @@
                             @enderror
                         </div>
 
+                        <fieldset>
+                            <legend class="block text-sm font-medium text-slate-300">Payment method</legend>
+                            <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                                @foreach ($paymentMethods as $method)
+                                    @php
+                                        $disabled = $method->isOnline() && ! $paymongoConfigured;
+                                    @endphp
+                                    <label class="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2 text-sm {{ $disabled ? 'cursor-not-allowed text-slate-500' : 'text-slate-300' }}">
+                                        <input
+                                            type="radio"
+                                            name="payment_method"
+                                            value="{{ $method->value }}"
+                                            @checked(old('payment_method', $defaultPaymentMethod) === $method->value)
+                                            @disabled($disabled)
+                                            required
+                                            class="border-slate-700 bg-slate-950/50 text-cyan-500 focus:ring-cyan-500/30"
+                                        />
+                                        <span>
+                                            {{ $method->label() }}
+                                            @if ($method->isOnline())
+                                                <span class="text-xs text-slate-500">via PayMongo</span>
+                                            @else
+                                                <span class="text-xs text-slate-500">pending confirmation</span>
+                                            @endif
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error('payment_method')
+                                <p class="mt-1 text-sm text-rose-300">{{ $message }}</p>
+                            @enderror
+                            <p class="mt-2 text-xs text-slate-500">GCash, Maya, and QR Ph open a PayMongo checkout page. Your donation is counted only after payment succeeds.</p>
+                        </fieldset>
+
                         <div>
                             <label class="block text-sm font-medium text-slate-300">Message (optional)</label>
                             <input
@@ -139,13 +184,13 @@
 
                         @if ($fundraiser->allow_anonymous !== false)
                             <label class="flex items-center gap-2 text-sm text-slate-300">
-                                <input type="checkbox" name="is_anonymous" value="1" class="rounded border-slate-700 bg-slate-950/50 text-cyan-500 focus:ring-cyan-500/30" />
+                                <input type="checkbox" name="is_anonymous" value="1" @checked(old('is_anonymous')) class="rounded border-slate-700 bg-slate-950/50 text-cyan-500 focus:ring-cyan-500/30" />
                                 Donate anonymously
                             </label>
                         @endif
 
                         <button type="submit" class="inline-flex rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-5 py-2.5 text-sm font-semibold text-slate-950">
-                            Donate
+                            Continue to payment
                         </button>
                     </form>
                 @else

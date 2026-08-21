@@ -40,6 +40,7 @@ unset($__defined_vars, $__key, $__value); ?>
             id="device_name"
             type="text"
             value="Primary Device"
+            autocapitalize="words"
             class="w-full rounded-lg border border-cyan-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-200"
             placeholder="e.g. School Laptop, iPhone"
         >
@@ -62,7 +63,7 @@ unset($__defined_vars, $__key, $__value); ?>
     <p id="register-passkey-status" class="mt-2 text-xs text-cyan-900" aria-live="polite"></p>
 </div>
 
-<?php if (! $__env->hasRenderedOnce('3f237568-4293-4a62-adf8-f0ad018416ff')): $__env->markAsRenderedOnce('3f237568-4293-4a62-adf8-f0ad018416ff'); ?>
+<?php if (! $__env->hasRenderedOnce('c294b13d-596d-457d-a30f-07b8d8aa8806')): $__env->markAsRenderedOnce('c294b13d-596d-457d-a30f-07b8d8aa8806'); ?>
     <?php echo app('Illuminate\Foundation\Vite')(['resources/js/passkey-register.js']); ?>
 <?php endif; ?>
 <?php /**PATH C:\xampp\htdocs\voting system\school_voting_system\resources\views/components/passkey-register.blade.php ENDPATH**/ ?>

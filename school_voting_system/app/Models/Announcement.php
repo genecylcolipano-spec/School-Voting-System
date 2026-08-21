@@ -240,12 +240,8 @@ class Announcement extends Model
     protected function relatedRecordUrlForStudent(): ?string
     {
         return match ($this->related_module) {
-            AnnouncementRelatedModule::Election => $this->relatedElection()?->slug
-                ? route('student.voting.show', $this->relatedElection())
-                : null,
-            AnnouncementRelatedModule::TalentCompetition => $this->relatedTalentEvent()?->slug
-                ? route('student.talent-voting.show', $this->relatedTalentEvent())
-                : null,
+            AnnouncementRelatedModule::Election => $this->studentElectionUrl(),
+            AnnouncementRelatedModule::TalentCompetition => $this->studentTalentUrl(),
             AnnouncementRelatedModule::SchoolEvent => $this->relatedEvent()?->slug
                 ? route('student.events.show', $this->relatedEvent())
                 : null,
@@ -281,11 +277,48 @@ class Announcement extends Model
             AnnouncementRelatedModule::Election => $this->relatedElection()?->slug
                 ? route('faculty.elections.show', $this->relatedElection())
                 : null,
+            AnnouncementRelatedModule::TalentCompetition => $this->relatedTalentEvent()?->slug
+                ? route('faculty.judging.show', $this->relatedTalentEvent())
+                : null,
             AnnouncementRelatedModule::SchoolEvent => $this->relatedEvent()?->slug
                 ? route('faculty.events.show', $this->relatedEvent())
                 : null,
             default => null,
         };
+    }
+
+    protected function studentElectionUrl(): ?string
+    {
+        $election = $this->relatedElection();
+
+        if (! $election?->slug) {
+            return null;
+        }
+
+        if ($this->auto_source_type === 'results_published' || $election->shouldShowOfficialResultsToStudents()) {
+            return route('student.results.election.show', $election);
+        }
+
+        return route('student.voting.show', $election);
+    }
+
+    protected function studentTalentUrl(): ?string
+    {
+        $event = $this->relatedTalentEvent();
+
+        if (! $event?->slug) {
+            return null;
+        }
+
+        if ($this->auto_source_type === 'results_published' || $event->hasPublishedResults()) {
+            return route('student.results.talent.show', $event);
+        }
+
+        if ($event->isRegistrationOpen()) {
+            return route('student.talent-registration.show', $event);
+        }
+
+        return route('student.talent-voting.show', $event);
     }
 
     public function relatedElection(): ?Election
@@ -384,7 +417,23 @@ class Announcement extends Model
                 ->orWhereNull('target_audiences');
 
             if ($user->isStudent()) {
-                $query->orWhereJsonContains('target_audiences', AnnouncementAudience::Students->value);
+                $query->orWhere(function (Builder $students) use ($user) {
+                    $students->where(function (Builder $audience) {
+                        $audience->whereJsonContains('target_audiences', AnnouncementAudience::Students->value)
+                            ->orWhereJsonContains('target_audiences', AnnouncementAudience::SpecificGrade->value)
+                            ->orWhereJsonContains('target_audiences', AnnouncementAudience::SpecificSection->value);
+                    });
+
+                    $students->where(function (Builder $grade) use ($user) {
+                        $grade->whereJsonDoesntContain('target_audiences', AnnouncementAudience::SpecificGrade->value)
+                            ->orWhere('target_grade_level', $user->grade_level);
+                    });
+
+                    $students->where(function (Builder $section) use ($user) {
+                        $section->whereJsonDoesntContain('target_audiences', AnnouncementAudience::SpecificSection->value)
+                            ->orWhere('target_section', $user->section);
+                    });
+                });
             }
 
             if ($user->isFaculty()) {
@@ -399,30 +448,55 @@ class Announcement extends Model
                 $query->orWhereJsonContains('target_audiences', AnnouncementAudience::SuperAdministrators->value);
             }
 
-            if ($user->isStudent() && $user->grade_level) {
-                $query->orWhere(function (Builder $inner) use ($user) {
-                    $inner->whereJsonContains('target_audiences', AnnouncementAudience::SpecificGrade->value)
-                        ->where('target_grade_level', $user->grade_level);
-                });
-            }
-
-            if ($user->isStudent() && $user->section) {
-                $query->orWhere(function (Builder $inner) use ($user) {
-                    $inner->whereJsonContains('target_audiences', AnnouncementAudience::SpecificSection->value)
-                        ->where('target_section', $user->section);
-                });
-            }
-
             if (Candidate::query()->where('user_id', $user->id)->where('is_active', true)->exists()) {
-                $query->orWhereJsonContains('target_audiences', AnnouncementAudience::ElectionCandidates->value);
+                $query->orWhere(function (Builder $candidates) use ($user) {
+                    $candidates->whereJsonContains('target_audiences', AnnouncementAudience::ElectionCandidates->value)
+                        ->where(function (Builder $related) use ($user) {
+                            $related->where('related_module', '!=', AnnouncementRelatedModule::Election->value)
+                                ->orWhereNull('related_id')
+                                ->orWhereIn(
+                                    'related_id',
+                                    Candidate::query()
+                                        ->where('user_id', $user->id)
+                                        ->where('is_active', true)
+                                        ->select('election_id'),
+                                );
+                        });
+                });
             }
 
-            if (TalentEventEntry::query()->where('user_id', $user->id)->exists()) {
-                $query->orWhereJsonContains('target_audiences', AnnouncementAudience::TalentParticipants->value);
+            if (TalentEventEntry::query()->where('user_id', $user->id)->where('status', TalentEventEntry::STATUS_APPROVED)->exists()) {
+                $query->orWhere(function (Builder $participants) use ($user) {
+                    $participants->whereJsonContains('target_audiences', AnnouncementAudience::TalentParticipants->value)
+                        ->where(function (Builder $related) use ($user) {
+                            $related->where('related_module', '!=', AnnouncementRelatedModule::TalentCompetition->value)
+                                ->orWhereNull('related_id')
+                                ->orWhereIn(
+                                    'related_id',
+                                    TalentEventEntry::query()
+                                        ->where('user_id', $user->id)
+                                        ->where('status', TalentEventEntry::STATUS_APPROVED)
+                                        ->select('talent_event_id'),
+                                );
+                        });
+                });
             }
 
-            if (Donation::query()->where('user_id', $user->id)->exists()) {
-                $query->orWhereJsonContains('target_audiences', AnnouncementAudience::FundraisingDonors->value);
+            if (Donation::query()->paid()->where('user_id', $user->id)->exists()) {
+                $query->orWhere(function (Builder $donors) use ($user) {
+                    $donors->whereJsonContains('target_audiences', AnnouncementAudience::FundraisingDonors->value)
+                        ->where(function (Builder $related) use ($user) {
+                            $related->where('related_module', '!=', AnnouncementRelatedModule::Fundraising->value)
+                                ->orWhereNull('related_id')
+                                ->orWhereIn(
+                                    'related_id',
+                                    Donation::query()
+                                        ->paid()
+                                        ->where('user_id', $user->id)
+                                        ->select('fundraiser_id'),
+                                );
+                        });
+                });
             }
         });
     }

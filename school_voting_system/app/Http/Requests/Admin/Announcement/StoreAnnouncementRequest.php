@@ -63,7 +63,6 @@ class StoreAnnouncementRequest extends AdminFormRequest
             'show_on_dashboard' => ['sometimes', 'boolean'],
             'pin_to_homepage' => ['sometimes', 'boolean'],
             'send_email' => ['sometimes', 'boolean'],
-            'notify_students' => ['nullable', 'boolean'],
             'resend_notifications' => ['nullable', 'boolean'],
         ];
     }
@@ -101,9 +100,8 @@ class StoreAnnouncementRequest extends AdminFormRequest
             'show_on_dashboard' => $this->boolean('show_on_dashboard'),
             'pin_to_homepage' => $this->boolean('pin_to_homepage'),
             'send_email' => $this->boolean('send_email'),
-            'notify_students' => $this->boolean('notify_students'),
             'resend_notifications' => $this->boolean('resend_notifications'),
-            'target_audiences' => $this->input('target_audiences', [AnnouncementAudience::AllUsers->value]),
+            'target_audiences' => $this->input('target_audiences', [AnnouncementAudience::Students->value]),
         ]);
     }
 }

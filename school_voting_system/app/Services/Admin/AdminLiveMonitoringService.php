@@ -13,6 +13,7 @@ use App\Models\TalentEventVote;
 use App\Models\TalentJudgeScoreSheet;
 use App\Models\User;
 use App\Models\Vote;
+use App\Services\Talent\TalentResultsRankingService;
 use App\Support\EventImageUrl;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -24,6 +25,7 @@ class AdminLiveMonitoringService
 {
     public function __construct(
         protected AdminScopeService $scope,
+        protected TalentResultsRankingService $talentRankingService,
     ) {}
 
     /**
@@ -65,11 +67,12 @@ class AdminLiveMonitoringService
             ->groupBy('election_id')
             ->pluck('unique_voters', 'election_id');
 
-        $cards = $elections->map(function (Election $election) use ($lastVotes, $uniqueVoters) {
+        $cards = $elections->map(function (Election $election) use ($lastVotes, $uniqueVoters, $viewer) {
             return $this->mapElection(
                 $election,
                 $lastVotes[$election->id] ?? null,
                 (int) ($uniqueVoters[$election->id] ?? 0),
+                $viewer,
             );
         });
 
@@ -240,7 +243,7 @@ class AdminLiveMonitoringService
     /**
      * @return array<string, mixed>
      */
-    protected function mapElection(Election $election, mixed $lastVoteAt, int $uniqueVoters): array
+    protected function mapElection(Election $election, mixed $lastVoteAt, int $uniqueVoters, User $viewer): array
     {
         $phase = $this->electionPhase($election);
         $isLive = $phase['key'] === 'voting_open';
@@ -248,6 +251,11 @@ class AdminLiveMonitoringService
         $votesCast = (int) ($election->votes_count ?? 0);
         $turnout = $eligible > 0 ? round(($uniqueVoters / $eligible) * 100, 1) : 0.0;
         $lastAt = $lastVoteAt ? Carbon::parse($lastVoteAt) : null;
+        $inScope = $viewer->isSuperAdmin()
+            || $this->scope->assignedElection($viewer)?->id === $election->id;
+        $canManageLive = $this->scope->canPauseElection($viewer)
+            && $inScope
+            && in_array($phase['key'], ['voting_open', 'voting_paused'], true);
 
         $schedule = collect([
             $election->voting_starts_at?->format('M d, Y g:i A'),
@@ -282,6 +290,12 @@ class AdminLiveMonitoringService
             'details_url' => route('admin.elections.edit', $election),
             'results_url' => route('admin.results.election.show', $election),
             'show_results_shortcut' => $phase['key'] === 'published',
+            'can_manage_live' => $canManageLive,
+            'is_paused' => (bool) $election->is_paused,
+            'actions' => [
+                'pause' => route('admin.election.pause', $election),
+                'resume' => route('admin.election.resume', $election),
+            ],
             'freeze_totals' => in_array($phase['key'], ['voting_closed', 'results_pending', 'published'], true),
             'urgency_rank' => $this->urgencyRank($phase['key']),
         ];
@@ -358,29 +372,7 @@ class AdminLiveMonitoringService
      */
     protected function talentLeaderboard(TalentEvent $event): array
     {
-        $entries = $event->approvedEntries()
-            ->withCount('votes')
-            ->orderByDesc('votes_count')
-            ->orderBy('display_name')
-            ->limit(10)
-            ->get();
-
-        $totalVotes = (int) $entries->sum('votes_count');
-
-        return $entries->values()->map(function (TalentEventEntry $entry, int $index) use ($totalVotes, $event) {
-            $votes = (int) $entry->votes_count;
-
-            return [
-                'rank' => $index + 1,
-                'name' => $entry->display_name,
-                'category' => $entry->talentCategoryLabel()
-                    ?? $event->talent_category?->label()
-                    ?? '—',
-                'votes' => $votes,
-                'percent' => $totalVotes > 0 ? round(($votes / $totalVotes) * 100, 1) : 0.0,
-                'photo' => $entry->photoUrl(),
-            ];
-        })->all();
+        return array_slice($this->talentRankingService->rankings($event), 0, 10);
     }
 
     /**

@@ -16,6 +16,7 @@
             data-mode="election"
             data-election-url="{{ route('admin.live.election') }}"
             data-talent-url="{{ route('admin.live.talent') }}"
+            data-can-manage="{{ ($canManage ?? false) ? '1' : '0' }}"
         >
             <div class="space-y-6" data-cards-view>
                 @if ($urgentCards->isNotEmpty())
@@ -29,7 +30,7 @@
                         </h3>
                         <div class="grid gap-5 lg:grid-cols-2" data-live-cards data-urgent-grid>
                             @foreach ($urgentCards as $card)
-                                @include('admin.live-monitoring._election-card', ['card' => $card])
+                                @include('admin.live-monitoring._election-card', ['card' => $card, 'canManage' => $canManage ?? false])
                             @endforeach
                         </div>
                     </section>
@@ -40,7 +41,7 @@
                         <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Other activities</h3>
                         <div class="grid gap-5 lg:grid-cols-2" data-live-cards data-other-grid>
                             @foreach ($otherCards as $card)
-                                @include('admin.live-monitoring._election-card', ['card' => $card])
+                                @include('admin.live-monitoring._election-card', ['card' => $card, 'canManage' => $canManage ?? false])
                             @endforeach
                         </div>
                     </section>

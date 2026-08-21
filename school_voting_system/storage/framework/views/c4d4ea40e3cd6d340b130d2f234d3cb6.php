@@ -131,10 +131,16 @@
                     <?php echo csrf_field(); ?>
                     <button type="submit" class="rounded-xl border border-amber-500/40 px-4 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-500/10">Close Voting</button>
                 </form>
-                <?php if($canPublishResults): ?>
+                <?php if($canPublishResults && $talentEvent->votingHasClosed() && ! $talentEvent->hasPublishedResults()): ?>
                     <form method="POST" action="<?php echo e(route('admin.talent.publish-results', $talentEvent)); ?>">
                         <?php echo csrf_field(); ?>
                         <button type="submit" class="rounded-xl border border-cyan-500/40 px-4 py-2 text-sm font-semibold text-cyan-200 hover:bg-cyan-500/10">Publish Results</button>
+                    </form>
+                <?php endif; ?>
+                <?php if($canPublishResults && $talentEvent->hasPublishedResults()): ?>
+                    <form method="POST" action="<?php echo e(route('admin.talent.unpublish-results', $talentEvent)); ?>">
+                        <?php echo csrf_field(); ?>
+                        <button type="submit" class="rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800">Unpublish Results</button>
                     </form>
                 <?php endif; ?>
                 <?php if (! ($talentEvent->published_to_students)): ?>

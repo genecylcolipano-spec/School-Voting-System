@@ -27,15 +27,15 @@
         <div class="space-y-4">
             <?php $__empty_1 = true; $__currentLoopData = $elections; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $election): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                 <article class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5">
-                    <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0">
                             <h2 class="text-lg font-semibold text-white"><?php echo e($election->title); ?></h2>
                             <?php if($election->description): ?>
                                 <p class="mt-1 text-sm text-slate-300 line-clamp-2"><?php echo e($election->description); ?></p>
                             <?php endif; ?>
                         </div>
-                        <div class="text-right">
-                            <p class="text-xs uppercase tracking-wide text-slate-500"><?php echo e($election->status?->value ?? $election->status); ?></p>
+                        <div class="sm:shrink-0 sm:text-right">
+                            <p class="text-xs uppercase tracking-wide text-slate-500"><?php echo e($election->status?->label() ?? $election->status); ?></p>
                             <?php if($election->voting_starts_at): ?>
                                 <p class="mt-1 text-xs text-slate-400">Starts: <?php echo e($election->voting_starts_at->format('M d, Y g:i A')); ?></p>
                             <?php endif; ?>
@@ -47,7 +47,7 @@
 
                     <a
                         href="<?php echo e(route('faculty.elections.show', $election)); ?>"
-                        class="mt-4 inline-block rounded-xl bg-gradient-to-r from-teal-500 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950"
+                        class="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-gradient-to-r from-teal-500 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 sm:w-auto"
                     >
                         View details
                     </a>

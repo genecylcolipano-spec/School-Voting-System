@@ -45,6 +45,8 @@
                         <th class="px-4 py-3">Txn ID</th>
                         <th class="px-4 py-3">Date &amp; Time</th>
                         <th class="px-4 py-3">Type</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Method</th>
                         <th class="px-4 py-3">Donor</th>
                         <th class="px-4 py-3">Campaign</th>
                         <th class="px-4 py-3">Currency</th>
@@ -57,13 +59,20 @@
                             <td class="px-4 py-3 font-mono text-xs text-slate-400">#<?php echo e(str_pad((string) $txn->id, 6, '0', STR_PAD_LEFT)); ?></td>
                             <td class="px-4 py-3 text-xs text-slate-400"><?php echo e(optional($txn->donated_at)->format('M d, Y g:i A')); ?></td>
                             <td class="px-4 py-3"><span class="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-200">Donation</span></td>
+                            <td class="px-4 py-3">
+                                <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold <?php echo e($txn->isPaid() ? 'bg-emerald-500/10 text-emerald-200' : 'bg-amber-500/10 text-amber-200'); ?>">
+                                    <?php echo e($txn->status?->label() ?? '—'); ?>
+
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-xs text-slate-400"><?php echo e($txn->payment_method?->label() ?? '—'); ?></td>
                             <td class="px-4 py-3"><?php echo e($txn->is_anonymous ? 'Anonymous' : ($txn->donor?->name ?? '—')); ?></td>
                             <td class="px-4 py-3"><?php echo e($txn->fundraiser?->title ?? '—'); ?></td>
                             <td class="px-4 py-3 text-xs uppercase text-slate-400"><?php echo e($txn->currency ?: 'PHP'); ?></td>
                             <td class="px-4 py-3 text-right font-bold text-emerald-300">₱<?php echo e(number_format((float) $txn->amount, 2)); ?></td>
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                        <tr><td colspan="7" class="px-4 py-10 text-center text-slate-400">No transactions recorded yet.</td></tr>
+                        <tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">No transactions recorded yet.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

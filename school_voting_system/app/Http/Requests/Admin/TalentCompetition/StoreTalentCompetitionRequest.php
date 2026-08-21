@@ -33,8 +33,6 @@ class StoreTalentCompetitionRequest extends AdminFormRequest
             'type' => ['required', Rule::enum(TalentEventType::class)],
             'talent_category' => ['required', Rule::enum(TalentCategory::class)],
             'organizer' => ['nullable', 'string', 'max:255'],
-            'event_date' => ['required', 'date', 'after_or_equal:voting_starts_at'],
-            'venue' => ['required', 'string', 'max:255'],
             'registration_starts_at' => ['nullable', 'date'],
             'registration_ends_at' => ['nullable', 'date', 'after_or_equal:registration_starts_at'],
             'submission_deadline' => ['nullable', 'date', 'after_or_equal:registration_starts_at'],
@@ -132,7 +130,6 @@ class StoreTalentCompetitionRequest extends AdminFormRequest
     {
         return [
             'title.required' => 'Competition title is required.',
-            'event_date.after_or_equal' => 'Event date cannot be earlier than the voting open schedule.',
             'voting_ends_at.after' => 'Voting close must be later than voting open.',
             'performance_duration_custom.required_if' => 'Enter a custom performance duration in minutes.',
             'winners_count_custom.required_if' => 'Enter the custom number of winners.',

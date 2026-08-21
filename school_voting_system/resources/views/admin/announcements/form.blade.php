@@ -1,7 +1,7 @@
 @php
     $announcement = $announcement ?? null;
     $isEdit = $announcement !== null;
-    $selectedAudiences = old('target_audiences', $isEdit ? ($announcement->target_audiences ?? [\App\Enums\AnnouncementAudience::AllUsers->value]) : [\App\Enums\AnnouncementAudience::AllUsers->value]);
+    $selectedAudiences = old('target_audiences', $isEdit ? ($announcement->target_audiences ?? [\App\Enums\AnnouncementAudience::Students->value]) : [\App\Enums\AnnouncementAudience::Students->value]);
     $relatedModule = old('related_module', $isEdit ? optional($announcement->related_module)->value : \App\Enums\AnnouncementRelatedModule::None->value);
     $relatedId = old('related_id', $isEdit ? $announcement->related_id : null);
     $resolvedStatus = $isEdit ? $announcement->resolvedStatus() : null;
@@ -66,7 +66,7 @@
             {{-- Section 2: Audience --}}
             <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-4 sm:p-5">
                 <h2 class="text-sm font-bold uppercase tracking-wide text-violet-200">Audience</h2>
-                <p class="mt-1 text-xs text-slate-500">Only selected recipients will receive notifications and see targeted announcements.</p>
+                <p class="mt-1 text-xs text-slate-500">Only selected recipients will receive notifications and see this announcement. Grade and section narrow the student list instead of adding extra people. “All Users” overrides the other boxes.</p>
                 <div class="mt-4 grid gap-2 sm:grid-cols-2">
                     @foreach ($audiences as $audience)
                         <label class="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2 text-sm text-slate-300">
@@ -260,7 +260,7 @@
                 </div>
                 <label class="mt-4 flex items-center gap-2 text-sm text-slate-300">
                     <input type="checkbox" name="is_published" value="1" @checked(old('is_published', optional($announcement)->is_published)) class="rounded border-slate-700 bg-slate-950/50 text-violet-500" />
-                    Published
+                    Published (uncheck to keep as draft; choose Archived in Manual Status to archive)
                 </label>
                 <label class="mt-3 flex items-center gap-2 text-sm text-slate-300">
                     <input type="checkbox" name="is_pinned" value="1" @checked(old('is_pinned', optional($announcement)->is_pinned)) class="rounded border-slate-700 bg-slate-950/50 text-violet-500" />
@@ -294,8 +294,6 @@
                         <input type="checkbox" name="resend_notifications" value="1" class="rounded border-slate-700 bg-slate-950/50 text-violet-500" />
                         Resend notifications on save
                     </label>
-                @else
-                    <input type="hidden" name="notify_students" value="1" />
                 @endif
             </section>
 

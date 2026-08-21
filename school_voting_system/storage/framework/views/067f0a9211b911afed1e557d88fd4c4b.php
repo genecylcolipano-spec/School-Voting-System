@@ -45,7 +45,7 @@
 <?php unset($__componentOriginal57da683fe32826f08aa9f05c3342a7e2); ?>
 <?php endif; ?>
 
-    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/regular-admin-dashboard.js', 'resources/js/event-image-preview.js']); ?>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/regular-admin-dashboard.js', 'resources/js/event-image-preview.js', 'resources/js/talent-competition-create.js']); ?>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>

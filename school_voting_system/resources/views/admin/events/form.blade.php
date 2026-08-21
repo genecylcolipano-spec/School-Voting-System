@@ -4,7 +4,7 @@
 @endphp
 <x-app-layout>
     <x-admin-portal :title="$isEdit ? 'Edit Event' : 'Create Event'" :user="$user" :notifications-count="$notificationsCount">
-        <form method="POST" action="{{ $isEdit ? route('admin.events.update', $event) : route('admin.events.store') }}" enctype="multipart/form-data" class="max-w-2xl space-y-4 rounded-2xl border border-cyan-500/15 bg-slate-900/70 p-6">
+        <form method="POST" action="{{ $isEdit ? route('admin.events.update', $event) : route('admin.events.store') }}" enctype="multipart/form-data" class="max-w-2xl min-w-0 space-y-4 rounded-2xl border border-cyan-500/15 bg-slate-900/70 p-4 sm:p-6">
             @csrf @if($isEdit) @method('PUT') @endif
 
             @include('admin.partials.form-input', ['label' => 'Title', 'name' => 'title', 'value' => optional($event)->title, 'required' => true])
@@ -18,7 +18,8 @@
                 :contain="$isEdit && $event->bannerNeedsContainLayout()"
                 :orientation="$isEdit ? $event->imageOrientation() : null"
             >
-                <input id="event-image-input" type="file" name="image" accept=".jpg,.jpeg,.png,image/jpeg,image/png" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-500/20 file:px-3 file:py-1.5 file:text-sm file:text-cyan-300">
+                <input id="event-image-input" type="file" name="image" accept=".jpg,.jpeg,.png,image/jpeg,image/png" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 file:mr-4 file:block file:w-full file:rounded-lg file:border-0 file:bg-cyan-500/20 file:px-3 file:py-1.5 file:text-sm file:text-cyan-300 sm:file:inline-block sm:file:w-auto">
+                <p id="event-image-status" class="mt-1 text-xs text-slate-500"></p>
                 <p class="mt-1 text-xs text-slate-500">
                     Recommended: <span class="text-slate-300">1600 × 900 px</span> · Landscape (16:9) · JPG or PNG · Max 2MB
                 </p>
@@ -31,16 +32,16 @@
 
             <div>
                 <label class="block text-sm font-medium text-slate-300">Status</label>
-                <select name="status" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                <select name="status" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
                     @foreach ($statuses as $status)
-                        <option value="{{ $status->value }}" @selected(old('status', optional($event)->status?->value) === $status->value)>{{ ucfirst($status->value) }}</option>
+                        <option value="{{ $status->value }}" @selected(old('status', optional($event)->status?->value) === $status->value)>{{ $status->label() }}</option>
                     @endforeach
                 </select>
             </div>
 
-            <div class="flex flex-wrap gap-3">
-                <button type="submit" class="rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-5 py-2.5 text-sm font-semibold text-slate-950">Save</button>
-                <a href="{{ route('admin.events.index') }}" class="rounded-xl border border-slate-700 px-5 py-2.5 text-sm text-slate-300">Cancel</a>
+            <div class="flex flex-col gap-3 sm:flex-row">
+                <button type="submit" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-5 py-2.5 text-sm font-semibold text-slate-950 sm:w-auto">Save</button>
+                <a href="{{ route('admin.events.index') }}" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-700 px-5 py-2.5 text-sm text-slate-300 sm:w-auto">Cancel</a>
             </div>
         </form>
 

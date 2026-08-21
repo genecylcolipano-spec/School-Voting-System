@@ -12,6 +12,7 @@
             id="device_name"
             type="text"
             value="Primary Device"
+            autocapitalize="words"
             class="w-full rounded-lg border border-cyan-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-200"
             placeholder="e.g. School Laptop, iPhone"
         >
