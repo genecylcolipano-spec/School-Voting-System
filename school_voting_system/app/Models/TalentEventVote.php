@@ -61,6 +61,13 @@ class TalentEventVote extends Model
                 throw new VoteIntegrityException('This talent event is not currently accepting votes.');
             }
 
+            if ($entry->hasVideo() && ! TalentEventEntryView::query()
+                ->where('user_id', $voter->id)
+                ->where('talent_event_entry_id', $entry->id)
+                ->exists()) {
+                throw new VoteIntegrityException('Watch the performance before voting for this entry.');
+            }
+
             try {
                 return static::create([
                     'talent_event_id' => $event->id,

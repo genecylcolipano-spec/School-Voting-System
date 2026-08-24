@@ -282,11 +282,7 @@ class AdminTalentParticipantController extends Controller
      */
     protected function scopedEventIds($user)
     {
-        if ($user->isSuperAdmin()) {
-            return TalentEvent::query()->pluck('id');
-        }
-
-        return $this->scope->talentEvents($user)->pluck('id');
+        return $this->scope->talentEventsQuery($user)->pluck('id');
     }
 
     protected function storePublicImage(?UploadedFile $file, string $folder): ?string

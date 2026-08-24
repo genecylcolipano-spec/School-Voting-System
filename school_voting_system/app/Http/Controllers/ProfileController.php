@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Passkey;
 use App\Models\User;
 use App\Services\Media\ImageCompressionService;
+use App\Services\Talent\TalentJudgingService;
 use App\Support\AdminPortal;
 use App\Support\UserAgentParser;
 use Illuminate\Http\RedirectResponse;
@@ -24,10 +25,10 @@ class ProfileController extends Controller
     /**
      * Display the user's profile / settings form.
      */
-    public function edit(Request $request): View
+    public function edit(Request $request, TalentJudgingService $judging): View
     {
         /** @var User $user */
-        $user = $request->user()->load(['staffRole'])->loadCount(['passkeys', 'judgingAssignments']);
+        $user = $request->user()->load(['staffRole'])->loadCount(['passkeys']);
 
         $currentPasskeyId = (int) $request->session()->get('authenticated_passkey_id', 0);
 
@@ -96,6 +97,9 @@ class ProfileController extends Controller
 
         $settingsData['notificationsCount'] = AdminPortal::notificationCount($user);
         $settingsData['portalComponent'] = $user->isFaculty() ? 'faculty-portal' : 'student-portal';
+        $settingsData['currentAssignedCompetitionsCount'] = $user->isFaculty()
+            ? $judging->assignedCompetitionsQuery($user, 'current')->count()
+            : 0;
 
         return view('profile.edit-student', $settingsData);
     }

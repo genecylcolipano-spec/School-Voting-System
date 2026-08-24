@@ -2,15 +2,17 @@
     <x-admin-portal title="Reports & Analytics" :user="$user" :notifications-count="$notificationsCount">
         <div
             id="admin-analytics-live"
-            data-live-url="{{ route('admin.analytics.live') }}"
+            data-live-url="{{ route('admin.analytics.live', array_filter(['election' => $election?->id])) }}"
             class="hidden"
             aria-hidden="true"
         ></div>
 
         @include('admin.partials.page-header', [
             'title' => 'Reports & Analytics',
-            'description' => 'Voting turnout, campaign engagement, event attendance, and fundraising performance.',
+            'description' => 'Voting turnout, campaign vote share, event counts, and fundraising performance.',
         ])
+
+        @include('admin.reports.partials.election-picker')
 
         <div class="mb-4 flex items-center justify-end gap-2">
             <span class="relative flex h-2 w-2">
@@ -23,7 +25,7 @@
         <div class="grid gap-4 xl:grid-cols-2">
             <x-admin-chart-panel
                 title="Participation Growth (Events/Voting)"
-                subtitle="Monthly turnout and event participation — Jan to Jun"
+                subtitle="Share of enrolled students who voted in the selected election or its talent events — Jan to Dec"
                 type="line"
                 live-key="participation"
                 :labels="$report['participation']['labels']"
@@ -36,7 +38,7 @@
 
             <x-admin-chart-panel
                 title="Donation/Fundraising History"
-                subtitle="Monthly donation totals — Jan to Dec"
+                subtitle="Paid donation totals for campaigns in your scope — Jan to Dec"
                 type="bar"
                 live-key="fundraising"
                 :labels="$report['fundraising']['labels']"
@@ -61,8 +63,8 @@
             />
 
             <x-admin-chart-panel
-                title="Campaign Engagement Stats"
-                subtitle="Engagement score by partylist campaign"
+                title="Campaign Vote Share"
+                subtitle="Vote share by partylist for the selected election"
                 type="bar"
                 live-key="campaigns"
                 :labels="$report['campaigns']['labels']"
@@ -77,8 +79,8 @@
         <div class="mt-4 grid gap-4 xl:grid-cols-12">
             <div class="xl:col-span-8">
                 <x-admin-chart-panel
-                    title="Event Attendance History"
-                    subtitle="School events scheduled and talent event participation by month"
+                    title="Events by Month"
+                    subtitle="School events and talent competitions scheduled each month"
                     type="bar"
                     live-key="events"
                     :labels="$report['events']['labels']"
@@ -106,7 +108,7 @@
                             </div>
                         </div>
                     @empty
-                        <p class="text-sm text-slate-400">No turnout data for your assigned election yet.</p>
+                        <p class="text-sm text-slate-400">No turnout data for the selected election yet.</p>
                     @endforelse
                 </div>
             </section>
@@ -114,9 +116,9 @@
 
         <section class="mt-4 rounded-2xl border border-violet-500/15 bg-slate-900/80 p-5">
             <h3 class="text-base font-semibold text-white">Campaign Performance</h3>
-            <p class="mt-0.5 text-xs text-slate-400">Vote share and seats won, derived from candidate votes</p>
+            <p class="mt-0.5 text-xs text-slate-400">Vote share and seats won, including ties</p>
 
-            <div class="mt-4 space-y-3">
+            <div id="analytics-campaign-performance" class="mt-4 space-y-3">
                 @forelse ($report['campaignPerformance'] ?? [] as $campaign)
                     <div class="rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3">
                         <div class="flex items-center justify-between gap-2">
@@ -142,14 +144,14 @@
                         </div>
                     </div>
                 @empty
-                    <p class="text-sm text-slate-400">No campaign vote data for your assigned election yet.</p>
+                    <p class="text-sm text-slate-400">No campaign vote data for the selected election yet.</p>
                 @endforelse
             </div>
         </section>
 
         <section id="talent-competitions" class="mt-4 scroll-mt-24 rounded-2xl border border-violet-500/15 bg-slate-900/80 p-5">
             <h3 class="text-base font-semibold text-white">Talent Competition Insights</h3>
-            <p class="mt-0.5 text-xs text-slate-400">Category, contestants, votes, voting method, and winner settings</p>
+            <p class="mt-0.5 text-xs text-slate-400">Category, contestants, ranking metric, and actual winners</p>
 
             <div class="mt-4 overflow-x-auto">
                 <table class="min-w-full text-left text-sm">
@@ -164,7 +166,7 @@
                             <th class="px-3 py-2">Status</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-800">
+                    <tbody id="analytics-talent-competitions" class="divide-y divide-slate-800">
                         @forelse ($report['talentCompetitions'] ?? [] as $event)
                             <tr class="text-slate-300">
                                 <td class="px-3 py-3 font-medium text-white">{{ $event['name'] }}</td>
@@ -172,7 +174,7 @@
                                 <td class="px-3 py-3">{{ $event['contestants'] }}</td>
                                 <td class="px-3 py-3">{{ number_format($event['total_votes']) }}</td>
                                 <td class="px-3 py-3">{{ $event['voting_method'] }}</td>
-                                <td class="px-3 py-3">{{ $event['winner_count'] }}</td>
+                                <td class="px-3 py-3 text-emerald-300">{{ count($event['winners'] ?? []) ? implode(', ', $event['winners']) : '—' }}</td>
                                 <td class="px-3 py-3">{{ $event['display_status'] }}</td>
                             </tr>
                         @empty

@@ -20,15 +20,17 @@
 <?php $component->withAttributes(['title' => 'Reports & Analytics','user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount)]); ?>
         <div
             id="admin-analytics-live"
-            data-live-url="<?php echo e(route('admin.analytics.live')); ?>"
+            data-live-url="<?php echo e(route('admin.analytics.live', array_filter(['election' => $election?->id]))); ?>"
             class="hidden"
             aria-hidden="true"
         ></div>
 
         <?php echo $__env->make('admin.partials.page-header', [
             'title' => 'Reports & Analytics',
-            'description' => 'Voting turnout, campaign engagement, event attendance, and fundraising performance.',
+            'description' => 'Voting turnout, campaign vote share, event counts, and fundraising performance.',
         ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
+        <?php echo $__env->make('admin.reports.partials.election-picker', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
         <div class="mb-4 flex items-center justify-end gap-2">
             <span class="relative flex h-2 w-2">
@@ -41,14 +43,14 @@
         <div class="grid gap-4 xl:grid-cols-2">
             <?php if (isset($component)) { $__componentOriginal3f4023e8ae0200a7792ee5dfef809633 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal3f4023e8ae0200a7792ee5dfef809633 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin-chart-panel','data' => ['title' => 'Participation Growth (Events/Voting)','subtitle' => 'Monthly turnout and event participation — Jan to Jun','type' => 'line','liveKey' => 'participation','labels' => $report['participation']['labels'],'values' => $report['participation']['values'],'yMax' => $report['participation']['yMax'],'yTicks' => $report['participation']['yTicks'],'valueSuffix' => $report['participation']['valueSuffix'],'accent' => '#34d399']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin-chart-panel','data' => ['title' => 'Participation Growth (Events/Voting)','subtitle' => 'Share of enrolled students who voted in the selected election or its talent events — Jan to Dec','type' => 'line','liveKey' => 'participation','labels' => $report['participation']['labels'],'values' => $report['participation']['values'],'yMax' => $report['participation']['yMax'],'yTicks' => $report['participation']['yTicks'],'valueSuffix' => $report['participation']['valueSuffix'],'accent' => '#34d399']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('admin-chart-panel'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['title' => 'Participation Growth (Events/Voting)','subtitle' => 'Monthly turnout and event participation — Jan to Jun','type' => 'line','live-key' => 'participation','labels' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['participation']['labels']),'values' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['participation']['values']),'y-max' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['participation']['yMax']),'y-ticks' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['participation']['yTicks']),'value-suffix' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['participation']['valueSuffix']),'accent' => '#34d399']); ?>
+<?php $component->withAttributes(['title' => 'Participation Growth (Events/Voting)','subtitle' => 'Share of enrolled students who voted in the selected election or its talent events — Jan to Dec','type' => 'line','live-key' => 'participation','labels' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['participation']['labels']),'values' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['participation']['values']),'y-max' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['participation']['yMax']),'y-ticks' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['participation']['yTicks']),'value-suffix' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['participation']['valueSuffix']),'accent' => '#34d399']); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal3f4023e8ae0200a7792ee5dfef809633)): ?>
@@ -62,14 +64,14 @@
 
             <?php if (isset($component)) { $__componentOriginal3f4023e8ae0200a7792ee5dfef809633 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal3f4023e8ae0200a7792ee5dfef809633 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin-chart-panel','data' => ['title' => 'Donation/Fundraising History','subtitle' => 'Monthly donation totals — Jan to Dec','type' => 'bar','liveKey' => 'fundraising','labels' => $report['fundraising']['labels'],'values' => $report['fundraising']['values'],'yMax' => $report['fundraising']['yMax'],'yTicks' => $report['fundraising']['yTicks'],'valuePrefix' => $report['fundraising']['valuePrefix'],'accent' => '#818cf8']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin-chart-panel','data' => ['title' => 'Donation/Fundraising History','subtitle' => 'Paid donation totals for campaigns in your scope — Jan to Dec','type' => 'bar','liveKey' => 'fundraising','labels' => $report['fundraising']['labels'],'values' => $report['fundraising']['values'],'yMax' => $report['fundraising']['yMax'],'yTicks' => $report['fundraising']['yTicks'],'valuePrefix' => $report['fundraising']['valuePrefix'],'accent' => '#818cf8']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('admin-chart-panel'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['title' => 'Donation/Fundraising History','subtitle' => 'Monthly donation totals — Jan to Dec','type' => 'bar','live-key' => 'fundraising','labels' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['labels']),'values' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['values']),'y-max' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['yMax']),'y-ticks' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['yTicks']),'value-prefix' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['valuePrefix']),'accent' => '#818cf8']); ?>
+<?php $component->withAttributes(['title' => 'Donation/Fundraising History','subtitle' => 'Paid donation totals for campaigns in your scope — Jan to Dec','type' => 'bar','live-key' => 'fundraising','labels' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['labels']),'values' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['values']),'y-max' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['yMax']),'y-ticks' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['yTicks']),'value-prefix' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['valuePrefix']),'accent' => '#818cf8']); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal3f4023e8ae0200a7792ee5dfef809633)): ?>
@@ -104,14 +106,14 @@
 
             <?php if (isset($component)) { $__componentOriginal3f4023e8ae0200a7792ee5dfef809633 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal3f4023e8ae0200a7792ee5dfef809633 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin-chart-panel','data' => ['title' => 'Campaign Engagement Stats','subtitle' => 'Engagement score by partylist campaign','type' => 'bar','liveKey' => 'campaigns','labels' => $report['campaigns']['labels'],'values' => $report['campaigns']['values'],'yMax' => $report['campaigns']['yMax'],'yTicks' => $report['campaigns']['yTicks'],'valueSuffix' => $report['campaigns']['valueSuffix'],'accent' => '#f472b6']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin-chart-panel','data' => ['title' => 'Campaign Vote Share','subtitle' => 'Vote share by partylist for the selected election','type' => 'bar','liveKey' => 'campaigns','labels' => $report['campaigns']['labels'],'values' => $report['campaigns']['values'],'yMax' => $report['campaigns']['yMax'],'yTicks' => $report['campaigns']['yTicks'],'valueSuffix' => $report['campaigns']['valueSuffix'],'accent' => '#f472b6']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('admin-chart-panel'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['title' => 'Campaign Engagement Stats','subtitle' => 'Engagement score by partylist campaign','type' => 'bar','live-key' => 'campaigns','labels' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['campaigns']['labels']),'values' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['campaigns']['values']),'y-max' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['campaigns']['yMax']),'y-ticks' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['campaigns']['yTicks']),'value-suffix' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['campaigns']['valueSuffix']),'accent' => '#f472b6']); ?>
+<?php $component->withAttributes(['title' => 'Campaign Vote Share','subtitle' => 'Vote share by partylist for the selected election','type' => 'bar','live-key' => 'campaigns','labels' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['campaigns']['labels']),'values' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['campaigns']['values']),'y-max' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['campaigns']['yMax']),'y-ticks' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['campaigns']['yTicks']),'value-suffix' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['campaigns']['valueSuffix']),'accent' => '#f472b6']); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal3f4023e8ae0200a7792ee5dfef809633)): ?>
@@ -128,14 +130,14 @@
             <div class="xl:col-span-8">
                 <?php if (isset($component)) { $__componentOriginal3f4023e8ae0200a7792ee5dfef809633 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal3f4023e8ae0200a7792ee5dfef809633 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin-chart-panel','data' => ['title' => 'Event Attendance History','subtitle' => 'School events scheduled and talent event participation by month','type' => 'bar','liveKey' => 'events','labels' => $report['events']['labels'],'values' => $report['events']['values'],'yMax' => $report['events']['yMax'],'yTicks' => $report['events']['yTicks'],'accent' => '#38bdf8']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin-chart-panel','data' => ['title' => 'Events by Month','subtitle' => 'School events and talent competitions scheduled each month','type' => 'bar','liveKey' => 'events','labels' => $report['events']['labels'],'values' => $report['events']['values'],'yMax' => $report['events']['yMax'],'yTicks' => $report['events']['yTicks'],'accent' => '#38bdf8']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('admin-chart-panel'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['title' => 'Event Attendance History','subtitle' => 'School events scheduled and talent event participation by month','type' => 'bar','live-key' => 'events','labels' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['events']['labels']),'values' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['events']['values']),'y-max' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['events']['yMax']),'y-ticks' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['events']['yTicks']),'accent' => '#38bdf8']); ?>
+<?php $component->withAttributes(['title' => 'Events by Month','subtitle' => 'School events and talent competitions scheduled each month','type' => 'bar','live-key' => 'events','labels' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['events']['labels']),'values' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['events']['values']),'y-max' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['events']['yMax']),'y-ticks' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['events']['yTicks']),'accent' => '#38bdf8']); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal3f4023e8ae0200a7792ee5dfef809633)): ?>
@@ -165,7 +167,7 @@
                             </div>
                         </div>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                        <p class="text-sm text-slate-400">No turnout data for your assigned election yet.</p>
+                        <p class="text-sm text-slate-400">No turnout data for the selected election yet.</p>
                     <?php endif; ?>
                 </div>
             </section>
@@ -173,9 +175,9 @@
 
         <section class="mt-4 rounded-2xl border border-violet-500/15 bg-slate-900/80 p-5">
             <h3 class="text-base font-semibold text-white">Campaign Performance</h3>
-            <p class="mt-0.5 text-xs text-slate-400">Vote share and seats won, derived from candidate votes</p>
+            <p class="mt-0.5 text-xs text-slate-400">Vote share and seats won, including ties</p>
 
-            <div class="mt-4 space-y-3">
+            <div id="analytics-campaign-performance" class="mt-4 space-y-3">
                 <?php $__empty_1 = true; $__currentLoopData = $report['campaignPerformance'] ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $campaign): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                     <div class="rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3">
                         <div class="flex items-center justify-between gap-2">
@@ -201,14 +203,14 @@
                         </div>
                     </div>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                    <p class="text-sm text-slate-400">No campaign vote data for your assigned election yet.</p>
+                    <p class="text-sm text-slate-400">No campaign vote data for the selected election yet.</p>
                 <?php endif; ?>
             </div>
         </section>
 
         <section id="talent-competitions" class="mt-4 scroll-mt-24 rounded-2xl border border-violet-500/15 bg-slate-900/80 p-5">
             <h3 class="text-base font-semibold text-white">Talent Competition Insights</h3>
-            <p class="mt-0.5 text-xs text-slate-400">Category, contestants, votes, voting method, and winner settings</p>
+            <p class="mt-0.5 text-xs text-slate-400">Category, contestants, ranking metric, and actual winners</p>
 
             <div class="mt-4 overflow-x-auto">
                 <table class="min-w-full text-left text-sm">
@@ -223,7 +225,7 @@
                             <th class="px-3 py-2">Status</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-800">
+                    <tbody id="analytics-talent-competitions" class="divide-y divide-slate-800">
                         <?php $__empty_1 = true; $__currentLoopData = $report['talentCompetitions'] ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $event): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                             <tr class="text-slate-300">
                                 <td class="px-3 py-3 font-medium text-white"><?php echo e($event['name']); ?></td>
@@ -231,7 +233,7 @@
                                 <td class="px-3 py-3"><?php echo e($event['contestants']); ?></td>
                                 <td class="px-3 py-3"><?php echo e(number_format($event['total_votes'])); ?></td>
                                 <td class="px-3 py-3"><?php echo e($event['voting_method']); ?></td>
-                                <td class="px-3 py-3"><?php echo e($event['winner_count']); ?></td>
+                                <td class="px-3 py-3 text-emerald-300"><?php echo e(count($event['winners'] ?? []) ? implode(', ', $event['winners']) : '—'); ?></td>
                                 <td class="px-3 py-3"><?php echo e($event['display_status']); ?></td>
                             </tr>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>

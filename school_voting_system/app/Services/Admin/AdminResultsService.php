@@ -493,11 +493,6 @@ class AdminResultsService
             return $scoped;
         }
 
-        $manageable = (int) $this->scope->manageableStudentsQuery($admin)->count();
-        if ($manageable > 0) {
-            return $manageable;
-        }
-
         return (int) User::query()
             ->where('role', UserRole::Student)
             ->where('is_active', true)

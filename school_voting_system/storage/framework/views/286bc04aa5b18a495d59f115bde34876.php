@@ -77,7 +77,7 @@
                 <div x-show="openTalent" x-transition class="mt-0.5 space-y-0.5 border-l border-violet-500/10 pl-3">
                     <a href="<?php echo e(route('admin.talent-competition.index')); ?>" @click="sidebarOpen = false" class="<?php echo e($subLink(request()->routeIs('admin.talent-competition.*'))); ?>">Competition Management</a>
                     <a href="<?php echo e(route('admin.talent-participants.index')); ?>" @click="sidebarOpen = false" class="<?php echo e($subLink(request()->routeIs('admin.talent-participants.*'))); ?>">Participants</a>
-                    <a href="<?php echo e(route('admin.live.talent')); ?>" @click="sidebarOpen = false" class="<?php echo e($subLink(request()->routeIs('admin.live.talent'))); ?>">Live Monitoring</a>
+                    <a href="<?php echo e(route('admin.live.talent')); ?>" @click="sidebarOpen = false" class="<?php echo e($subLink(request()->routeIs('admin.live.talent'))); ?>">Talent Live Monitoring</a>
                 </div>
             </div>
         </div>
@@ -97,7 +97,7 @@
         <div x-show="openVoting && !collapsed" x-transition class="mt-1 space-y-0.5 pl-4">
             <a href="<?php echo e(route('admin.elections.index')); ?>" @click="sidebarOpen = false" class="<?php echo e($subLink(request()->routeIs('admin.elections.*'))); ?>">Elections</a>
             <a href="<?php echo e(route('admin.campaigns.index')); ?>" @click="sidebarOpen = false" class="<?php echo e($subLink(request()->routeIs('admin.campaigns.*'))); ?>">Campaigns</a>
-            <a href="<?php echo e(route('admin.live.election')); ?>" @click="sidebarOpen = false" class="<?php echo e($subLink(request()->routeIs('admin.live.election'))); ?>">Live Monitoring</a>
+            <a href="<?php echo e(route('admin.live.election')); ?>" @click="sidebarOpen = false" class="<?php echo e($subLink(request()->routeIs('admin.live.election'))); ?>">Election Live Monitoring</a>
         </div>
     </div>
 

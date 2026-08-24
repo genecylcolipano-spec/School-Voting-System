@@ -12,8 +12,9 @@
                     <th class="px-4 py-3 text-right">Votes</th>
                     <th class="px-4 py-3 text-right">Approved</th>
                 @endif
-                <th class="px-4 py-3">Last Vote</th>
-                <th class="px-4 py-3 text-right">Action</th>
+                    <th class="px-4 py-3">Last Vote</th>
+                    <th class="px-4 py-3">Time remaining</th>
+                    <th class="px-4 py-3 text-right">Action</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-slate-800" data-live-list-body>
@@ -46,6 +47,14 @@
                         <td class="px-4 py-3 text-right text-violet-300" data-field="approved_participants" data-flashable>{{ number_format($card['approved_participants'] ?? 0) }}</td>
                     @endif
                     <td class="px-4 py-3 text-xs" data-field="last_vote_at" data-flashable>{{ $card['last_vote_at'] ?? '—' }}</td>
+                    <td class="px-4 py-3 text-xs text-cyan-200">
+                        <span
+                            data-countdown
+                            data-target-iso="{{ $card['countdown']['target_at_iso'] ?? '' }}"
+                            data-countdown-phase="{{ $card['countdown']['phase'] ?? '' }}"
+                            data-countdown-remaining
+                        >{{ $card['countdown']['remaining'] ?? '—' }}</span>
+                    </td>
                     <td class="px-4 py-3 text-right">
                         <a href="{{ $card['details_url'] }}" class="font-semibold text-violet-300 hover:text-violet-200">Open →</a>
                     </td>

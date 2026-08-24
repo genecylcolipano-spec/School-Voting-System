@@ -44,8 +44,13 @@ unset($__defined_vars, $__key, $__value); ?>
 
 <?php
     $isAdmin = $theme === 'admin';
-    $cardBorder = $isAdmin ? 'border-violet-500/20' : 'border-cyan-500/20';
-    $accent = $isAdmin ? 'text-violet-300' : 'text-cyan-300';
+    $isFaculty = $theme === 'faculty';
+    $cardBorder = $isAdmin
+        ? 'border-violet-500/20'
+        : ($isFaculty ? 'border-teal-500/20' : 'border-cyan-500/20');
+    $accent = $isAdmin
+        ? 'text-violet-300'
+        : ($isFaculty ? 'text-teal-300' : 'text-cyan-300');
     $entries = collect($spotlight);
 ?>
 

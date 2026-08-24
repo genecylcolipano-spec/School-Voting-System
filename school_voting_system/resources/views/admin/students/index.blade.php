@@ -6,6 +6,14 @@
             'showAction' => false,
         ])
 
+        @if (auth()->user()?->isSuperAdmin())
+            <div class="mb-6 flex flex-wrap justify-end gap-3">
+                <a href="{{ route('super-admin.roster.students.index') }}" class="rounded-xl border border-violet-500/30 px-4 py-2 text-sm font-semibold text-violet-300 hover:bg-violet-500/10">
+                    Manage Student Roster
+                </a>
+            </div>
+        @endif
+
         @if (session('success'))
             <div class="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">{{ session('success') }}</div>
         @endif
@@ -51,6 +59,9 @@
                 </select>
             @endif
             <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white sm:w-auto">Search</button>
+            @if ($hasFilters ?? false)
+                <a href="{{ route('admin.students.index') }}" class="w-full rounded-xl border border-slate-700 px-4 py-2 text-center text-sm font-semibold text-slate-300 hover:bg-slate-800 sm:w-auto">Clear</a>
+            @endif
         </form>
 
         <div class="overflow-x-auto rounded-2xl border border-violet-500/15 bg-slate-900/70">
@@ -108,7 +119,17 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-4 py-6 text-slate-400">No registered student accounts found.</td>
+                            <td colspan="9" class="px-4 py-10 text-center text-slate-400">
+                                @if ($hasFilters ?? false)
+                                    <p>No registered student accounts match your filters.</p>
+                                @else
+                                    <p class="font-medium text-slate-300">No registered student accounts yet.</p>
+                                    <p class="mt-2 text-sm">Students appear here after they are added to the Student Roster and complete passkey enrollment. This list is not the official roster.</p>
+                                    @if (auth()->user()?->isSuperAdmin())
+                                        <a href="{{ route('super-admin.roster.students.index') }}" class="mt-4 inline-flex rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Open Student Roster</a>
+                                    @endif
+                                @endif
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -117,6 +138,4 @@
 
         <div class="mt-6">{{ $students->links() }}</div>
     </x-admin-portal>
-
-    @vite(['resources/js/regular-admin-dashboard.js'])
 </x-app-layout>

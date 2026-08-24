@@ -67,8 +67,8 @@ unset($__defined_vars, $__key, $__value); ?>
 
     $removeLabel = $isFaculty ? 'Remove Faculty' : 'Remove Administrator';
     $removeConfirm = $isFaculty
-        ? 'Remove Faculty?\n\nThis action cannot be undone if the account has no active assignments. Accounts with active judging or unpublished scores cannot be removed — deactivate instead.'
-        : 'Remove Administrator?\n\nThis action cannot be undone if the account has no active assignments. Accounts tied to active elections, competitions, or fundraising cannot be removed — deactivate instead.';
+        ? 'Remove Faculty?\n\nThis cannot be undone if the account has no blocking assignments. Accounts with active judging or unpublished scores cannot be removed — suspend or archive instead.'
+        : 'Remove Administrator?\n\nThis cannot be undone if the account has no blocking assignments. Accounts tied to active elections, competitions, or fundraising cannot be removed — suspend or archive instead.';
 
     $itemClass = 'flex w-full items-center gap-3 px-3.5 py-2.5 text-left text-sm text-slate-200 transition hover:bg-slate-800/90 hover:text-white';
     $dangerClass = 'flex w-full items-center gap-3 px-3.5 py-2.5 text-left text-sm text-rose-300 transition hover:bg-rose-500/10 hover:text-rose-200';
@@ -157,12 +157,12 @@ unset($__defined_vars, $__key, $__value); ?>
                     </button>
                 </form>
             <?php elseif($account->is_active): ?>
-                <form method="POST" action="<?php echo e($toggleRoute); ?>" onsubmit="return confirm('Deactivate <?php echo e(addslashes($account->name)); ?>?\n\nThey will not be able to sign in until reactivated.');">
+                <form method="POST" action="<?php echo e($toggleRoute); ?>" onsubmit="return confirm('Suspend <?php echo e(addslashes($account->name)); ?>?\n\nThey will not be able to sign in until reactivated. This is not the same as archiving.');">
                     <?php echo csrf_field(); ?>
                     <?php echo method_field('PATCH'); ?>
                     <button type="submit" data-popover-close role="menuitem" class="<?php echo e($itemClass); ?>">
                         <span class="w-5 shrink-0 text-center" aria-hidden="true">🚫</span>
-                        <span>Deactivate Account</span>
+                        <span>Suspend Account</span>
                     </button>
                 </form>
             <?php else: ?>
@@ -182,7 +182,7 @@ unset($__defined_vars, $__key, $__value); ?>
         <?php if($isStudent): ?>
             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('updateStudentRecord', $account)): ?>
                 <?php if (! ($account->archived_at)): ?>
-                    <form method="POST" action="<?php echo e($archiveRoute); ?>" onsubmit="return confirm('Archive Student?\n\nVotes, submissions, donations, and login history are preserved. Students are never permanently deleted.');">
+                    <form method="POST" action="<?php echo e($archiveRoute); ?>" onsubmit="return confirm('Archive <?php echo e(addslashes($account->name)); ?>?\n\nStatus becomes Deactivated. Votes, submissions, donations, and login history are preserved. Students are never permanently deleted.');">
                         <?php echo csrf_field(); ?>
                         <button type="submit" data-popover-close role="menuitem" class="<?php echo e($dangerClass); ?>">
                             <span class="w-5 shrink-0 text-center" aria-hidden="true">📦</span>
@@ -192,6 +192,15 @@ unset($__defined_vars, $__key, $__value); ?>
                 <?php endif; ?>
             <?php endif; ?>
         <?php else: ?>
+            <?php if (! ($account->archived_at)): ?>
+                <form method="POST" action="<?php echo e($archiveRoute); ?>" onsubmit="return confirm('Archive <?php echo e(addslashes($account->name)); ?>?\n\nStatus becomes Deactivated. They cannot sign in until restored.');">
+                    <?php echo csrf_field(); ?>
+                    <button type="submit" data-popover-close role="menuitem" class="<?php echo e($itemClass); ?>">
+                        <span class="w-5 shrink-0 text-center" aria-hidden="true">📦</span>
+                        <span>Archive Account</span>
+                    </button>
+                </form>
+            <?php endif; ?>
             <form method="POST" action="<?php echo e($removeRoute); ?>" onsubmit="return confirm(<?php echo \Illuminate\Support\Js::from($removeConfirm)->toHtml() ?>);">
                 <?php echo csrf_field(); ?>
                 <?php echo method_field('DELETE'); ?>

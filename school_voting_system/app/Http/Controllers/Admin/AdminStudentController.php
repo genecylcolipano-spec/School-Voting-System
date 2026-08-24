@@ -64,9 +64,13 @@ class AdminStudentController extends Controller
             'notificationsCount' => AdminPortal::notificationCount($request->user()),
             'students' => $students,
             'isScoped' => ! $request->user()->isSuperAdmin(),
-            'gradeLevels' => $this->scope->assignableGradeLevels($request->user()),
-            'sections' => $this->scope->assignableSections($request->user()),
+            'gradeLevels' => $this->scope->studentFilterGradeLevels($request->user()),
+            'sections' => $this->scope->studentFilterSections($request->user()),
             'statusFilter' => $status,
+            'hasFilters' => $request->filled('q')
+                || $request->filled('status')
+                || $request->filled('grade_level')
+                || $request->filled('section'),
         ]);
     }
 
@@ -96,8 +100,8 @@ class AdminStudentController extends Controller
             'user' => $request->user()->loadCount('passkeys'),
             'notificationsCount' => AdminPortal::notificationCount($request->user()),
             'student' => $student,
-            'gradeLevels' => $this->scope->assignableGradeLevels($request->user()),
-            'sections' => $this->scope->assignableSections($request->user()),
+            'gradeLevels' => [],
+            'sections' => [],
             'statuses' => StudentStatus::cases(),
         ]);
     }
@@ -147,7 +151,7 @@ class AdminStudentController extends Controller
         abort_unless($student->isStudent(), 404);
 
         if ($student->isArchived()) {
-            return back()->with('error', 'Restore this deactivated account before changing status.');
+            return back()->with('error', 'Restore this archived account before changing status.');
         }
 
         $student->forceFill(['is_active' => ! $student->is_active])->save();
@@ -175,13 +179,13 @@ class AdminStudentController extends Controller
         $this->lifecycle->archive($student);
 
         $this->logAdminAction(
-            'Deactivated student '.$student->account_id,
+            'Archived student '.$student->account_id,
             AuditActionType::User,
             User::class,
             $student->id,
         );
 
-        return back()->with('success', 'Student account deactivated. Voting history is preserved.');
+        return back()->with('success', 'Student account archived. Voting history is preserved.');
     }
 
     public function restore(Request $request, User $student): RedirectResponse

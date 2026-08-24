@@ -200,16 +200,16 @@ class SuperAdminStaffUserController extends Controller
     {
         abort_unless($request->user()?->isSuperAdmin(), 403);
         abort_unless(in_array($user->role, [UserRole::Admin, UserRole::Faculty], true), 404);
-        abort_if($user->id === $request->user()->id, 403, 'You cannot deactivate your own account.');
+        abort_if($user->id === $request->user()->id, 403, 'You cannot suspend your own account.');
 
         if ($user->isArchived()) {
-            return back()->with('error', 'Restore this archived account before changing active status.');
+            return back()->with('error', 'Restore this archived account before changing status.');
         }
 
         $user->forceFill(['is_active' => ! $user->is_active])->save();
 
         $this->logAdminAction(
-            ($user->is_active ? 'Activated' : 'Deactivated').' '.$user->account_id,
+            ($user->is_active ? 'Activated' : 'Suspended').' '.$user->account_id,
             AuditActionType::User,
             targetType: User::class,
             targetId: $user->id,
@@ -219,7 +219,7 @@ class SuperAdminStaffUserController extends Controller
             'success',
             $user->is_active
                 ? 'Account activated.'
-                : 'Account deactivated. They cannot sign in until reactivated.'
+                : 'Account suspended. They cannot sign in until reactivated.'
         );
     }
 
@@ -238,7 +238,7 @@ class SuperAdminStaffUserController extends Controller
             targetId: $user->id,
         );
 
-        return back()->with('success', 'Account archived and deactivated.');
+        return back()->with('success', 'Account archived. Status is Deactivated until restored.');
     }
 
     public function restore(Request $request, User $user): RedirectResponse

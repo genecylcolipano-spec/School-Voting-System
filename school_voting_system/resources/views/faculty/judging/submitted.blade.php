@@ -19,6 +19,13 @@
                 </thead>
                 <tbody class="divide-y divide-slate-800">
                     @forelse ($summaries as $row)
+                        @php
+                            $statusClass = match ($row['status']) {
+                                'Complete' => 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
+                                'In Progress' => 'border-amber-500/30 bg-amber-500/10 text-amber-200',
+                                default => 'border-slate-500/30 bg-slate-500/10 text-slate-300',
+                            };
+                        @endphp
                         <tr>
                             <td class="px-4 py-3 text-white">{{ $row['competition']->title }}</td>
                             <td class="px-4 py-3 text-slate-300">{{ $row['judge_role'] }}</td>
@@ -26,7 +33,7 @@
                             <td class="px-4 py-3 font-semibold text-teal-200">{{ $row['completion_percent'] }}%</td>
                             <td class="px-4 py-3 text-slate-400">{{ optional($row['submission_date'])->format('M d, Y g:i A') ?? '—' }}</td>
                             <td class="px-4 py-3">
-                                <span class="rounded-full border border-teal-500/30 bg-teal-500/10 px-2.5 py-0.5 text-xs font-semibold text-teal-200">{{ $row['status'] }}</span>
+                                <span class="rounded-full border px-2.5 py-0.5 text-xs font-semibold {{ $statusClass }}">{{ $row['status'] }}</span>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <a href="{{ route('faculty.judging.show', $row['competition']) }}" class="text-sm font-semibold text-teal-300 hover:text-teal-200">Open</a>
@@ -57,14 +64,12 @@
                     <tbody class="divide-y divide-slate-800">
                         @forelse ($sheets as $sheet)
                             <tr>
-                                <td class="px-4 py-3 text-slate-200">{{ $sheet->talentEvent?->title ?? '—' }}</td>
-                                <td class="px-4 py-3 text-white">{{ $sheet->entry?->display_name ?? '—' }}</td>
+                                <td class="px-4 py-3 text-slate-200">{{ $sheet->talentEvent->title }}</td>
+                                <td class="px-4 py-3 text-white">{{ $sheet->entry->display_name }}</td>
                                 <td class="px-4 py-3 font-semibold text-teal-200">{{ number_format((float) $sheet->total_score, 2) }}</td>
                                 <td class="px-4 py-3 text-slate-400">{{ optional($sheet->submitted_at)->format('M d, Y g:i A') ?? '—' }}</td>
                                 <td class="px-4 py-3 text-right">
-                                    @if ($sheet->talentEvent && $sheet->entry)
-                                        <a href="{{ route('faculty.judging.score', [$sheet->talentEvent, $sheet->entry]) }}" class="text-sm font-semibold text-teal-300 hover:text-teal-200">View</a>
-                                    @endif
+                                    <a href="{{ route('faculty.judging.score', [$sheet->talentEvent, $sheet->entry, 'from' => 'submitted']) }}" class="text-sm font-semibold text-teal-300 hover:text-teal-200">View</a>
                                 </td>
                             </tr>
                         @empty

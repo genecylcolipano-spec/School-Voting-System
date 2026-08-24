@@ -262,7 +262,7 @@ class StudentUpcomingActivitiesService
                     bannerUrl: $event->has_uploaded_image
                         ? ($event->bannerThumbUrl() ?? $event->image_url)
                         : null,
-                    scheduleLabel: $event->event_date?->format('M d, Y') ?? 'TBA',
+                    scheduleLabel: $event->scheduleLabel(),
                     statusKey: $mapped['status_key'],
                     statusLabel: $mapped['status_label'],
                     actionLabel: $mapped['action_label'],
@@ -278,32 +278,11 @@ class StudentUpcomingActivitiesService
      */
     protected function mapSchoolEventAction(Event $event): array
     {
-        $showUrl = route('student.events.show', $event);
-        $status = $event->displayStatus();
-
-        if ($status === EventStatus::Completed) {
-            return [
-                'status_key' => 'completed',
-                'status_label' => 'Completed',
-                'action_label' => 'View Summary',
-                'action_url' => $showUrl,
-            ];
-        }
-
-        if ($event->event_date && $event->event_date->isToday()) {
-            return [
-                'status_key' => 'active',
-                'status_label' => 'Ongoing',
-                'action_label' => 'Join',
-                'action_url' => $showUrl,
-            ];
-        }
-
         return [
-            'status_key' => 'upcoming',
-            'status_label' => 'Upcoming',
-            'action_label' => 'View',
-            'action_url' => $showUrl,
+            'status_key' => $event->campusStatusKey(),
+            'status_label' => $event->campusStatusLabel(),
+            'action_label' => 'View details',
+            'action_url' => route('student.events.show', $event),
         ];
     }
 

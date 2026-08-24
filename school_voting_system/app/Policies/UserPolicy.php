@@ -33,9 +33,7 @@ class UserPolicy
             return false;
         }
 
-        return $this->scope->scopedStudentsQuery($actor)
-            ->whereKey($target->id)
-            ->exists();
+        return $this->scope->canManageStudent($actor, $target);
     }
 
     public function updateStudentRecord(User $actor, User $target): bool

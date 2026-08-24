@@ -4,7 +4,6 @@
         $heroActions = $heroActions ?? ['primary' => null, 'secondary' => null, 'phase' => 'unknown'];
         $heroPrimary = $heroActions['primary'] ?? null;
         $heroSecondary = $heroActions['secondary'] ?? null;
-        $entryStatus = $studentEntry?->status;
         $statusKey = $talentEvent->currentStatusKey();
         $statusLabel = $talentEvent->displayStatusLabel();
         $competitionCategory = $talentEvent->talent_category?->label() ?? $talentEvent->type?->label() ?? 'Talent';
@@ -15,15 +14,8 @@
         $votingOpen = $talentEvent->isAcceptingVotes();
         $resultsPublished = $talentEvent->hasPublishedResults();
         $votingClosed = $talentEvent->votingHasClosed() && ! $resultsPublished;
-        $registrationStatusLabel = $registrationOpen ? 'Registration Open' : 'Registration Closed';
         $officialResultsUrl = route('student.results.talent.show', $talentEvent);
 
-        $studentVote = $hasVoted
-            ? \App\Models\TalentEventVote::query()
-                ->where('talent_event_id', $talentEvent->id)
-                ->where('user_id', $user->id)
-                ->first()
-            : null;
         $votedEntry = ($hasVoted && $votedEntryId)
             ? $talentEvent->approvedEntries->firstWhere('id', $votedEntryId)
             : null;
@@ -70,9 +62,42 @@
         ];
 
         $votingEndsIso = $talentEvent->voting_ends_at?->toIso8601String();
+        $registrationEndsIso = $talentEvent->registration_ends_at?->toIso8601String();
+        $showTimeline = ! $votingOpen && ! $resultsPublished;
+        $showRegistrationDetails = $registrationOpen || (! $votingOpen && ! $resultsPublished);
+        $detailsDefaultOpen = $registrationOpen;
+
+        $timeHeading = 'Schedule';
+        $timeValue = '—';
+        $timeCountdownIso = null;
+        if ($votingOpen && $votingEndsIso) {
+            $timeHeading = 'Voting Ends In';
+            $timeCountdownIso = $votingEndsIso;
+        } elseif ($registrationOpen && $registrationEndsIso) {
+            $timeHeading = 'Registration Ends In';
+            $timeCountdownIso = $registrationEndsIso;
+        } elseif ($resultsPublished || $votingClosed) {
+            $timeHeading = 'Voting';
+            $timeValue = 'Ended';
+        } elseif ($talentEvent->voting_starts_at?->isFuture()) {
+            $timeHeading = 'Voting Starts';
+            $timeValue = $talentEvent->voting_starts_at->format('M d, g:i A');
+        }
+
+        $voteStripValue = 'Voting not open';
+        $voteStripClass = 'text-slate-400';
+        if ($hasVoted && $votedEntry) {
+            $voteStripValue = 'Voted for '.$votedEntry->display_name;
+            $voteStripClass = 'text-emerald-300';
+        } elseif ($votingOpen) {
+            $voteStripValue = 'Not voted yet';
+            $voteStripClass = 'text-amber-200';
+        } elseif ($resultsPublished) {
+            $voteStripValue = 'Did not vote';
+        }
     @endphp
 
-    <div class="min-h-screen bg-slate-950 text-slate-100" x-data="talentVoteConfirm()">
+    <div class="min-h-screen bg-slate-950 text-slate-100" x-data="talentVoteConfirm({ watchedIds: @js($watchedEntryIds ?? []) })">
         <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
             <div class="mb-3 flex items-center justify-between gap-4">
                 <a href="{{ route('student.talent-voting.index') }}" class="text-sm font-semibold text-cyan-300 hover:text-cyan-200">&larr; Back to Talent Competitions</a>
@@ -103,11 +128,6 @@
                                     <div class="flex flex-wrap items-center gap-2">
                                         <span class="rounded-full border border-cyan-400/30 bg-cyan-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-100">{{ $competitionCategory }}</span>
                                         <span class="rounded-full border border-slate-500/40 bg-slate-950/55 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-100">{{ $statusLabel }}</span>
-                                        <span @class([
-                                            'rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
-                                            'bg-emerald-500/15 text-emerald-200' => $registrationOpen,
-                                            'bg-slate-800/80 text-slate-300' => ! $registrationOpen,
-                                        ])>{{ $registrationStatusLabel }}</span>
                                     </div>
                                     <h1 class="mt-2 text-xl font-bold leading-tight text-white sm:text-2xl lg:text-[1.75rem]">{{ $talentEvent->title }}</h1>
                                     <p class="mt-1 text-xs text-slate-300 sm:text-sm">
@@ -149,32 +169,16 @@
                     </div>
                 </section>
 
-                {{-- Quick Statistics --}}
-                <section class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" aria-label="Competition quick statistics">
+                {{-- Compact status --}}
+                <section class="grid grid-cols-1 gap-2 sm:grid-cols-3" aria-label="Competition status">
                     <div class="rounded-xl border border-cyan-500/15 bg-slate-900/70 px-3 py-2.5">
                         <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Approved Participants</p>
                         <p class="mt-1 text-sm font-bold text-white sm:text-base">{{ number_format($approvedCount) }}</p>
                     </div>
-                    <div class="rounded-xl border border-cyan-500/15 bg-slate-900/70 px-3 py-2.5">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Total Votes Cast</p>
-                        <p class="mt-1 text-sm font-bold text-white sm:text-base">{{ number_format($totalVotesCast) }}</p>
-                    </div>
-                    <div class="rounded-xl border border-cyan-500/15 bg-slate-900/70 px-3 py-2.5">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Category</p>
-                        <p class="mt-1 truncate text-sm font-bold text-white sm:text-base">{{ $competitionCategory }}</p>
-                    </div>
-                    <div class="rounded-xl border border-cyan-500/15 bg-slate-900/70 px-3 py-2.5">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Winners</p>
-                        <p class="mt-1 text-sm font-bold text-white sm:text-base">{{ number_format($winnersCount) }}</p>
-                    </div>
-                    <div class="rounded-xl border border-cyan-500/15 bg-slate-900/70 px-3 py-2.5">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Status</p>
-                        <p class="mt-1 truncate text-sm font-bold text-white sm:text-base">{{ $statusLabel }}</p>
-                    </div>
                     <div class="rounded-xl border border-cyan-500/15 bg-slate-900/70 px-3 py-2.5"
-                        @if ($votingOpen && $votingEndsIso)
+                        @if ($timeCountdownIso)
                             x-data="{
-                                endsAt: new Date(@js($votingEndsIso)).getTime(),
+                                endsAt: new Date(@js($timeCountdownIso)).getTime(),
                                 label: '—',
                                 tick() {
                                     const diff = this.endsAt - Date.now();
@@ -188,131 +192,72 @@
                             x-init="tick(); setInterval(() => tick(), 1000)"
                         @endif
                     >
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Voting Ends In</p>
-                        @if ($votingOpen && $votingEndsIso)
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{{ $timeHeading }}</p>
+                        @if ($timeCountdownIso)
                             <p class="mt-1 text-sm font-bold text-emerald-300 sm:text-base" x-text="label">—</p>
-                        @elseif ($talentEvent->voting_ends_at)
-                            <p class="mt-1 text-sm font-bold text-white sm:text-base">{{ $talentEvent->isAfterVotingEnd() ? 'Ended' : $talentEvent->voting_ends_at->format('M d, g:i A') }}</p>
                         @else
-                            <p class="mt-1 text-sm font-bold text-slate-400 sm:text-base">—</p>
+                            <p class="mt-1 truncate text-sm font-bold text-white sm:text-base">{{ $timeValue }}</p>
                         @endif
                     </div>
-                </section>
-
-                {{-- Your Vote --}}
-                <section class="rounded-xl border border-violet-500/20 bg-slate-900/70 px-4 py-3 sm:px-5" aria-label="Your vote status">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <h2 class="text-xs font-bold uppercase tracking-wide text-violet-200">Your Vote</h2>
-                            @if ($hasVoted && $votedEntry)
-                                <p class="mt-1 text-sm text-white">You voted for: <span class="font-semibold text-cyan-300">{{ $votedEntry->display_name }}</span></p>
-                                <p class="mt-0.5 text-xs text-emerald-300">Vote recorded successfully</p>
-                                @if ($studentVote?->created_at)
-                                    <p class="mt-0.5 text-xs text-slate-500">Voting date: {{ $studentVote->created_at->format('M d, Y · g:i A') }}</p>
-                                @endif
-                            @else
-                                <p class="mt-1 text-sm text-slate-400">You haven't voted yet.</p>
-                            @endif
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            @if ($votingOpen && ! $hasVoted)
-                                <a href="#candidates" class="rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-4 py-2 text-xs font-semibold text-slate-950">Vote Now</a>
-                            @endif
-                            @if ($resultsPublished)
-                                <a href="{{ $officialResultsUrl }}" class="rounded-xl border border-sky-500/30 px-4 py-2 text-xs font-semibold text-sky-200 hover:bg-sky-500/10">View Official Results</a>
-                            @endif
-                        </div>
+                    <div class="rounded-xl border border-violet-500/20 bg-slate-900/70 px-3 py-2.5" aria-label="Your vote status">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-violet-200">Your Vote</p>
+                        <p class="mt-1 truncate text-sm font-bold {{ $voteStripClass }} sm:text-base">{{ $voteStripValue }}</p>
                     </div>
                 </section>
 
-                {{-- Competition Progress --}}
-                <section class="rounded-xl border border-cyan-500/15 bg-slate-900/70 p-4 sm:p-5" aria-label="Competition progress">
-                    <h2 class="text-sm font-bold uppercase tracking-wide text-white">Competition Progress</h2>
-                    <ol class="mt-4 space-y-0">
-                        @foreach ($timeline as $step)
-                            <li class="relative flex gap-3 pb-4 last:pb-0">
-                                @if (! $loop->last)
-                                    <span class="absolute left-[0.6875rem] top-6 h-[calc(100%-0.5rem)] w-px bg-slate-700" aria-hidden="true"></span>
-                                @endif
-                                <span @class([
-                                    'relative z-[1] mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold',
-                                    'border-emerald-400/50 bg-emerald-500/20 text-emerald-300' => $step['state'] === 'done',
-                                    'border-cyan-400/60 bg-cyan-500/20 text-cyan-200 ring-2 ring-cyan-400/20' => $step['state'] === 'active',
-                                    'border-slate-600 bg-slate-900 text-slate-500' => $step['state'] === 'pending',
-                                ])>
-                                    @if ($step['state'] === 'done') ✓ @elseif ($step['state'] === 'active') ● @else ○ @endif
-                                </span>
-                                <div class="min-w-0 pt-0.5">
-                                    <p @class([
-                                        'text-sm font-semibold',
-                                        'text-emerald-200' => $step['state'] === 'done',
-                                        'text-cyan-100' => $step['state'] === 'active',
-                                        'text-slate-500' => $step['state'] === 'pending',
-                                    ])>{{ $step['label'] }}</p>
-                                    @if ($step['state'] === 'active' && $votingActive)
-                                        <p class="mt-0.5 text-xs text-emerald-300/90">Live now — cast your vote below</p>
+                @if ($resultsPublished)
+                    <section class="rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-slate-900/80 to-slate-950/80 p-4 sm:p-5" aria-label="Results published notice">
+                        <div class="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <p class="text-lg font-bold text-white">🏆 Results Published</p>
+                                <p class="mt-1 text-sm text-slate-300">The official competition results have been published.</p>
+                                <p class="mt-1 text-sm text-slate-400">View complete rankings, winners, and vote statistics.</p>
+                            </div>
+                            <a href="{{ $officialResultsUrl }}"
+                                class="inline-flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-amber-500/20 transition hover:from-amber-400 hover:to-orange-300">
+                                View Official Results
+                            </a>
+                        </div>
+                    </section>
+                @endif
+
+                @if ($showTimeline)
+                    <section class="rounded-xl border border-cyan-500/15 bg-slate-900/70 p-4 sm:p-5" aria-label="Competition progress">
+                        <h2 class="text-sm font-bold uppercase tracking-wide text-white">Competition Progress</h2>
+                        <ol class="mt-4 space-y-0">
+                            @foreach ($timeline as $step)
+                                <li class="relative flex gap-3 pb-4 last:pb-0">
+                                    @if (! $loop->last)
+                                        <span class="absolute left-[0.6875rem] top-6 h-[calc(100%-0.5rem)] w-px bg-slate-700" aria-hidden="true"></span>
                                     @endif
-                                </div>
-                            </li>
-                        @endforeach
-                    </ol>
-                </section>
+                                    <span @class([
+                                        'relative z-[1] mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold',
+                                        'border-emerald-400/50 bg-emerald-500/20 text-emerald-300' => $step['state'] === 'done',
+                                        'border-cyan-400/60 bg-cyan-500/20 text-cyan-200 ring-2 ring-cyan-400/20' => $step['state'] === 'active',
+                                        'border-slate-600 bg-slate-900 text-slate-500' => $step['state'] === 'pending',
+                                    ])>
+                                        @if ($step['state'] === 'done') ✓ @elseif ($step['state'] === 'active') ● @else ○ @endif
+                                    </span>
+                                    <div class="min-w-0 pt-0.5">
+                                        <p @class([
+                                            'text-sm font-semibold',
+                                            'text-emerald-200' => $step['state'] === 'done',
+                                            'text-cyan-100' => $step['state'] === 'active',
+                                            'text-slate-500' => $step['state'] === 'pending',
+                                        ])>{{ $step['label'] }}</p>
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ol>
+                    </section>
+                @endif
 
-                {{-- About Competition --}}
-                <section class="rounded-xl border border-cyan-500/15 bg-slate-900/70 p-4 sm:p-5" aria-label="About this competition">
-                    <h2 class="text-sm font-bold uppercase tracking-wide text-white">About Competition</h2>
-                    @if ($talentEvent->description)
-                        <p class="mt-2 text-sm leading-relaxed text-slate-300">{{ $talentEvent->description }}</p>
-                    @else
-                        <p class="mt-2 text-sm text-slate-500">No description provided for this competition.</p>
-                    @endif
-                    <dl class="mt-3 grid gap-3 border-t border-slate-800 pt-3 sm:grid-cols-2 lg:grid-cols-3">
-                        <div>
-                            <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Performance Duration</dt>
-                            <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->performanceDurationLabel() }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Voting Method</dt>
-                            <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->votingMethodLabel() }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Registration Period</dt>
-                            <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->registrationWindowLabel() }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Submission Deadline</dt>
-                            <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->submission_deadline?->format('M d, Y g:i A') ?: '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Voting Period</dt>
-                            <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->votingWindowLabel() }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Current Status</dt>
-                            <dd class="mt-0.5 text-sm font-medium text-white">{{ $statusLabel }}</dd>
-                        </div>
-                    </dl>
-                </section>
-
-                {{-- Competition Rules --}}
-                <section class="rounded-xl border border-cyan-500/15 bg-slate-900/70 p-4 sm:p-5" aria-label="Competition rules">
-                    <h2 class="text-sm font-bold uppercase tracking-wide text-white">Competition Rules</h2>
-                    <ul class="mt-3 space-y-2 text-sm text-slate-300">
-                        <li class="flex gap-2"><span class="text-emerald-400" aria-hidden="true">✓</span><span>One entry per student</span></li>
-                        <li class="flex gap-2"><span class="text-emerald-400" aria-hidden="true">✓</span><span>One vote per student</span></li>
-                        <li class="flex gap-2"><span class="text-emerald-400" aria-hidden="true">✓</span><span>Votes cannot be changed</span></li>
-                        <li class="flex gap-2"><span class="text-emerald-400" aria-hidden="true">✓</span><span>Offensive performances are prohibited</span></li>
-                        <li class="flex gap-2"><span class="text-emerald-400" aria-hidden="true">✓</span><span>Official results are available on the Results page</span></li>
-                    </ul>
-                </section>
-
-                {{-- Participants --}}
                 @if ($votingOpen && ! $hasVoted)
                     <div class="flex items-start gap-3 rounded-xl border border-cyan-500/15 bg-cyan-500/5 px-4 py-3">
                         <svg class="mt-0.5 h-5 w-5 shrink-0 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
                         <div>
                             <p class="text-sm font-semibold text-cyan-100">You may vote for ONE (1) talent entry.</p>
-                            <p class="mt-0.5 text-sm text-slate-400">Review each performance before casting your vote. You cannot change your vote after submission.</p>
+                            <p class="mt-0.5 text-sm text-slate-400">Watch the performance first, then cast your vote. You cannot change your vote after submission.</p>
                         </div>
                     </div>
                 @endif
@@ -326,6 +271,7 @@
                                 $entryCategory = $entry->talentCategoryLabel() ?? $competitionCategory;
                                 $photo = $entry->photoUrl() ?: $entry->thumbnailUrl();
                                 $watchPayload = [
+                                    'entryId' => $entry->id,
                                     'name' => $entry->display_name,
                                     'title' => $entry->performance_title ?? $entry->display_name,
                                     'category' => $entryCategory,
@@ -395,17 +341,42 @@
                                         @if ($isSelected)
                                             <span class="inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-[11px] font-semibold text-slate-950">Selected</span>
                                         @elseif ($votingOpen && ! $hasVoted)
-                                            <form method="POST" action="{{ route('student.talent-voting.vote', $entry) }}" class="inline">
-                                                @csrf
-                                                <button type="button"
-                                                    @click="openConfirm($event.target.closest('form'), @js($entry->display_name))"
-                                                    class="rounded-lg bg-gradient-to-r from-cyan-500 to-sky-400 px-2.5 py-1.5 text-[11px] font-semibold text-slate-950">
-                                                    Vote
-                                                </button>
-                                            </form>
-                                        @elseif ($resultsPublished)
-                                            <span class="inline-flex items-center rounded-lg border border-sky-500/30 bg-sky-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-sky-200">Results Published</span>
-                                        @elseif (! $votingOpen)
+                                            @php $mustWatch = $entry->hasVideo(); @endphp
+                                            <div class="flex w-full flex-col gap-1">
+                                                @if ($mustWatch)
+                                                    <p
+                                                        class="text-[10px] font-medium text-amber-200/90"
+                                                        x-show="!hasWatched({{ (int) $entry->id }})"
+                                                    >Watch the performance first</p>
+                                                @endif
+                                                <form
+                                                    method="POST"
+                                                    action="{{ route('student.talent-voting.vote', $entry) }}"
+                                                    class="inline"
+                                                    @if ($mustWatch)
+                                                        x-show="hasWatched({{ (int) $entry->id }})"
+                                                        x-cloak
+                                                    @endif
+                                                >
+                                                    @csrf
+                                                    <button type="button"
+                                                        @click="openConfirm($event.target.closest('form'), @js($entry->display_name))"
+                                                        class="rounded-lg bg-gradient-to-r from-cyan-500 to-sky-400 px-2.5 py-1.5 text-[11px] font-semibold text-slate-950">
+                                                        Vote
+                                                    </button>
+                                                </form>
+                                                @if ($mustWatch)
+                                                    <button
+                                                        type="button"
+                                                        disabled
+                                                        x-show="!hasWatched({{ (int) $entry->id }})"
+                                                        class="cursor-not-allowed rounded-lg border border-slate-600 bg-slate-800/80 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500"
+                                                    >
+                                                        Vote
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        @elseif ($votingClosed)
                                             <span class="inline-flex items-center rounded-lg border border-slate-600 bg-slate-800/80 px-2.5 py-1.5 text-[11px] font-semibold text-slate-400">Voting Closed</span>
                                         @endif
                                     </div>
@@ -417,45 +388,68 @@
                     </div>
                 </section>
 
-                {{-- Reminders + Help --}}
-                <section class="rounded-xl border border-cyan-500/15 bg-slate-900/70 p-4 sm:p-5">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <h3 class="text-xs font-bold uppercase tracking-wide text-white">Reminders</h3>
-                            <ul class="mt-2 space-y-1.5 text-sm text-slate-300">
-                                <li>• One entry per student.</li>
-                                <li>• One vote per student.</li>
-                                <li>• Votes cannot be changed.</li>
-                                <li>• Official results are available on the Results page.</li>
-                            </ul>
-                        </div>
+                <details class="rounded-xl border border-cyan-500/15 bg-slate-900/70" @if ($detailsDefaultOpen) open @endif>
+                    <summary class="cursor-pointer list-none px-4 py-3 text-sm font-bold uppercase tracking-wide text-white sm:px-5 [&::-webkit-details-marker]:hidden">
+                        <span class="flex items-center justify-between gap-3">
+                            Competition details
+                            <span class="text-[11px] font-semibold normal-case tracking-normal text-slate-500">Optional</span>
+                        </span>
+                    </summary>
+                    <div class="border-t border-slate-800 px-4 pb-4 pt-3 sm:px-5" aria-label="About this competition">
+                        @if ($talentEvent->description)
+                            <p class="text-sm leading-relaxed text-slate-300">{{ $talentEvent->description }}</p>
+                        @else
+                            <p class="text-sm text-slate-500">No description provided for this competition.</p>
+                        @endif
+                        <dl class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            <div>
+                                <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Performance Duration</dt>
+                                <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->performanceDurationLabel() }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Voting Method</dt>
+                                <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->votingMethodLabel() }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Voting Period</dt>
+                                <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->votingWindowLabel() }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Winners</dt>
+                                <dd class="mt-0.5 text-sm font-medium text-white">{{ number_format($winnersCount) }}</dd>
+                            </div>
+                            @if ($showRegistrationDetails)
+                                <div>
+                                    <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Registration Period</dt>
+                                    <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->registrationWindowLabel() }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Submission Deadline</dt>
+                                    <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->submission_deadline?->format('M d, Y g:i A') ?: '—' }}</dd>
+                                </div>
+                            @endif
+                            @if ($resultsPublished)
+                                <div>
+                                    <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Total Votes Cast</dt>
+                                    <dd class="mt-0.5 text-sm font-medium text-white">{{ number_format($totalVotesCast) }}</dd>
+                                </div>
+                            @endif
+                        </dl>
+                    </div>
+                </details>
+
+                <section class="rounded-xl border border-cyan-500/15 bg-slate-900/70 px-4 py-3 sm:px-5">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h3 class="text-xs font-bold uppercase tracking-wide text-white">Need Help?</h3>
-                            <p class="mt-2 text-sm text-slate-400">Contact {{ \App\Support\PortalSupportSettings::teamLabel() }}</p>
-                            <a href="mailto:{{ \App\Support\PortalSupportSettings::email() }}"
-                                class="mt-2 inline-flex items-center justify-center rounded-xl border border-cyan-500/25 px-4 py-2 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/10">
-                                Contact ICT Support
-                            </a>
+                            <p class="mt-1 text-sm text-slate-400">Contact {{ \App\Support\PortalSupportSettings::teamLabel() }}</p>
                         </div>
+                        <a href="mailto:{{ \App\Support\PortalSupportSettings::email() }}"
+                            class="inline-flex items-center justify-center rounded-xl border border-cyan-500/25 px-4 py-2 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/10">
+                            Contact ICT Support
+                        </a>
                     </div>
                 </section>
-
-                {{-- Results Published card (links to dedicated Results page) --}}
-                @if ($resultsPublished)
-                    <section class="rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-slate-900/80 to-slate-950/80 p-4 sm:p-5" aria-label="Results published notice">
-                        <div class="flex flex-wrap items-start justify-between gap-4">
-                            <div>
-                                <p class="text-lg font-bold text-white">🏆 Results Published</p>
-                                <p class="mt-1 text-sm text-slate-300">The official competition results have been published.</p>
-                                <p class="mt-1 text-sm text-slate-400">Click below to view the complete rankings, winner, and vote statistics.</p>
-                            </div>
-                            <a href="{{ $officialResultsUrl }}"
-                                class="inline-flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-amber-500/20 transition hover:from-amber-400 hover:to-orange-300">
-                                View Official Results
-                            </a>
-                        </div>
-                    </section>
-                @endif
             </div>
         </div>
 

@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\Vote;
 use App\Services\Admin\AdminResultsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class ResultsPublishingAndVisibilityTest extends TestCase
@@ -43,6 +44,7 @@ class ResultsPublishingAndVisibilityTest extends TestCase
     {
         $admin = User::factory()->superAdmin()->create();
         $student = User::factory()->create();
+        $faculty = User::factory()->faculty()->create();
         $event = $this->makeCompetition([
             'voting_method' => TalentVotingMethod::StudentOnly->value,
             'voting_starts_at' => now()->subDays(2),
@@ -50,6 +52,8 @@ class ResultsPublishingAndVisibilityTest extends TestCase
             'status' => TalentEventStatus::VotingOpen,
         ]);
         $this->makeEntry($event);
+
+        Queue::fake();
 
         $this->actingAs($admin)
             ->post(route('admin.talent.publish-results', $event))
@@ -63,6 +67,20 @@ class ResultsPublishingAndVisibilityTest extends TestCase
             'type' => 'student_talent_results_published',
             'related_id' => $event->id,
         ]);
+        $this->assertDatabaseHas('portal_notifications', [
+            'user_id' => $faculty->id,
+            'type' => 'faculty_talent_results_published',
+            'related_id' => $event->id,
+        ]);
+
+        $this->actingAs($faculty)
+            ->getJson(route('faculty.notifications.feed'))
+            ->assertOk()
+            ->assertJsonPath('unread_count', 1)
+            ->assertJsonFragment([
+                'type' => 'faculty_talent_results_published',
+                'url' => route('faculty.results.talent.show', $event),
+            ]);
 
         $this->actingAs($admin)
             ->post(route('admin.talent.unpublish-results', $event))
@@ -71,6 +89,76 @@ class ResultsPublishingAndVisibilityTest extends TestCase
         $event->refresh();
         $this->assertNull($event->results_published_at);
         $this->assertSame(TalentEventStatus::VotingOpen, $event->status);
+    }
+
+    public function test_published_election_results_notify_students_and_faculty(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $student = User::factory()->create();
+        $faculty = User::factory()->faculty()->create();
+        $election = Election::factory()->closed()->create([
+            'title' => 'SSC Election Results',
+            'public_results_published' => false,
+        ]);
+
+        Queue::fake();
+
+        $this->actingAs($admin)
+            ->post(route('admin.election.publish-results', $election))
+            ->assertRedirect(route('admin.results.election.show', $election));
+
+        $this->assertTrue($election->fresh()->public_results_published);
+        $this->assertDatabaseHas('portal_notifications', [
+            'user_id' => $student->id,
+            'type' => 'student_results_published',
+            'related_id' => $election->id,
+        ]);
+        $this->assertDatabaseHas('portal_notifications', [
+            'user_id' => $faculty->id,
+            'type' => 'faculty_results_published',
+            'related_id' => $election->id,
+        ]);
+
+        $this->actingAs($faculty)
+            ->getJson(route('faculty.notifications.feed'))
+            ->assertOk()
+            ->assertJsonPath('unread_count', 1)
+            ->assertJsonFragment([
+                'type' => 'faculty_results_published',
+                'url' => route('faculty.results.election.show', $election),
+            ]);
+
+        $this->assertSame(
+            1,
+            \App\Models\Announcement::query()
+                ->where('auto_source_type', 'results_published')
+                ->where('auto_source_id', $election->id)
+                ->count()
+        );
+
+        $this->actingAs($admin)
+            ->post(route('admin.election.unpublish-results', $election))
+            ->assertRedirect(route('admin.results.election.show', $election));
+
+        $this->assertFalse(
+            \App\Models\Announcement::query()
+                ->published()
+                ->where('auto_source_type', 'results_published')
+                ->where('auto_source_id', $election->id)
+                ->exists()
+        );
+
+        $this->actingAs($admin)
+            ->post(route('admin.election.publish-results', $election))
+            ->assertRedirect(route('admin.results.election.show', $election));
+
+        $this->assertSame(
+            1,
+            \App\Models\Announcement::query()
+                ->where('auto_source_type', 'results_published')
+                ->where('auto_source_id', $election->id)
+                ->count()
+        );
     }
 
     public function test_students_cannot_see_draft_or_archived_unpublished_elections_on_results(): void
@@ -101,7 +189,11 @@ class ResultsPublishingAndVisibilityTest extends TestCase
 
         $this->actingAs($student)
             ->get(route('student.results.election.show', $closed))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee('Welcome back')
+            ->assertSee('Under Review')
+            ->assertSee('Results are not yet available.')
+            ->assertDontSee('Voting is still ongoing.');
     }
 
     public function test_tied_election_candidates_are_both_winners(): void

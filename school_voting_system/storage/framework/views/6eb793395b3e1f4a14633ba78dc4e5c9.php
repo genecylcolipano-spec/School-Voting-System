@@ -37,6 +37,13 @@
                 </thead>
                 <tbody class="divide-y divide-slate-800">
                     <?php $__empty_1 = true; $__currentLoopData = $summaries; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <?php
+                            $statusClass = match ($row['status']) {
+                                'Complete' => 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
+                                'In Progress' => 'border-amber-500/30 bg-amber-500/10 text-amber-200',
+                                default => 'border-slate-500/30 bg-slate-500/10 text-slate-300',
+                            };
+                        ?>
                         <tr>
                             <td class="px-4 py-3 text-white"><?php echo e($row['competition']->title); ?></td>
                             <td class="px-4 py-3 text-slate-300"><?php echo e($row['judge_role']); ?></td>
@@ -44,7 +51,7 @@
                             <td class="px-4 py-3 font-semibold text-teal-200"><?php echo e($row['completion_percent']); ?>%</td>
                             <td class="px-4 py-3 text-slate-400"><?php echo e(optional($row['submission_date'])->format('M d, Y g:i A') ?? '—'); ?></td>
                             <td class="px-4 py-3">
-                                <span class="rounded-full border border-teal-500/30 bg-teal-500/10 px-2.5 py-0.5 text-xs font-semibold text-teal-200"><?php echo e($row['status']); ?></span>
+                                <span class="rounded-full border px-2.5 py-0.5 text-xs font-semibold <?php echo e($statusClass); ?>"><?php echo e($row['status']); ?></span>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <a href="<?php echo e(route('faculty.judging.show', $row['competition'])); ?>" class="text-sm font-semibold text-teal-300 hover:text-teal-200">Open</a>
@@ -75,14 +82,12 @@
                     <tbody class="divide-y divide-slate-800">
                         <?php $__empty_1 = true; $__currentLoopData = $sheets; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sheet): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                             <tr>
-                                <td class="px-4 py-3 text-slate-200"><?php echo e($sheet->talentEvent?->title ?? '—'); ?></td>
-                                <td class="px-4 py-3 text-white"><?php echo e($sheet->entry?->display_name ?? '—'); ?></td>
+                                <td class="px-4 py-3 text-slate-200"><?php echo e($sheet->talentEvent->title); ?></td>
+                                <td class="px-4 py-3 text-white"><?php echo e($sheet->entry->display_name); ?></td>
                                 <td class="px-4 py-3 font-semibold text-teal-200"><?php echo e(number_format((float) $sheet->total_score, 2)); ?></td>
                                 <td class="px-4 py-3 text-slate-400"><?php echo e(optional($sheet->submitted_at)->format('M d, Y g:i A') ?? '—'); ?></td>
                                 <td class="px-4 py-3 text-right">
-                                    <?php if($sheet->talentEvent && $sheet->entry): ?>
-                                        <a href="<?php echo e(route('faculty.judging.score', [$sheet->talentEvent, $sheet->entry])); ?>" class="text-sm font-semibold text-teal-300 hover:text-teal-200">View</a>
-                                    <?php endif; ?>
+                                    <a href="<?php echo e(route('faculty.judging.score', [$sheet->talentEvent, $sheet->entry, 'from' => 'submitted'])); ?>" class="text-sm font-semibold text-teal-300 hover:text-teal-200">View</a>
                                 </td>
                             </tr>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>

@@ -87,8 +87,8 @@
 
                     <dl class="mt-6 space-y-3 border-t border-slate-800 pt-4 text-sm">
                         <div class="flex items-center justify-between gap-3">
-                            <dt class="text-slate-400">Completed Votes</dt>
-                            <dd class="font-semibold text-white">{{ $votingAnalytics['completed_votes'] }}</dd>
+                            <dt class="text-slate-400">Positions voted</dt>
+                            <dd class="font-semibold text-white">{{ $votingAnalytics['positions_voted'] }}</dd>
                         </div>
                         <div class="flex items-center justify-between gap-3">
                             <dt class="text-slate-400">Eligible Elections</dt>
@@ -138,18 +138,18 @@
             <div class="rounded-2xl border border-cyan-500/15 bg-slate-900/70 p-5 sm:p-6">
                 <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Donation Summary</h3>
 
-                @if ($donationSummary['donations_made'] > 0)
-                    <div class="mt-4 grid grid-cols-2 gap-3">
-                        <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                            <p class="text-xs uppercase tracking-wide text-slate-500">Total Donations</p>
-                            <p class="mt-1 text-lg font-bold text-white">₱{{ number_format($donationSummary['total_donated'], 2) }}</p>
-                        </div>
-                        <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                            <p class="text-xs uppercase tracking-wide text-slate-500">Campaigns Supported</p>
-                            <p class="mt-1 text-lg font-bold text-white">{{ $donationSummary['campaigns_supported'] }}</p>
-                        </div>
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                    <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+                        <p class="text-xs uppercase tracking-wide text-slate-500">Total Donations</p>
+                        <p class="mt-1 text-lg font-bold text-white">₱{{ number_format($donationSummary['total_donated'], 2) }}</p>
                     </div>
+                    <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+                        <p class="text-xs uppercase tracking-wide text-slate-500">Drives supported</p>
+                        <p class="mt-1 text-lg font-bold text-white">{{ $donationSummary['drives_supported'] }}</p>
+                    </div>
+                </div>
 
+                @if ($donationSummary['donations_made'] > 0)
                     <div class="mt-4 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                         <p class="text-xs uppercase tracking-wide text-slate-500">Latest Donation</p>
                         <p class="mt-1 text-sm font-semibold text-white">{{ $donationSummary['latest_title'] ?? '—' }}</p>
@@ -227,22 +227,16 @@
                 <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Achievements</h3>
                 <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                        <p class="text-xs uppercase tracking-wide text-slate-500">Most Active Semester</p>
-                        <p class="mt-1 text-sm font-semibold text-white">{{ $achievements['most_active_semester'] ?? 'No activity yet' }}</p>
+                        <p class="text-xs uppercase tracking-wide text-slate-500">Most Active Month</p>
+                        <p class="mt-1 text-sm font-semibold text-white">{{ $achievements['most_active_month'] ?? 'No activity yet' }}</p>
                     </div>
                     <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                         <p class="text-xs uppercase tracking-wide text-slate-500">Total Activities</p>
                         <p class="mt-1 text-2xl font-bold text-white">{{ $achievements['total_activities'] }}</p>
                     </div>
                     <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                        <p class="text-xs uppercase tracking-wide text-slate-500">Certificates Earned</p>
-                        <p class="mt-1 text-sm font-semibold text-white">
-                            @if ($achievements['certificates_earned'] > 0)
-                                {{ $achievements['certificates_earned'] }}
-                            @else
-                                Not available yet
-                            @endif
-                        </p>
+                        <p class="text-xs uppercase tracking-wide text-slate-500">Supporter Level</p>
+                        <p class="mt-1 text-sm font-semibold text-white">{{ $achievements['supporter_level'] }}</p>
                     </div>
                     <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                         <p class="text-xs uppercase tracking-wide text-slate-500">Current Participation Level</p>

@@ -61,6 +61,33 @@ class Event extends Model
         return $this->displayStatus()->label();
     }
 
+    public function scheduleLabel(): string
+    {
+        return $this->event_date?->format('M d, Y · g:i A') ?? 'TBA';
+    }
+
+    public function campusStatusKey(): string
+    {
+        if ($this->displayStatus() === EventStatus::Completed) {
+            return 'completed';
+        }
+
+        if ($this->event_date?->isToday()) {
+            return 'ongoing';
+        }
+
+        return 'upcoming';
+    }
+
+    public function campusStatusLabel(): string
+    {
+        return match ($this->campusStatusKey()) {
+            'completed' => 'Completed',
+            'ongoing' => 'Ongoing',
+            default => 'Upcoming',
+        };
+    }
+
     public function isVisibleToCampus(): bool
     {
         return $this->status !== EventStatus::Cancelled;

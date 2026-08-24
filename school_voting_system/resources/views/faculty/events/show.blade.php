@@ -1,8 +1,15 @@
 <x-app-layout>
     <x-faculty-portal title="{{ $event->title }}" :user="$user" :notifications-count="$notificationsCount">
-            <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <a href="{{ route('faculty.events.index') }}" class="text-sm font-semibold text-teal-300 hover:text-teal-200">&larr; Back to events</a>
-            <span class="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-200">View only</span>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-200">View only</span>
+                <x-ui.badge
+                    type="status"
+                    :tone-key="$event->campusStatusKey()"
+                    :label="$event->campusStatusLabel()"
+                />
+            </div>
         </div>
 
         <article class="overflow-hidden rounded-2xl border border-teal-500/15 bg-slate-900/70">
@@ -18,12 +25,11 @@
                 <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
                     <div class="min-w-0">
                         <h2 class="text-2xl font-bold text-white">{{ $event->title }}</h2>
-                        <p class="mt-1 text-sm text-slate-400">{{ $event->venue }}</p>
+                        @if ($event->venue)
+                            <p class="mt-1 text-sm text-slate-400">{{ $event->venue }}</p>
+                        @endif
                     </div>
-                    <div class="sm:text-right">
-                        <p class="text-sm text-slate-300">{{ optional($event->event_date)->format('M d, Y') }}</p>
-                        <p class="text-xs uppercase tracking-wide text-slate-500">{{ $event->displayStatusLabel() }}</p>
-                    </div>
+                    <p class="text-sm text-slate-300 sm:text-right">{{ $event->scheduleLabel() }}</p>
                 </div>
 
                 @if ($event->description)

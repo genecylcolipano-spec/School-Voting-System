@@ -19,7 +19,38 @@
 <?php endif; ?>
 <?php $component->withAttributes(['title' => 'School Events','user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount)]); ?>
         <section class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 sm:p-6">
-            <p class="text-sm text-slate-400">Browse upcoming and past school events. This list is view-only.</p>
+            <p class="text-sm text-slate-400">
+                <?php if($showUpcomingOnly): ?>
+                    Showing upcoming school events. Past events stay on the full list. This list is view-only.
+                <?php else: ?>
+                    Browse upcoming and past school events. This list is view-only.
+                <?php endif; ?>
+            </p>
+
+            <nav class="mt-4 flex flex-wrap gap-2" aria-label="School event lists">
+                <a
+                    href="<?php echo e(route('faculty.events.index')); ?>"
+                    class="<?php echo \Illuminate\Support\Arr::toCssClasses([
+                        'inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition',
+                        'bg-gradient-to-r from-teal-500 to-emerald-400 text-slate-950' => ! $showUpcomingOnly,
+                        'border border-slate-700 text-slate-300 hover:bg-slate-800' => $showUpcomingOnly,
+                    ]); ?>"
+                >
+                    All
+                    <span class="rounded-full bg-black/10 px-1.5 py-0.5 text-[11px] leading-none"><?php echo e($allCount); ?></span>
+                </a>
+                <a
+                    href="<?php echo e(route('faculty.events.index', ['filter' => 'upcoming'])); ?>"
+                    class="<?php echo \Illuminate\Support\Arr::toCssClasses([
+                        'inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition',
+                        'bg-gradient-to-r from-teal-500 to-emerald-400 text-slate-950' => $showUpcomingOnly,
+                        'border border-slate-700 text-slate-300 hover:bg-slate-800' => ! $showUpcomingOnly,
+                    ]); ?>"
+                >
+                    Upcoming
+                    <span class="rounded-full bg-black/10 px-1.5 py-0.5 text-[11px] leading-none"><?php echo e($upcomingCount); ?></span>
+                </a>
+            </nav>
         </section>
 
         <div class="grid gap-4 md:grid-cols-2">
@@ -49,11 +80,34 @@
                         <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                             <h2 class="min-w-0 text-lg font-semibold text-white"><?php echo e($event->title); ?></h2>
                             <div class="sm:shrink-0 sm:text-right">
-                                <span class="block text-xs text-slate-400"><?php echo e(optional($event->event_date)->format('M d, Y')); ?></span>
-                                <span class="mt-1 inline-block text-[10px] font-semibold uppercase tracking-wide text-slate-500"><?php echo e($event->displayStatusLabel()); ?></span>
+                                <span class="block text-xs text-slate-400"><?php echo e($event->scheduleLabel()); ?></span>
+                                <div class="mt-2 sm:flex sm:justify-end">
+                                    <?php if (isset($component)) { $__componentOriginalab7baa01105b3dfe1e0cf1dfc58879b4 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalab7baa01105b3dfe1e0cf1dfc58879b4 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.ui.badge','data' => ['type' => 'status','toneKey' => $event->campusStatusKey(),'label' => $event->campusStatusLabel()]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('ui.badge'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['type' => 'status','tone-key' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($event->campusStatusKey()),'label' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($event->campusStatusLabel())]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalab7baa01105b3dfe1e0cf1dfc58879b4)): ?>
+<?php $attributes = $__attributesOriginalab7baa01105b3dfe1e0cf1dfc58879b4; ?>
+<?php unset($__attributesOriginalab7baa01105b3dfe1e0cf1dfc58879b4); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalab7baa01105b3dfe1e0cf1dfc58879b4)): ?>
+<?php $component = $__componentOriginalab7baa01105b3dfe1e0cf1dfc58879b4; ?>
+<?php unset($__componentOriginalab7baa01105b3dfe1e0cf1dfc58879b4); ?>
+<?php endif; ?>
+                                </div>
                             </div>
                         </div>
-                        <p class="mt-2 text-sm text-slate-400"><?php echo e($event->venue); ?></p>
+                        <?php if($event->venue): ?>
+                            <p class="mt-2 text-sm text-slate-400"><?php echo e($event->venue); ?></p>
+                        <?php endif; ?>
                         <?php if($event->description): ?>
                             <p class="mt-3 line-clamp-3 text-sm text-slate-300"><?php echo e($event->description); ?></p>
                         <?php endif; ?>
@@ -67,7 +121,8 @@
                 </article>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <div class="rounded-2xl border border-dashed border-slate-700 px-4 py-8 text-center text-sm text-slate-500 md:col-span-2">
-                    No school events found.
+                    <?php echo e($showUpcomingOnly ? 'No upcoming school events.' : 'No school events found.'); ?>
+
                 </div>
             <?php endif; ?>
         </div>

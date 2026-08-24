@@ -24,7 +24,7 @@
                     @endif
                 </div>
                 <div class="text-right">
-                    <p class="text-xs uppercase tracking-wide text-slate-500">{{ $election->status?->label() ?? $election->status }}</p>
+                    @include('faculty.elections._status-badge', ['election' => $election])
                     @if ($election->voting_starts_at)
                         <p class="mt-1 text-xs text-slate-400">Starts {{ $election->voting_starts_at->format('M d, Y g:i A') }}</p>
                     @endif
@@ -33,6 +33,14 @@
                     @endif
                 </div>
             </div>
+            @if ($election->shouldShowOfficialResultsToStudents())
+                <a
+                    href="{{ route('faculty.results.election.show', $election) }}"
+                    class="mt-4 inline-flex min-h-10 items-center justify-center rounded-xl bg-gradient-to-r from-teal-500 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950"
+                >
+                    View official results
+                </a>
+            @endif
         </section>
 
         <div class="space-y-6">

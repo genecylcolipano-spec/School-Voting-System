@@ -2,35 +2,37 @@
 
 namespace App\Services\Admin;
 
+use App\Enums\StudentStatus;
 use App\Models\Candidate;
 use App\Models\Donation;
+use App\Models\Election;
 use App\Models\Event;
-use App\Models\Partylist;
-use App\Models\PartylistPoster;
 use App\Models\TalentEvent;
 use App\Models\TalentEventVote;
 use App\Models\User;
 use App\Models\Vote;
+use App\Services\Talent\TalentResultsRankingService;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class AdminAnalyticsService
 {
-    public function __construct(protected AdminScopeService $scope) {}
+    public function __construct(
+        protected AdminScopeService $scope,
+        protected TalentResultsRankingService $talentRanking,
+    ) {}
 
-    public function participationGrowth(User $admin): array
+    public function participationGrowth(User $admin, ?Election $election = null): array
     {
         $year = now()->year;
         $labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        $eligibleIds = $this->scope->eligibleStudentsQuery()->pluck('id');
+        $election ??= $this->scope->resolveReportElection($admin, null, preferClosed: false);
+        $eligibleIds = $this->eligibleParticipantIds($admin);
         $eligible = max(1, $eligibleIds->count());
-        $election = $this->scope->assignedElection($admin);
 
         $yearStart = Carbon::create($year, 1, 1)->startOfYear();
         $yearEnd = Carbon::create($year, 12, 31)->endOfYear();
-
-        // Distinct (month, voter) pairs pulled in two grouped queries instead of
-        // one query per month, then merged in-memory so a student voting in both
-        // an election and a talent event is only counted once per month.
+        $monthExpr = $this->monthExpression('voted_at');
         $participantsByMonth = [];
 
         if ($eligibleIds->isNotEmpty()) {
@@ -38,16 +40,20 @@ class AdminAnalyticsService
                 ->whereIn('user_id', $eligibleIds)
                 ->whereBetween('voted_at', [$yearStart, $yearEnd])
                 ->when($election, fn ($query) => $query->where('election_id', $election->id))
-                ->selectRaw('MONTH(voted_at) as month, user_id')
+                ->selectRaw($monthExpr.' as month, user_id')
                 ->distinct()
                 ->get();
 
-            $talentRows = TalentEventVote::query()
-                ->whereIn('user_id', $eligibleIds)
-                ->whereBetween('voted_at', [$yearStart, $yearEnd])
-                ->selectRaw('MONTH(voted_at) as month, user_id')
-                ->distinct()
-                ->get();
+            $talentEventIds = $this->talentEventIdsForAnalytics($admin, $election);
+            $talentRows = $talentEventIds->isEmpty()
+                ? collect()
+                : TalentEventVote::query()
+                    ->whereIn('user_id', $eligibleIds)
+                    ->whereIn('talent_event_id', $talentEventIds)
+                    ->whereBetween('voted_at', [$yearStart, $yearEnd])
+                    ->selectRaw($monthExpr.' as month, user_id')
+                    ->distinct()
+                    ->get();
 
             foreach ($electionRows->concat($talentRows) as $row) {
                 $participantsByMonth[(int) $row->month][$row->user_id] = true;
@@ -68,16 +74,20 @@ class AdminAnalyticsService
     {
         $year = now()->year;
         $labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
         $yearStart = Carbon::create($year, 1, 1)->startOfYear();
         $yearEnd = Carbon::create($year, 12, 31)->endOfYear();
+        $fundraiserIds = $this->scope->fundraisersForReports($admin)->pluck('id');
+        $monthExpr = $this->monthExpression('donated_at');
 
-        $totalsByMonth = Donation::query()
-            ->paid()
-            ->whereBetween('donated_at', [$yearStart, $yearEnd])
-            ->selectRaw('MONTH(donated_at) as month, SUM(amount) as total')
-            ->groupBy('month')
-            ->pluck('total', 'month');
+        $totalsByMonth = $fundraiserIds->isEmpty()
+            ? collect()
+            : Donation::query()
+                ->paid()
+                ->whereIn('fundraiser_id', $fundraiserIds)
+                ->whereBetween('donated_at', [$yearStart, $yearEnd])
+                ->selectRaw($monthExpr.' as month, SUM(amount) as total')
+                ->groupByRaw($monthExpr)
+                ->pluck('total', 'month');
 
         $values = [];
 
@@ -94,9 +104,10 @@ class AdminAnalyticsService
         return $this->chartPayload($labels, $values, $yMax, $yTicks, '', '₱');
     }
 
-    public function votingTurnoutByGradeSection(User $admin): array
+    public function votingTurnoutByGradeSection(User $admin, ?Election $election = null): array
     {
-        $sections = $this->scope->turnoutBySection($admin);
+        $election ??= $this->scope->resolveReportElection($admin, null, preferClosed: false);
+        $sections = $this->scope->turnoutBySection($admin, $election);
 
         if ($sections->isEmpty()) {
             return $this->chartPayload(['No data'], [0], 100, [0, 25, 50, 75, 100], '%');
@@ -111,45 +122,31 @@ class AdminAnalyticsService
         );
     }
 
-    public function campaignEngagement(User $admin): array
+    public function campaignEngagement(User $admin, ?Election $election = null): array
     {
-        $election = $this->scope->assignedElection($admin);
-        $query = Partylist::query()->withCount([
-            'posters',
-            'posters as approved_posters_count' => fn ($q) => $q->where('status', PartylistPoster::STATUS_APPROVED),
-        ]);
+        $performance = array_slice($this->campaignPerformance($admin, $election), 0, 8);
 
-        if ($election) {
-            $query->whereHas('elections', fn ($q) => $q->whereKey($election->id));
-        }
-
-        $partylists = $query->orderByDesc('approved_posters_count')->limit(8)->get();
-
-        if ($partylists->isEmpty()) {
+        if ($performance === []) {
             return $this->chartPayload(['No campaigns'], [0], 100, [0, 25, 50, 75, 100], '%');
         }
 
-        $labels = $partylists->map(fn (Partylist $partylist) => $partylist->acronym ?: $partylist->name)->all();
-        $values = $partylists->map(function (Partylist $partylist) {
-            $score = ($partylist->approved_posters_count * 25)
-                + ($partylist->isPublished() ? 35 : 0)
-                + min(40, $partylist->posters_count * 10);
-
-            return (float) min(100, $score);
-        })->all();
-
-        return $this->chartPayload($labels, $values, 100, [0, 25, 50, 75, 100], '%');
+        return $this->chartPayload(
+            array_map(fn (array $row) => $row['acronym'] ?: $row['name'], $performance),
+            array_map(fn (array $row) => (float) $row['vote_share'], $performance),
+            100,
+            [0, 25, 50, 75, 100],
+            '%',
+        );
     }
 
     /**
-     * Vote-based campaign performance for the admin's assigned election, derived
-     * from actual candidate votes (not poster activity).
+     * Vote-based campaign performance for the selected report election.
      *
      * @return array<int, array<string, mixed>>
      */
-    public function campaignPerformance(User $admin): array
+    public function campaignPerformance(User $admin, ?Election $election = null): array
     {
-        $election = $this->scope->assignedElection($admin);
+        $election ??= $this->scope->resolveReportElection($admin, null, preferClosed: false);
 
         if (! $election) {
             return [];
@@ -166,11 +163,15 @@ class AdminAnalyticsService
             return [];
         }
 
-        // Winner per position (category), keyed by candidate id => position name.
         $winnerPositions = [];
         foreach ($candidates->groupBy('election_category_id') as $group) {
-            $winner = $group->sortByDesc('votes_count')->first();
-            if ($winner && (int) $winner->votes_count > 0) {
+            $maxVotes = (int) $group->max('votes_count');
+
+            if ($maxVotes <= 0) {
+                continue;
+            }
+
+            foreach ($group->where('votes_count', $maxVotes) as $winner) {
                 $winnerPositions[$winner->id] = $winner->category?->name ?? $winner->position ?? 'Position';
             }
         }
@@ -178,16 +179,16 @@ class AdminAnalyticsService
         $totalVotes = max(1, (int) $candidates->sum('votes_count'));
 
         return $candidates
-            ->filter(fn (Candidate $candidate) => $candidate->partylist_id !== null)
-            ->groupBy('partylist_id')
+            ->groupBy(fn (Candidate $candidate) => $candidate->partylist_id ?: 0)
             ->map(function ($group) use ($winnerPositions, $totalVotes) {
                 $first = $group->first();
                 $votes = (int) $group->sum('votes_count');
                 $winning = $group->filter(fn (Candidate $candidate) => isset($winnerPositions[$candidate->id]));
+                $isIndependent = $first->partylist_id === null;
 
                 return [
-                    'partylist_id' => (int) $first->partylist_id,
-                    'name' => $first->partylist?->name ?? $first->party_or_group ?? 'Campaign',
+                    'partylist_id' => $isIndependent ? null : (int) $first->partylist_id,
+                    'name' => $first->partylist?->name ?? 'Independent',
                     'acronym' => $first->partylist?->acronym,
                     'color' => $first->partylist?->color,
                     'total_candidates' => $group->count(),
@@ -206,26 +207,32 @@ class AdminAnalyticsService
     {
         $year = now()->year;
         $labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        $eligibleIds = $this->scope->eligibleStudentsQuery()->pluck('id');
+        $yearStart = Carbon::create($year, 1, 1)->startOfYear();
+        $yearEnd = Carbon::create($year, 12, 31)->endOfYear();
+        $monthExpr = $this->monthExpression('event_date');
+
+        $schoolEventsByMonth = Event::query()
+            ->whereBetween('event_date', [$yearStart, $yearEnd])
+            ->selectRaw($monthExpr.' as month, COUNT(*) as total')
+            ->groupByRaw($monthExpr)
+            ->pluck('total', 'month');
+
+        $talentQuery = TalentEvent::query()->whereBetween('event_date', [$yearStart, $yearEnd]);
+
+        if (! $admin->isSuperAdmin()) {
+            $talentIds = $this->scope->talentEvents($admin)->pluck('id');
+            $talentQuery->whereIn('id', $talentIds->all() ?: [0]);
+        }
+
+        $talentEventsByMonth = $talentQuery
+            ->selectRaw($monthExpr.' as month, COUNT(*) as total')
+            ->groupByRaw($monthExpr)
+            ->pluck('total', 'month');
+
         $values = [];
 
         foreach (range(1, 12) as $month) {
-            $start = Carbon::create($year, $month, 1)->startOfMonth();
-            $end = $start->copy()->endOfMonth();
-
-            $schoolEvents = Event::query()
-                ->whereBetween('event_date', [$start, $end])
-                ->count();
-
-            $talentParticipants = $eligibleIds->isEmpty()
-                ? 0
-                : TalentEventVote::query()
-                    ->whereIn('user_id', $eligibleIds)
-                    ->whereBetween('voted_at', [$start, $end])
-                    ->distinct('user_id')
-                    ->count('user_id');
-
-            $values[] = $schoolEvents + $talentParticipants;
+            $values[] = (float) (($schoolEventsByMonth[$month] ?? 0) + ($talentEventsByMonth[$month] ?? 0));
         }
 
         $peak = max(1, (int) max($values));
@@ -233,28 +240,34 @@ class AdminAnalyticsService
         $step = max(5, (int) round($yMax / 4));
         $yTicks = [0, $step, $step * 2, $step * 3, $yMax];
 
-        return $this->chartPayload($labels, array_map('floatval', $values), $yMax, $yTicks);
+        return $this->chartPayload($labels, $values, $yMax, $yTicks);
     }
 
     public function dashboardWidgets(User $admin): array
     {
+        $election = $this->scope->resolveReportElection($admin, null, preferClosed: false);
+
         return [
-            'participation' => $this->participationGrowth($admin),
+            'participation' => $this->participationGrowth($admin, $election),
             'fundraising' => $this->fundraisingHistory($admin),
         ];
     }
 
-    public function fullReport(User $admin): array
+    public function fullReport(User $admin, ?Election $election = null): array
     {
+        $election ??= $this->scope->resolveReportElection($admin, null, preferClosed: false);
+
         return [
-            'participation' => $this->participationGrowth($admin),
+            'election_id' => $election?->id,
+            'election_name' => $election?->title,
+            'participation' => $this->participationGrowth($admin, $election),
             'fundraising' => $this->fundraisingHistory($admin),
-            'turnout' => $this->votingTurnoutByGradeSection($admin),
-            'campaigns' => $this->campaignEngagement($admin),
-            'campaignPerformance' => $this->campaignPerformance($admin),
+            'turnout' => $this->votingTurnoutByGradeSection($admin, $election),
+            'campaigns' => $this->campaignEngagement($admin, $election),
+            'campaignPerformance' => $this->campaignPerformance($admin, $election),
             'events' => $this->eventAttendanceHistory($admin),
             'talentCompetitions' => $this->talentCompetitionSummaries($admin),
-            'turnoutSections' => $this->scope->turnoutBySection($admin),
+            'turnoutSections' => $this->scope->turnoutBySection($admin, $election),
         ];
     }
 
@@ -263,13 +276,12 @@ class AdminAnalyticsService
      */
     public function talentCompetitionSummaries(User $admin): array
     {
-        $events = $admin->isSuperAdmin()
-            ? TalentEvent::query()->withCount(['entries', 'votes'])->orderByDesc('event_date')->get()
-            : $this->scope->talentEvents($admin);
+        $events = $this->scope->talentEvents($admin);
 
         return $events->map(function (TalentEvent $event) {
             $participants = (int) ($event->entries_count ?? $event->entries()->count());
             $totalVotes = (int) ($event->votes_count ?? $event->votes()->count());
+            $winners = $this->talentRanking->winners($event);
 
             return [
                 'name' => $event->title,
@@ -277,12 +289,58 @@ class AdminAnalyticsService
                 'contestants' => $participants,
                 'total_votes' => $totalVotes,
                 'voting_method' => $event->votingMethodLabel(),
-                'winner_count' => (int) ($event->number_of_winners ?? 3),
-                'participation' => $totalVotes > 0 ? $totalVotes : 0,
+                'metric_label' => $this->talentRanking->metricLabel($event),
+                'winner_count' => count($winners),
+                'winners' => array_map(fn (array $row) => $row['name'], $winners),
                 'display_status' => $event->displayStatusLabel(),
                 'event_date' => $event->event_date?->format('M d, Y'),
             ];
         })->values()->all();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, int>
+     */
+    protected function eligibleParticipantIds(User $admin)
+    {
+        $query = $admin->isSuperAdmin()
+            ? $this->scope->eligibleStudentsQuery()
+            : $this->scope->scopedStudentsQuery($admin)->where('student_status', StudentStatus::Enrolled);
+
+        return $query->pluck('id');
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, int>
+     */
+    protected function talentEventIdsForAnalytics(User $admin, ?Election $election)
+    {
+        if ($election) {
+            return TalentEvent::query()
+                ->where('election_id', $election->id)
+                ->pluck('id');
+        }
+
+        if ($admin->isSuperAdmin()) {
+            return TalentEvent::query()->pluck('id');
+        }
+
+        return $this->scope->talentEvents($admin)->pluck('id');
+    }
+
+    protected function monthExpression(string $column): string
+    {
+        $wrapped = $this->wrapColumn($column);
+
+        return match (DB::connection()->getDriverName()) {
+            'sqlite' => 'CAST(strftime(\'%m\', '.$wrapped.') AS INTEGER)',
+            default => 'MONTH('.$wrapped.')',
+        };
+    }
+
+    protected function wrapColumn(string $column): string
+    {
+        return DB::getQueryGrammar()->wrap($column);
     }
 
     /**

@@ -10,6 +10,9 @@
     $judgePct = ($card['judges_total'] ?? 0) > 0
         ? min(100, round((($card['judges_completed'] ?? 0) / max(1, $card['judges_total'])) * 100, 1))
         : 0;
+    $hasBanner = ! empty($card['has_banner'])
+        && filled($card['banner_url'] ?? null)
+        && ! \App\Support\EventImageUrl::isLegacyRemotePlaceholder($card['banner_url'] ?? null);
 ?>
 
 <article
@@ -19,8 +22,10 @@
     data-card-type="talent"
     data-votes-cast="<?php echo e((int) ($card['votes_cast'] ?? 0)); ?>"
 >
-    <div class="relative aspect-[21/7] overflow-hidden bg-slate-950">
-        <img src="<?php echo e($card['banner_url']); ?>" alt="" class="h-full w-full object-cover opacity-85" data-field="banner_url">
+    <div class="relative aspect-[21/7] overflow-hidden bg-gradient-to-br from-violet-950 via-slate-950 to-slate-900">
+        <?php if($hasBanner): ?>
+            <img src="<?php echo e($card['banner_url']); ?>" alt="" class="h-full w-full object-cover opacity-85" data-field="banner_url" onerror="this.remove()">
+        <?php endif; ?>
         <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/25 to-transparent"></div>
         <div class="absolute left-3 top-3">
             <?php echo $__env->make('admin.live-monitoring._live-badge', ['isLive' => ! empty($card['is_live'])], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
@@ -43,6 +48,8 @@
 
     <div class="space-y-3.5 p-4">
         <?php echo $__env->make('admin.live-monitoring._phase-timeline', ['steps' => $card['phase_steps'] ?? []], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
+        <?php echo $__env->make('admin.live-monitoring._countdown', ['card' => $card], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div>

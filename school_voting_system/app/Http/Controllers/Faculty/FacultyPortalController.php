@@ -26,14 +26,21 @@ class FacultyPortalController extends Controller
 
     public function elections(Request $request): View
     {
+        $showOpenOnly = $request->string('filter')->toString() === 'open';
+
         $elections = Election::query()
             ->visibleToCampus()
+            ->when($showOpenOnly, fn ($query) => $query->acceptingVotes())
             ->orderByDesc('voting_starts_at')
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
         return view('faculty.elections.index', [
             ...$this->portalData($request),
             'elections' => $elections,
+            'showOpenOnly' => $showOpenOnly,
+            'openCount' => Election::query()->visibleToCampus()->acceptingVotes()->count(),
+            'allCount' => Election::query()->visibleToCampus()->count(),
         ]);
     }
 
@@ -57,13 +64,23 @@ class FacultyPortalController extends Controller
     {
         Event::markOverdueAsCompleted();
 
+        $showUpcomingOnly = $request->string('filter')->toString() === 'upcoming';
+
         $events = Event::query()
-            ->campusListing()
-            ->paginate(12);
+            ->when(
+                $showUpcomingOnly,
+                fn ($query) => $query->upcoming()->orderBy('event_date'),
+                fn ($query) => $query->campusListing(),
+            )
+            ->paginate(12)
+            ->withQueryString();
 
         return view('faculty.events.index', [
             ...$this->portalData($request),
             'events' => $events,
+            'showUpcomingOnly' => $showUpcomingOnly,
+            'upcomingCount' => Event::query()->upcoming()->count(),
+            'allCount' => Event::query()->visibleToCampus()->count(),
         ]);
     }
 

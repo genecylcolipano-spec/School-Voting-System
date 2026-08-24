@@ -23,6 +23,9 @@
             'description' => 'Election summary, turnout, winners, party performance, and exports.',
         ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
+        <?php echo $__env->make('admin.reports.partials.report-tabs', ['active' => 'election'], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+        <?php echo $__env->make('admin.reports.partials.election-picker', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
         <?php if($report): ?>
             <section class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <div class="vm-stat-card rounded-2xl border border-violet-500/15 bg-slate-900/70 p-4">
@@ -149,8 +152,8 @@
             </section>
         <?php else: ?>
             <div class="rounded-2xl border border-dashed border-slate-700 bg-slate-900/50 px-6 py-12 text-center">
-                <p class="text-lg font-semibold text-white">No assigned election report</p>
-                <p class="mt-2 text-sm text-slate-400">Assign an election to your admin account to generate election summary reports.</p>
+                <p class="text-lg font-semibold text-white">No election report available</p>
+                <p class="mt-2 text-sm text-slate-400">Closed or published elections appear here once voting ends. You can also open an election you created or were assigned.</p>
                 <a href="<?php echo e(route('admin.analytics.index')); ?>" class="mt-5 inline-flex rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Open Analytics Dashboard</a>
             </div>
         <?php endif; ?>

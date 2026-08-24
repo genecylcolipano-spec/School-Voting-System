@@ -42,7 +42,7 @@
                     <?php endif; ?>
                 </div>
                 <div class="text-right">
-                    <p class="text-xs uppercase tracking-wide text-slate-500"><?php echo e($election->status?->value ?? $election->status); ?></p>
+                    <?php echo $__env->make('faculty.elections._status-badge', ['election' => $election], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                     <?php if($election->voting_starts_at): ?>
                         <p class="mt-1 text-xs text-slate-400">Starts <?php echo e($election->voting_starts_at->format('M d, Y g:i A')); ?></p>
                     <?php endif; ?>
@@ -51,6 +51,14 @@
                     <?php endif; ?>
                 </div>
             </div>
+            <?php if($election->shouldShowOfficialResultsToStudents()): ?>
+                <a
+                    href="<?php echo e(route('faculty.results.election.show', $election)); ?>"
+                    class="mt-4 inline-flex min-h-10 items-center justify-center rounded-xl bg-gradient-to-r from-teal-500 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950"
+                >
+                    View official results
+                </a>
+            <?php endif; ?>
         </section>
 
         <div class="space-y-6">

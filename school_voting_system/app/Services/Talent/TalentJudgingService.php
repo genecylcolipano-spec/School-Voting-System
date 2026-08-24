@@ -17,6 +17,7 @@ use App\Models\TalentJudgeScoreSheet;
 use App\Models\TalentJudgingCriterion;
 use App\Models\User;
 use App\Services\Portal\PortalNotificationService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -252,14 +253,19 @@ class TalentJudgingService
     }
 
     /**
+     * Competitions this faculty is assigned to judge.
+     *
+     * @param  'all'|'current'|'past'  $phase
      * @return Builder<TalentEvent>
      */
-    public function assignedCompetitionsQuery(User $faculty): Builder
+    public function assignedCompetitionsQuery(User $faculty, string $phase = 'all'): Builder
     {
         return TalentEvent::query()
             ->whereHas('judges', fn (Builder $query) => $query
                 ->where('user_id', $faculty->id)
                 ->where('status', TalentJudgeAssignmentStatus::Active))
+            ->when($phase === 'current', fn (Builder $query) => $query->whereJudgingCurrent())
+            ->when($phase === 'past', fn (Builder $query) => $query->whereJudgingPast())
             ->orderByDesc('voting_starts_at')
             ->orderByDesc('event_date');
     }
@@ -287,6 +293,52 @@ class TalentJudgingService
         return $event->approvedEntries()
             ->orderBy('display_name')
             ->get();
+    }
+
+    /**
+     * Approved performances for current assignments, grouped by competition.
+     * Incomplete competitions are listed first; unsubmitted performances first within each group.
+     *
+     * @return Collection<int, array{competition: TalentEvent, progress: array<string, mixed>, needs_work: bool, entries: Collection<int, TalentEventEntry>, sheets: Collection<int, TalentJudgeScoreSheet>}>
+     */
+    public function currentPerformanceGroupsFor(User $faculty): Collection
+    {
+        $competitions = $this->assignedCompetitionsQuery($faculty, 'current')
+            ->with(['approvedEntries' => fn ($query) => $query->orderBy('display_name')])
+            ->get();
+
+        $sheetsByEvent = TalentJudgeScoreSheet::query()
+            ->where('user_id', $faculty->id)
+            ->whereIn('talent_event_id', $competitions->modelKeys() ?: [0])
+            ->get()
+            ->groupBy('talent_event_id');
+
+        return $competitions->map(function (TalentEvent $competition) use ($faculty, $sheetsByEvent) {
+            $progress = $this->progressFor($faculty, $competition);
+            $sheets = collect($sheetsByEvent->get($competition->id, collect()))
+                ->keyBy('talent_event_entry_id');
+
+            $entries = $competition->approvedEntries
+                ->sortBy(function (TalentEventEntry $entry) use ($sheets) {
+                    $sheet = $sheets->get($entry->id);
+                    $bucket = match ($sheet?->status) {
+                        TalentJudgeScoreStatus::Draft => 1,
+                        TalentJudgeScoreStatus::Submitted => 2,
+                        default => 0,
+                    };
+
+                    return sprintf('%d-%s', $bucket, mb_strtolower($entry->display_name));
+                })
+                ->values();
+
+            return [
+                'competition' => $competition,
+                'progress' => $progress,
+                'needs_work' => $progress['remaining'] > 0,
+                'entries' => $entries,
+                'sheets' => $sheets,
+            ];
+        })->sortByDesc('needs_work')->values();
     }
 
     public function scoreSheetFor(User $faculty, TalentEvent $event, TalentEventEntry $entry): ?TalentJudgeScoreSheet
@@ -520,5 +572,22 @@ class TalentJudgingService
                 'status' => $progress['judging_status'],
             ];
         })->filter()->values();
+    }
+
+    /**
+     * Submitted sheets for live (non-deleted) competitions only.
+     *
+     * @return LengthAwarePaginator<int, TalentJudgeScoreSheet>
+     */
+    public function submittedSheetsFor(User $faculty, int $perPage = 15): LengthAwarePaginator
+    {
+        return TalentJudgeScoreSheet::query()
+            ->where('user_id', $faculty->id)
+            ->where('status', TalentJudgeScoreStatus::Submitted)
+            ->whereHas('talentEvent')
+            ->whereHas('entry')
+            ->with(['talentEvent', 'entry'])
+            ->orderByDesc('submitted_at')
+            ->paginate($perPage);
     }
 }

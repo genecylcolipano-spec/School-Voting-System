@@ -244,12 +244,17 @@ class AdminActionController extends Controller
 
         return redirect()
             ->route('admin.results.election.show', $election)
-            ->with('success', 'Official election results have been published to students.');
+            ->with('success', 'Official election results have been published to students and faculty.');
     }
 
     public function unpublishElectionResults(UnpublishElectionResultsRequest $request, Election $election): RedirectResponse
     {
         $this->electionPublishing->unpublish($election, $request->user());
+        $this->announcements->retractResultsPublished(
+            AnnouncementRelatedModule::Election,
+            $election->id,
+            $request->user(),
+        );
 
         return redirect()
             ->route('admin.results.election.show', $election)
@@ -296,12 +301,17 @@ class AdminActionController extends Controller
 
         return redirect()
             ->route('admin.results.talent.show', $talentEvent)
-            ->with('success', 'Official talent competition results have been published to students.');
+            ->with('success', 'Official talent competition results have been published to students and faculty.');
     }
 
     public function unpublishTalentResults(UnpublishTalentResultsRequest $request, TalentEvent $talentEvent): RedirectResponse
     {
         $this->talentResultsPublishing->unpublish($talentEvent, $request->user());
+        $this->announcements->retractResultsPublished(
+            AnnouncementRelatedModule::TalentCompetition,
+            $talentEvent->id,
+            $request->user(),
+        );
 
         return redirect()
             ->route('admin.results.talent.show', $talentEvent)

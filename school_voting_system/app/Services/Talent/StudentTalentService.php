@@ -5,6 +5,7 @@ namespace App\Services\Talent;
 use App\Enums\TalentEventStatus;
 use App\Models\TalentEvent;
 use App\Models\TalentEventEntry;
+use App\Models\TalentEventEntryView;
 use App\Models\TalentEventVote;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -109,6 +110,49 @@ class StudentTalentService
             ->value('talent_event_entry_id');
     }
 
+    /**
+     * Entry IDs this student has opened Watch Performance for in this competition.
+     *
+     * @return list<int>
+     */
+    public function watchedEntryIds(User $student, TalentEvent $event): array
+    {
+        return TalentEventEntryView::query()
+            ->where('talent_event_id', $event->id)
+            ->where('user_id', $student->id)
+            ->pluck('talent_event_entry_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    public function hasWatchedPerformance(User $student, TalentEventEntry $entry): bool
+    {
+        if (! $entry->hasVideo()) {
+            return true;
+        }
+
+        return TalentEventEntryView::query()
+            ->where('user_id', $student->id)
+            ->where('talent_event_entry_id', $entry->id)
+            ->exists();
+    }
+
+    public function recordWatch(User $student, TalentEventEntry $entry): TalentEventEntryView
+    {
+        $entry->loadMissing('talentEvent');
+
+        return TalentEventEntryView::query()->firstOrCreate(
+            [
+                'user_id' => $student->id,
+                'talent_event_entry_id' => $entry->id,
+            ],
+            [
+                'talent_event_id' => $entry->talent_event_id,
+                'watched_at' => now(),
+            ],
+        );
+    }
+
     public function standings(TalentEvent $event): array
     {
         $entries = $event->approvedEntries()
@@ -152,27 +196,15 @@ class StudentTalentService
      */
     public function activePhaseSummary(): array
     {
-        $events = TalentEvent::query()
-            ->publishedToStudents()
-            ->whereNull('results_published_at')
-            ->where('status', '!=', TalentEventStatus::ResultsPublished)
-            ->where('status', '!=', TalentEventStatus::Completed)
-            ->where('is_paused', false)
-            ->get([
-                'id',
-                'status',
-                'published_to_students',
-                'registration_starts_at',
-                'registration_ends_at',
-                'submission_deadline',
-                'registration_method',
-                'voting_starts_at',
-                'voting_ends_at',
-                'voting_method',
-                'results_published_at',
-                'is_paused',
-            ]);
+        return $this->summarizeOpenEvents($this->openPublishedEvents());
+    }
 
+    /**
+     * @param  Collection<int, TalentEvent>  $events
+     * @return array{total: int, registration_open: int, voting_open: int}
+     */
+    protected function summarizeOpenEvents(Collection $events): array
+    {
         $registrationOpen = 0;
         $votingOpen = 0;
 
@@ -193,8 +225,81 @@ class StudentTalentService
         ];
     }
 
+    /**
+     * Open talent phases plus what this student still needs to do.
+     *
+     * @return array{
+     *     total: int,
+     *     registration_open: int,
+     *     voting_open: int,
+     *     remaining_votes: int,
+     *     remaining_registrations: int
+     * }
+     */
+    public function overviewForStudent(User $student): array
+    {
+        $events = $this->openPublishedEvents();
+        $summary = $this->summarizeOpenEvents($events);
+
+        $votingIds = $events
+            ->filter(fn (TalentEvent $event) => $event->currentStatusKey() === 'voting_open')
+            ->pluck('id');
+        $registrationIds = $events
+            ->filter(fn (TalentEvent $event) => $event->currentStatusKey() === 'registration_open')
+            ->pluck('id');
+
+        $votedIds = $votingIds->isEmpty()
+            ? collect()
+            : TalentEventVote::query()
+                ->where('user_id', $student->id)
+                ->whereIn('talent_event_id', $votingIds)
+                ->pluck('talent_event_id')
+                ->unique();
+
+        $enteredIds = $registrationIds->isEmpty()
+            ? collect()
+            : TalentEventEntry::query()
+                ->where('user_id', $student->id)
+                ->whereIn('talent_event_id', $registrationIds)
+                ->pluck('talent_event_id')
+                ->unique();
+
+        return [
+            ...$summary,
+            'remaining_votes' => $votingIds->diff($votedIds)->count(),
+            'remaining_registrations' => $registrationIds->diff($enteredIds)->count(),
+        ];
+    }
+
     public function openPublishedCount(): int
     {
         return $this->activePhaseSummary()['voting_open'];
+    }
+
+    /**
+     * @return Collection<int, TalentEvent>
+     */
+    protected function openPublishedEvents(): Collection
+    {
+        return TalentEvent::query()
+            ->publishedToStudents()
+            ->whereNull('results_published_at')
+            ->where('status', '!=', TalentEventStatus::ResultsPublished)
+            ->where('status', '!=', TalentEventStatus::Completed)
+            ->where('is_paused', false)
+            ->get([
+                'id',
+                'status',
+                'published_to_students',
+                'registration_starts_at',
+                'registration_ends_at',
+                'submission_deadline',
+                'registration_method',
+                'voting_starts_at',
+                'voting_ends_at',
+                'voting_method',
+                'results_published_at',
+                'is_paused',
+            ]);
     }
 }

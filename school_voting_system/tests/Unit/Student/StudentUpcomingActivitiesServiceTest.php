@@ -166,6 +166,33 @@ class StudentUpcomingActivitiesServiceTest extends TestCase
         $this->assertNotNull($row);
         $this->assertSame('completed', $row['status_key']);
         $this->assertSame('Completed', $row['status_label']);
+        $this->assertSame('View details', $row['action_label']);
+    }
+
+    public function test_todays_school_event_uses_view_details_not_join(): void
+    {
+        $this->travelTo(now()->setTime(10, 0));
+
+        $admin = User::factory()->admin()->create();
+        $startsAt = now()->setTime(18, 30);
+
+        Event::query()->create([
+            'title' => 'Tonight Assembly',
+            'slug' => 'tonight-assembly',
+            'event_date' => $startsAt,
+            'venue' => 'Auditorium',
+            'status' => EventStatus::Scheduled,
+            'created_by' => $admin->id,
+        ]);
+
+        $row = $this->service->forDashboard()->firstWhere('title', 'Tonight Assembly');
+
+        $this->assertNotNull($row);
+        $this->assertSame('ongoing', $row['status_key']);
+        $this->assertSame('Ongoing', $row['status_label']);
+        $this->assertSame('View details', $row['action_label']);
+        $this->assertSame($startsAt->format('M d, Y · g:i A'), $row['schedule_label']);
+        $this->assertStringContainsString(route('student.events.show', 'tonight-assembly'), $row['action_url']);
     }
 
     public function test_active_fundraiser_shows_donate_action(): void

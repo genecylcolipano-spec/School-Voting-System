@@ -8,6 +8,7 @@ use App\Models\TalentEvent;
 use App\Models\TalentEventEntry;
 use App\Models\TalentEventJudge;
 use App\Models\TalentJudgeScoreSheet;
+use App\Models\User;
 use App\Enums\TalentJudgeScoreStatus;
 use App\Services\Talent\TalentJudgingService;
 use App\Support\AdminPortal;
@@ -24,11 +25,14 @@ class FacultyJudgingController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user()->loadCount('passkeys');
-        $competitions = $this->judging->assignedCompetitionsQuery($user)
+        $phase = $request->string('filter')->toString() === 'past' ? 'past' : 'current';
+
+        $competitions = $this->judging->assignedCompetitionsQuery($user, $phase)
             ->withCount([
                 'entries as approved_entries_count' => fn ($q) => $q->where('status', TalentEventEntry::STATUS_APPROVED),
             ])
-            ->paginate(12);
+            ->paginate(12)
+            ->withQueryString();
 
         $assignments = TalentEventJudge::query()
             ->active()
@@ -48,32 +52,20 @@ class FacultyJudgingController extends Controller
             'competitions' => $competitions,
             'assignments' => $assignments,
             'progress' => $progress,
+            'phase' => $phase,
+            'currentCount' => $this->judging->assignedCompetitionsQuery($user, 'current')->count(),
+            'pastCount' => $this->judging->assignedCompetitionsQuery($user, 'past')->count(),
         ]);
     }
 
     public function performances(Request $request): View
     {
         $user = $request->user()->loadCount('passkeys');
-        $competitions = $this->judging->assignedCompetitionsQuery($user)
-            ->withCount([
-                'entries as approved_entries_count' => fn ($q) => $q->where('status', TalentEventEntry::STATUS_APPROVED),
-            ])
-            ->get();
-
-        $rows = $competitions->map(function (TalentEvent $competition) use ($user) {
-            $progress = $this->judging->progressFor($user, $competition);
-
-            return [
-                'competition' => $competition,
-                'progress' => $progress,
-                'needs_work' => $progress['remaining'] > 0,
-            ];
-        })->sortByDesc('needs_work')->values();
 
         return view('faculty.judging.performances', [
             'user' => $user,
             'notificationsCount' => AdminPortal::notificationCount($user),
-            'rows' => $rows,
+            'rows' => $this->judging->currentPerformanceGroupsFor($user),
         ]);
     }
 
@@ -83,12 +75,7 @@ class FacultyJudgingController extends Controller
 
         $summaries = $this->judging->submittedSummariesFor($user);
 
-        $sheets = TalentJudgeScoreSheet::query()
-            ->where('user_id', $user->id)
-            ->where('status', TalentJudgeScoreStatus::Submitted)
-            ->with(['talentEvent', 'entry'])
-            ->orderByDesc('submitted_at')
-            ->paginate(15);
+        $sheets = $this->judging->submittedSheetsFor($user);
 
         return view('faculty.judging.submitted', [
             'user' => $user,
@@ -124,9 +111,7 @@ class FacultyJudgingController extends Controller
     public function scoreForm(Request $request, TalentEvent $talentEvent, TalentEventEntry $entry): View
     {
         $user = $request->user()->loadCount('passkeys');
-        $this->judging->assertAssigned($user, $talentEvent);
-        abort_unless((int) $entry->talent_event_id === (int) $talentEvent->id, 404);
-        abort_unless($entry->isApproved(), 404);
+        $this->assertJudgeableEntry($user, $talentEvent, $entry);
 
         $this->judging->ensureDefaultCriteria($talentEvent);
         $criteria = $talentEvent->judgingCriteria()->orderBy('sort_order')->get();
@@ -143,6 +128,28 @@ class FacultyJudgingController extends Controller
             'existingScores' => $existingScores,
             'acceptingScores' => $talentEvent->isAcceptingJudgeScores(),
             'locked' => $sheet?->isLocked() ?? false,
+            'from' => $request->string('from')->toString(),
+            'backUrl' => $this->entryBackUrl($request, $talentEvent),
+            'backLabel' => $this->entryBackLabel($request, $talentEvent),
+        ]);
+    }
+
+    public function profile(Request $request, TalentEvent $talentEvent, TalentEventEntry $entry): View
+    {
+        $user = $request->user()->loadCount('passkeys');
+        $this->assertJudgeableEntry($user, $talentEvent, $entry);
+
+        $sheet = $this->judging->scoreSheetFor($user, $talentEvent, $entry);
+
+        return view('faculty.judging.profile', [
+            'user' => $user,
+            'notificationsCount' => AdminPortal::notificationCount($user),
+            'competition' => $talentEvent,
+            'entry' => $entry,
+            'sheet' => $sheet,
+            'from' => $request->string('from')->toString(),
+            'backUrl' => $this->entryBackUrl($request, $talentEvent),
+            'backLabel' => $this->entryBackLabel($request, $talentEvent),
         ]);
     }
 
@@ -195,5 +202,30 @@ class FacultyJudgingController extends Controller
         return redirect()
             ->route('faculty.judging.show', $talentEvent)
             ->with('success', $message);
+    }
+
+    protected function assertJudgeableEntry(User $user, TalentEvent $talentEvent, TalentEventEntry $entry): void
+    {
+        $this->judging->assertAssigned($user, $talentEvent);
+        abort_unless((int) $entry->talent_event_id === (int) $talentEvent->id, 404);
+        abort_unless($entry->isApproved(), 404);
+    }
+
+    protected function entryBackUrl(Request $request, TalentEvent $talentEvent): string
+    {
+        return match ($request->string('from')->toString()) {
+            'performances' => route('faculty.judging.performances'),
+            'submitted' => route('faculty.judging.submitted'),
+            default => route('faculty.judging.show', $talentEvent),
+        };
+    }
+
+    protected function entryBackLabel(Request $request, TalentEvent $talentEvent): string
+    {
+        return match ($request->string('from')->toString()) {
+            'performances' => 'Judge Performances',
+            'submitted' => 'Submitted Scores',
+            default => $talentEvent->title,
+        };
     }
 }

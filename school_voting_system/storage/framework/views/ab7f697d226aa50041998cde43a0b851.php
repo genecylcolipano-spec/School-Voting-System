@@ -34,6 +34,7 @@
             data-mode="election"
             data-election-url="<?php echo e(route('admin.live.election')); ?>"
             data-talent-url="<?php echo e(route('admin.live.talent')); ?>"
+            data-can-manage="<?php echo e(($canManage ?? false) ? '1' : '0'); ?>"
         >
             <div class="space-y-6" data-cards-view>
                 <?php if($urgentCards->isNotEmpty()): ?>
@@ -47,7 +48,7 @@
                         </h3>
                         <div class="grid gap-5 lg:grid-cols-2" data-live-cards data-urgent-grid>
                             <?php $__currentLoopData = $urgentCards; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $card): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <?php echo $__env->make('admin.live-monitoring._election-card', ['card' => $card], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php echo $__env->make('admin.live-monitoring._election-card', ['card' => $card, 'canManage' => $canManage ?? false], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
                     </section>
@@ -58,7 +59,7 @@
                         <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Other activities</h3>
                         <div class="grid gap-5 lg:grid-cols-2" data-live-cards data-other-grid>
                             <?php $__currentLoopData = $otherCards; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $card): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <?php echo $__env->make('admin.live-monitoring._election-card', ['card' => $card], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                <?php echo $__env->make('admin.live-monitoring._election-card', ['card' => $card, 'canManage' => $canManage ?? false], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
                     </section>

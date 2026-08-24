@@ -64,11 +64,77 @@ class AnnouncementCommunicationTest extends TestCase
 
         $this->assertTrue($announcement->is_published);
         $this->assertTrue($announcement->isLive());
+        $this->assertContains(AnnouncementAudience::Students->value, $announcement->target_audiences);
+        $this->assertContains(AnnouncementAudience::Faculty->value, $announcement->target_audiences);
         $this->assertSame(
             route('student.results.election.show', $election),
             $announcement->relatedRecordUrl(\App\Enums\UserRole::Student),
         );
+        $this->assertSame(
+            route('faculty.results.election.show', $election),
+            $announcement->relatedRecordUrl(\App\Enums\UserRole::Faculty),
+        );
         $this->assertFalse($announcement->notify_in_app);
+    }
+
+    public function test_results_announcement_is_reused_on_republish_and_hidden_when_unpublished(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $faculty = User::factory()->faculty()->create();
+        $election = Election::factory()->create([
+            'status' => ElectionStatus::Closed,
+            'voting_starts_at' => now()->subDays(2),
+            'voting_ends_at' => now()->subHour(),
+            'public_results_published' => true,
+        ]);
+
+        $service = app(AnnouncementService::class);
+        $first = $service->generateForResultsPublished(
+            $election->title,
+            AnnouncementRelatedModule::Election,
+            $election->id,
+            $admin,
+        );
+        $second = $service->generateForResultsPublished(
+            $election->title,
+            AnnouncementRelatedModule::Election,
+            $election->id,
+            $admin,
+        );
+
+        $this->assertSame($first->id, $second->id);
+        $this->assertSame(
+            1,
+            Announcement::query()
+                ->where('auto_source_type', 'results_published')
+                ->where('auto_source_id', $election->id)
+                ->where('related_module', AnnouncementRelatedModule::Election)
+                ->count()
+        );
+        $this->assertTrue(
+            Announcement::query()->published()->visibleToUser($faculty)->whereKey($first->id)->exists()
+        );
+
+        $service->retractResultsPublished(
+            AnnouncementRelatedModule::Election,
+            $election->id,
+            $admin,
+        );
+
+        $this->assertFalse($first->fresh()->isLive());
+        $this->assertFalse(
+            Announcement::query()->published()->visibleToUser($faculty)->whereKey($first->id)->exists()
+        );
+
+        $restored = $service->generateForResultsPublished(
+            $election->title,
+            AnnouncementRelatedModule::Election,
+            $election->id,
+            $admin,
+        );
+
+        $this->assertSame($first->id, $restored->id);
+        $this->assertTrue($restored->isLive());
     }
 
     public function test_scheduled_announcement_notifies_after_publish_time(): void

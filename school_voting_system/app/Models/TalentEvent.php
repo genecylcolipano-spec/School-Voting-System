@@ -10,10 +10,12 @@ use App\Enums\TalentRegistrationMethod;
 use App\Enums\TalentSubmissionMethod;
 use App\Enums\TalentVotingMethod;
 use App\Models\Concerns\HasEventImage;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 class TalentEvent extends Model
@@ -95,6 +97,49 @@ class TalentEvent extends Model
     public function scopePublishedToStudents($query)
     {
         return $query->where('published_to_students', true);
+    }
+
+    /**
+     * Judging window is scheduled or open (not closed).
+     */
+    public function scopeWhereJudgingCurrent(Builder $query, ?Carbon $at = null): Builder
+    {
+        $at ??= now();
+
+        return $query
+            ->whereIn('voting_method', [
+                TalentVotingMethod::JudgesOnly,
+                TalentVotingMethod::JudgesAndStudents,
+            ])
+            ->where('is_paused', false)
+            ->whereNotIn('status', [
+                TalentEventStatus::Completed,
+                TalentEventStatus::ResultsPublished,
+            ])
+            ->whereNull('results_published_at')
+            ->where(function (Builder $query) use ($at) {
+                $query->where(function (Builder $query) use ($at) {
+                    $query->whereNotNull('voting_starts_at')
+                        ->where(function (Builder $query) use ($at) {
+                            $query->whereNull('voting_ends_at')
+                                ->orWhere('voting_ends_at', '>=', $at);
+                        });
+                })->orWhere(function (Builder $query) {
+                    $query->whereNull('voting_starts_at')
+                        ->whereNull('voting_ends_at')
+                        ->where('status', TalentEventStatus::VotingOpen);
+                });
+            });
+    }
+
+    /**
+     * Judging window has ended, paused, or results are finished.
+     */
+    public function scopeWhereJudgingPast(Builder $query, ?Carbon $at = null): Builder
+    {
+        return $query->whereNot(function (Builder $query) use ($at) {
+            $query->whereJudgingCurrent($at);
+        });
     }
 
     public function isPublishedToStudents(): bool
@@ -224,6 +269,61 @@ class TalentEvent extends Model
             || ($this->voting_starts_at === null
                 && $this->voting_ends_at === null
                 && $this->status === TalentEventStatus::VotingOpen);
+    }
+
+    /**
+     * Faculty judging window for display. Score submit still uses isAcceptingJudgeScores().
+     *
+     * @return array{key: 'scheduled'|'open'|'closed', label: string, opens_at: ?string, closes_at: ?string}
+     */
+    public function judgingPhase(?\Illuminate\Support\Carbon $at = null): array
+    {
+        $at ??= now();
+        $closesAt = $this->voting_ends_at?->format('M d, Y g:i A');
+
+        if ($this->isAcceptingJudgeScores($at)) {
+            return $this->judgingPhasePayload('open', 'Judging open', closesAt: $closesAt);
+        }
+
+        $unavailable = $this->is_paused
+            || $this->isArchived()
+            || $this->status === TalentEventStatus::ResultsPublished
+            || $this->results_published_at !== null
+            || $this->isAfterVotingEnd($at);
+
+        if ($this->requiresJudges() && ! $unavailable && $this->isBeforeVotingStart($at)) {
+            return $this->judgingPhasePayload(
+                'scheduled',
+                'Judging scheduled',
+                $this->voting_starts_at?->format('M d, Y g:i A'),
+                $closesAt,
+            );
+        }
+
+        return $this->judgingPhasePayload('closed', 'Judging closed', closesAt: $closesAt);
+    }
+
+    public function judgingPhaseKey(?\Illuminate\Support\Carbon $at = null): string
+    {
+        return $this->judgingPhase($at)['key'];
+    }
+
+    public function judgingPhaseLabel(?\Illuminate\Support\Carbon $at = null): string
+    {
+        return $this->judgingPhase($at)['label'];
+    }
+
+    /**
+     * @return array{key: 'scheduled'|'open'|'closed', label: string, opens_at: ?string, closes_at: ?string}
+     */
+    protected function judgingPhasePayload(string $key, string $label, ?string $opensAt = null, ?string $closesAt = null): array
+    {
+        return [
+            'key' => $key,
+            'label' => $label,
+            'opens_at' => $opensAt,
+            'closes_at' => $closesAt,
+        ];
     }
 
     public function isAcceptingVotes(?\Illuminate\Support\Carbon $at = null): bool
@@ -668,6 +768,94 @@ class TalentEvent extends Model
         $end = $this->voting_ends_at?->format('M d, Y g:i A') ?? '—';
 
         return "{$start} – {$end}";
+    }
+
+    /**
+     * @return array{
+     *     label: string,
+     *     remaining: string,
+     *     hours: int,
+     *     minutes: int,
+     *     phase: string,
+     *     target_at_iso: string,
+     *     is_closed: bool,
+     *     ends_at_iso: ?string,
+     *     starts_at_iso: ?string
+     * }|null
+     */
+    public function countdownSnapshot(?Carbon $at = null): ?array
+    {
+        $at ??= now();
+        $startsAt = $this->voting_starts_at;
+        $endsAt = $this->voting_ends_at;
+
+        if (! $startsAt && ! $endsAt && $this->event_date) {
+            $startsAt = Carbon::parse($this->event_date);
+        }
+
+        if (! $startsAt && ! $endsAt) {
+            return null;
+        }
+
+        if ($startsAt && $at->lt($startsAt)) {
+            $label = $this->voting_starts_at ? 'Voting Starts In' : 'Event Starts In';
+
+            return $this->buildCountdown($startsAt, $label, 'before_start');
+        }
+
+        if ($endsAt) {
+            $ends = Carbon::parse($endsAt);
+
+            if ($at->gte($ends)) {
+                return [
+                    'label' => 'Voting Closed',
+                    'remaining' => '00 Hours 00 Minutes',
+                    'hours' => 0,
+                    'minutes' => 0,
+                    'phase' => 'ended',
+                    'target_at_iso' => $ends->toIso8601String(),
+                    'is_closed' => true,
+                    'ends_at_iso' => $ends->toIso8601String(),
+                    'starts_at_iso' => $this->voting_starts_at?->toIso8601String(),
+                ];
+            }
+
+            return $this->buildCountdown($ends, 'Voting Ends In', 'active');
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{
+     *     label: string,
+     *     remaining: string,
+     *     hours: int,
+     *     minutes: int,
+     *     phase: string,
+     *     target_at_iso: string,
+     *     is_closed: bool,
+     *     ends_at_iso: ?string,
+     *     starts_at_iso: ?string
+     * }
+     */
+    protected function buildCountdown(Carbon $target, string $label, string $phase): array
+    {
+        $diff = now()->diff($target);
+        $hours = ($diff->days * 24) + $diff->h;
+        $minutes = $diff->i;
+
+        return [
+            'label' => $label,
+            'remaining' => sprintf('%02d Hours %02d Minutes', $hours, $minutes),
+            'hours' => $hours,
+            'minutes' => $minutes,
+            'phase' => $phase,
+            'target_at_iso' => $target->toIso8601String(),
+            'is_closed' => false,
+            'ends_at_iso' => $this->voting_ends_at?->toIso8601String(),
+            'starts_at_iso' => $this->voting_starts_at?->toIso8601String(),
+        ];
     }
 
     public function registrationMethodLabel(): string

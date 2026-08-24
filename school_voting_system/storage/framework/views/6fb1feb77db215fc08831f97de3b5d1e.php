@@ -32,13 +32,10 @@
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
 <?php $component->withAttributes(['title' => 'Settings','user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount)]); ?>
-        <div class="mb-6">
-            <h1 class="text-xl font-bold text-white">Settings</h1>
-            <p class="mt-1 text-sm text-slate-400">
-                <?php echo e($isSuperAdmin ? 'Manage your super administrator profile, devices, and security posture.' : 'Manage your administrator profile, devices, and account security.'); ?>
+        <p class="mb-6 text-sm text-slate-400">
+            <?php echo e($isSuperAdmin ? 'Manage your super administrator profile, devices, and security posture.' : 'Manage your administrator profile, devices, and account security.'); ?>
 
-            </p>
-        </div>
+        </p>
 
         <nav class="mb-6 flex flex-wrap gap-2" aria-label="Settings sections">
             <a href="<?php echo e(route('profile.edit', ['section' => 'profile'])); ?>" class="<?php echo e($navClass('profile')); ?>">Profile</a>
@@ -134,7 +131,7 @@ unset($__errorArgs, $__bag); ?>
                         <div class="grid gap-4 sm:grid-cols-2">
                             <?php if (! ($isSuperAdmin)): ?>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-300">Department</label>
+                                    <label class="block text-sm font-medium text-slate-300">Staff role</label>
                                     <input type="text" value="<?php echo e($departmentLabel); ?>" readonly class="mt-1 w-full cursor-not-allowed rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-2 text-slate-400" />
                                 </div>
                             <?php endif; ?>
@@ -156,7 +153,7 @@ unset($__errorArgs, $__bag); ?>
                         ['label' => 'Role', 'value' => $user->roleLabel()],
                     ];
                     if (! $isSuperAdmin) {
-                        $adminSummaryRows[] = ['label' => 'Department', 'value' => $departmentLabel];
+                        $adminSummaryRows[] = ['label' => 'Staff role', 'value' => $departmentLabel];
                     }
                     $adminSummaryRows = array_merge($adminSummaryRows, [
                         ['label' => 'Registered Devices', 'value' => (string) $user->passkeys_count],
@@ -191,18 +188,18 @@ unset($__errorArgs, $__bag); ?>
             <div class="grid gap-6 lg:grid-cols-2">
                 <section class="rounded-2xl border border-cyan-500/15 bg-slate-900/70 p-5 sm:p-6">
                     <h2 class="text-lg font-semibold text-white">Register New Passkey</h2>
-                    <p class="mt-1 text-sm text-slate-400">Add another trusted device for passwordless administrator sign-in.</p>
-                    <div class="mt-5 [&_.rounded-xl]:border-cyan-500/20 [&_.rounded-xl]:bg-slate-950/50 [&_p]:text-slate-300 [&_label]:text-slate-300 [&_input]:border-slate-700 [&_input]:bg-slate-950 [&_input]:text-slate-100">
+                    <p class="mt-1 text-sm text-slate-400">Use another computer if this device is already listed. Names only help you tell devices apart.</p>
+                    <div class="mt-5">
                         <?php if (isset($component)) { $__componentOriginal15a615f1c082febb5f28527938415021 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal15a615f1c082febb5f28527938415021 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.passkey-register','data' => ['registerOptionsUrl' => route('register.passkey.options'),'registerVerifyUrl' => route('register.passkey.verify')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.passkey-register','data' => ['theme' => 'dark','registerOptionsUrl' => route('register.passkey.options'),'registerVerifyUrl' => route('register.passkey.verify')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('passkey-register'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['register-options-url' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('register.passkey.options')),'register-verify-url' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('register.passkey.verify'))]); ?>
+<?php $component->withAttributes(['theme' => 'dark','register-options-url' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('register.passkey.options')),'register-verify-url' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('register.passkey.verify'))]); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal15a615f1c082febb5f28527938415021)): ?>

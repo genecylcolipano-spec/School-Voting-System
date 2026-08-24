@@ -26,7 +26,8 @@ class FacultyDashboardController extends Controller
     {
         $user = $request->user()->loadCount('passkeys');
 
-        $assignedCompetitions = $this->judging->assignedCompetitionsQuery($user)
+        $assignedCompetitionsCount = $this->judging->assignedCompetitionsQuery($user, 'current')->count();
+        $assignedCompetitions = $this->judging->assignedCompetitionsQuery($user, 'current')
             ->withCount([
                 'entries as approved_entries_count' => fn ($q) => $q->where('status', TalentEventEntry::STATUS_APPROVED),
             ])
@@ -48,9 +49,10 @@ class FacultyDashboardController extends Controller
         return view('faculty.dashboard', [
             'user' => $user,
             'notificationsCount' => AdminPortal::notificationCount($user),
-            'openElectionsCount' => Election::query()->acceptingVotes()->count(),
+            'openElectionsCount' => Election::query()->visibleToCampus()->acceptingVotes()->count(),
             'upcomingEventsCount' => Event::query()->upcoming()->count(),
-            'openTalentCount' => $assignedCompetitions->count(),
+            'assignedCompetitionsCount' => $assignedCompetitionsCount,
+            'pastAssignedCount' => $this->judging->assignedCompetitionsQuery($user, 'past')->count(),
             'assignedCompetitions' => $assignedCompetitions,
             'assignments' => $assignments,
             'progress' => $progress,

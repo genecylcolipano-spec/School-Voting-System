@@ -7,6 +7,9 @@
         default => 'bg-slate-700/40 text-slate-300',
     };
     $turnout = min(100, max(0, (float) ($card['turnout_percent'] ?? 0)));
+    $hasBanner = ! empty($card['has_banner'])
+        && filled($card['banner_url'] ?? null)
+        && ! \App\Support\EventImageUrl::isLegacyRemotePlaceholder($card['banner_url'] ?? null);
 ?>
 
 <article
@@ -16,8 +19,10 @@
     data-card-type="election"
     data-votes-cast="<?php echo e((int) ($card['votes_cast'] ?? 0)); ?>"
 >
-    <div class="relative aspect-[21/7] overflow-hidden bg-slate-950">
-        <img src="<?php echo e($card['banner_url']); ?>" alt="" class="h-full w-full object-cover opacity-85">
+    <div class="relative aspect-[21/7] overflow-hidden bg-gradient-to-br from-violet-950 via-slate-950 to-slate-900">
+        <?php if($hasBanner): ?>
+            <img src="<?php echo e($card['banner_url']); ?>" alt="" class="h-full w-full object-cover opacity-85" onerror="this.remove()">
+        <?php endif; ?>
         <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/25 to-transparent"></div>
         <div class="absolute left-3 top-3">
             <?php echo $__env->make('admin.live-monitoring._live-badge', ['isLive' => ! empty($card['is_live'])], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
@@ -39,6 +44,8 @@
 
     <div class="space-y-3.5 p-4">
         <?php echo $__env->make('admin.live-monitoring._phase-timeline', ['steps' => $card['phase_steps'] ?? []], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
+        <?php echo $__env->make('admin.live-monitoring._countdown', ['card' => $card], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
         <div class="grid grid-cols-3 gap-3">
             <div>
@@ -78,10 +85,26 @@
             </dl>
         </details>
 
+        <?php echo $__env->make('admin.live-monitoring._position-leaders', ['card' => $card], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
         <div class="flex flex-wrap gap-2 pt-0.5">
             <a href="<?php echo e($card['details_url']); ?>" class="rounded-xl border border-slate-700 px-3 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-800">Open Details</a>
             <?php if(! empty($card['show_results_shortcut'])): ?>
                 <a href="<?php echo e($card['results_url']); ?>" class="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90">View Results</a>
+            <?php endif; ?>
+
+            <?php if(($canManage ?? false) && ! empty($card['can_manage_live'])): ?>
+                <?php if(! empty($card['is_paused'])): ?>
+                    <form method="POST" action="<?php echo e($card['actions']['resume']); ?>">
+                        <?php echo csrf_field(); ?>
+                        <button type="submit" class="rounded-xl border border-emerald-500/40 px-3 py-1.5 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/10">Resume</button>
+                    </form>
+                <?php else: ?>
+                    <form method="POST" action="<?php echo e($card['actions']['pause']); ?>">
+                        <?php echo csrf_field(); ?>
+                        <button type="submit" class="rounded-xl border border-amber-500/40 px-3 py-1.5 text-sm font-semibold text-amber-200 hover:bg-amber-500/10">Pause</button>
+                    </form>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
     </div>

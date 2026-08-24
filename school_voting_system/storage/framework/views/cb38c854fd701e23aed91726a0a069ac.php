@@ -27,7 +27,7 @@
 
             <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <a
-                    href="<?php echo e(route('faculty.judging.index')); ?>"
+                    href="<?php echo e(route('faculty.judging.index', ['filter' => 'current'])); ?>"
                     class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 sm:w-auto"
                     aria-label="View assigned competitions"
                 >
@@ -51,19 +51,19 @@
         </section>
 
         <div class="grid gap-4 sm:grid-cols-3">
-            <a href="<?php echo e(route('faculty.elections.index')); ?>" class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 transition hover:border-teal-400/40 hover:bg-slate-900">
+            <a href="<?php echo e(route('faculty.elections.index', ['filter' => 'open'])); ?>" class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 transition hover:border-teal-400/40 hover:bg-slate-900">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Open elections</p>
                 <p class="mt-2 text-3xl font-bold text-white"><?php echo e($openElectionsCount); ?></p>
-                <p class="mt-1 text-sm text-teal-300">View only →</p>
+                <p class="mt-1 text-sm text-teal-300">Currently open →</p>
             </a>
-            <a href="<?php echo e(route('faculty.events.index')); ?>" class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 transition hover:border-teal-400/40 hover:bg-slate-900">
+            <a href="<?php echo e(route('faculty.events.index', ['filter' => 'upcoming'])); ?>" class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 transition hover:border-teal-400/40 hover:bg-slate-900">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Upcoming events</p>
                 <p class="mt-2 text-3xl font-bold text-white"><?php echo e($upcomingEventsCount); ?></p>
-                <p class="mt-1 text-sm text-teal-300">View only →</p>
+                <p class="mt-1 text-sm text-teal-300">Scheduled upcoming →</p>
             </a>
-            <a href="<?php echo e(route('faculty.judging.index')); ?>" class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 transition hover:border-teal-400/40 hover:bg-slate-900">
+            <a href="<?php echo e(route('faculty.judging.index', ['filter' => 'current'])); ?>" class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 transition hover:border-teal-400/40 hover:bg-slate-900">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Assigned competitions</p>
-                <p class="mt-2 text-3xl font-bold text-white"><?php echo e($openTalentCount); ?></p>
+                <p class="mt-2 text-3xl font-bold text-white"><?php echo e($assignedCompetitionsCount); ?></p>
                 <p class="mt-1 text-sm text-teal-300">Open judging →</p>
             </a>
         </div>
@@ -72,9 +72,9 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h3 class="text-lg font-semibold text-amber-100">Assigned Competitions</h3>
-                    <p class="mt-1 text-sm text-amber-100/80">Competitions where the Super Administrator assigned you as a judge.</p>
+                    <p class="mt-1 text-sm text-amber-100/80">Current competitions where the Super Administrator assigned you as a judge.</p>
                 </div>
-                <a href="<?php echo e(route('faculty.judging.index')); ?>" class="text-sm font-semibold text-amber-200 hover:text-amber-100">View all →</a>
+                <a href="<?php echo e(route('faculty.judging.index', ['filter' => 'current'])); ?>" class="text-sm font-semibold text-amber-200 hover:text-amber-100">View all →</a>
             </div>
 
             <div class="mt-4 grid gap-4 lg:grid-cols-2">
@@ -113,14 +113,18 @@
                                 <dd class="mt-0.5 text-amber-100"><?php echo e($p['judging_status']); ?> · <?php echo e($p['percent']); ?>% complete</dd>
                             </div>
                         </dl>
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            <a href="<?php echo e(route('faculty.judging.show', $competition)); ?>" class="rounded-lg bg-gradient-to-r from-teal-500 to-emerald-400 px-3 py-1.5 text-xs font-semibold text-slate-950">Open Judging</a>
-                            <a href="<?php echo e(route('faculty.judging.show', $competition)); ?>" class="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800">View Competition</a>
+                        <div class="mt-4">
+                            <a href="<?php echo e(route('faculty.judging.show', $competition)); ?>" class="inline-flex rounded-lg bg-gradient-to-r from-teal-500 to-emerald-400 px-3 py-1.5 text-xs font-semibold text-slate-950">Open Judging</a>
                         </div>
                     </article>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                     <div class="lg:col-span-2 rounded-xl border border-dashed border-amber-500/20 px-4 py-8 text-center text-sm text-amber-100/70">
-                        No competitions assigned yet. The Super Administrator must assign you as a judge before competitions appear here.
+                        <?php if($pastAssignedCount > 0): ?>
+                            No current competitions to judge.
+                            <a href="<?php echo e(route('faculty.judging.index', ['filter' => 'past'])); ?>" class="font-semibold text-amber-100 hover:text-white">View past assignments →</a>
+                        <?php else: ?>
+                            No competitions assigned yet. The Super Administrator must assign you as a judge before competitions appear here.
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
             </div>

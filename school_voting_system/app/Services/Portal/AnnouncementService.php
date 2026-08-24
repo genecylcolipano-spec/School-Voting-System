@@ -366,15 +366,65 @@ class AnnouncementService
 
     public function generateForResultsPublished(string $moduleTitle, AnnouncementRelatedModule $module, int $relatedId, User $actor): Announcement
     {
-        return $this->generateDraft(
-            title: 'Results Published: '.$moduleTitle,
-            summary: 'Official results have been released.',
-            body: "Official results for \"{$moduleTitle}\" are now available. View the results page for full standings.",
-            category: match ($module) {
+        $audiences = $this->normalizeAudiences([
+            AnnouncementAudience::Students->value,
+            AnnouncementAudience::Faculty->value,
+        ]);
+
+        $matches = Announcement::query()
+            ->where('auto_source_type', 'results_published')
+            ->where('related_module', $module)
+            ->where('auto_source_id', $relatedId)
+            ->orderBy('id')
+            ->get();
+
+        $keep = $matches->first();
+
+        $matches->skip(1)->each(function (Announcement $extra) use ($actor): void {
+            $extra->forceFill([
+                'is_published' => false,
+                'status' => AnnouncementStatus::Archived,
+                'show_on_dashboard' => false,
+                'updated_by' => $actor->id,
+            ])->save();
+        });
+
+        $attributes = [
+            'title' => 'Results Published: '.$moduleTitle,
+            'summary' => 'Official results have been released.',
+            'body' => "Official results for \"{$moduleTitle}\" are now available. View the results page for full standings.",
+            'category' => match ($module) {
                 AnnouncementRelatedModule::Election => AnnouncementCategory::Election,
                 AnnouncementRelatedModule::TalentCompetition => AnnouncementCategory::TalentCompetition,
                 default => AnnouncementCategory::General,
             },
+            'priority' => AnnouncementPriority::High,
+            'target_audiences' => $audiences,
+            'related_module' => $module,
+            'related_id' => $relatedId,
+            'is_published' => true,
+            'status' => AnnouncementStatus::Published,
+            'published_at' => now(),
+            'notify_in_app' => false,
+            'send_email' => false,
+            'show_on_dashboard' => true,
+            'is_auto_generated' => true,
+            'auto_source_type' => 'results_published',
+            'auto_source_id' => $relatedId,
+            'updated_by' => $actor->id,
+        ];
+
+        if ($keep) {
+            $keep->forceFill($attributes)->save();
+
+            return $keep->fresh();
+        }
+
+        return $this->generateDraft(
+            title: $attributes['title'],
+            summary: $attributes['summary'],
+            body: $attributes['body'],
+            category: $attributes['category'],
             relatedModule: $module,
             relatedId: $relatedId,
             autoSourceType: 'results_published',
@@ -382,7 +432,28 @@ class AnnouncementService
             actor: $actor,
             priority: AnnouncementPriority::High,
             publish: true,
+            audiences: $audiences,
         );
+    }
+
+    public function retractResultsPublished(AnnouncementRelatedModule $module, int $relatedId, User $actor): int
+    {
+        $rows = Announcement::query()
+            ->where('auto_source_type', 'results_published')
+            ->where('related_module', $module)
+            ->where('auto_source_id', $relatedId)
+            ->get();
+
+        foreach ($rows as $announcement) {
+            $announcement->forceFill([
+                'is_published' => false,
+                'status' => AnnouncementStatus::Archived,
+                'show_on_dashboard' => false,
+                'updated_by' => $actor->id,
+            ])->save();
+        }
+
+        return $rows->count();
     }
 
     public function generateForSchoolEvent(Event $event, User $actor): Announcement

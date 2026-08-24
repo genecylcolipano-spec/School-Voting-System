@@ -5,7 +5,6 @@ namespace App\Services\Portal;
 use App\Enums\AuditActionType;
 use App\Enums\NotificationModule;
 use App\Enums\UserRole;
-use App\Jobs\FanOutPortalNotificationsJob;
 use App\Models\AdminAssignment;
 use App\Models\Election;
 use App\Models\PortalNotification;
@@ -53,6 +52,8 @@ class PortalNotificationService
         'faculty_score_submitted' => '🧑‍⚖️',
         'faculty_schedule_changed' => '📅',
         'faculty_event_published' => '📅',
+        'faculty_results_published' => '🏆',
+        'faculty_talent_results_published' => '🎉',
         'student_voting_open' => '🗳️',
         'student_voting_paused' => '⏸',
         'student_voting_resumed' => '▶',
@@ -507,6 +508,15 @@ class PortalNotificationService
             NotificationModule::Election,
             $election->id,
         );
+
+        $this->notifyFaculty(
+            'Official Results Published',
+            "The official results for {$election->title} are now available.",
+            'faculty_results_published',
+            $actor,
+            NotificationModule::Election,
+            $election->id,
+        );
     }
 
     public function resultsUnpublished(Election $election, User $actor): void
@@ -670,6 +680,15 @@ class PortalNotificationService
             'Talent Competition Results Published',
             "Official results for {$event->title} are now available.",
             'student_talent_results_published',
+            $actor,
+            NotificationModule::Competition,
+            $event->id,
+        );
+
+        $this->notifyFaculty(
+            'Talent Competition Results Published',
+            "Official results for {$event->title} are now available.",
+            'faculty_talent_results_published',
             $actor,
             NotificationModule::Competition,
             $event->id,
@@ -1227,11 +1246,15 @@ class PortalNotificationService
                 $relatedId
                 && (
                     str_starts_with($type, 'student_voting')
-                    || in_array($type, ['student_ballot_submitted', 'student_voting_reminder', 'student_results_published'], true)
+                    || in_array($type, ['student_ballot_submitted', 'student_voting_reminder', 'student_results_published', 'faculty_results_published'], true)
                 )
             ) {
                 $election = Election::query()->find($relatedId);
                 if ($election) {
+                    if ($type === 'faculty_results_published') {
+                        return route('faculty.results.election.show', $election);
+                    }
+
                     return $type === 'student_results_published'
                         ? route('student.results.election.show', $election)
                         : route('student.voting.show', $election);
@@ -1265,6 +1288,7 @@ class PortalNotificationService
 
                 return match (true) {
                     str_starts_with($type, 'student_talent_results') => route('student.results.talent.show', $event),
+                    str_starts_with($type, 'faculty_talent_results') => route('faculty.results.talent.show', $event),
                     str_starts_with($type, 'student_') => route('student.talent-voting.show', $event),
                     str_starts_with($type, 'faculty_') => route('faculty.judging.show', $event),
                     default => route('admin.talent-competition.show', $event),
@@ -1306,7 +1330,8 @@ class PortalNotificationService
     }
 
     /**
-     * Dispatch role fan-out asynchronously (sync queue still runs inline in tests).
+     * Insert one row per active recipient in this request so bells appear
+     * without a queue worker (database queue would otherwise sit unprocessed).
      */
     protected function fanOutToRole(
         UserRole $role,
@@ -1317,30 +1342,19 @@ class PortalNotificationService
         ?NotificationModule $module,
         ?int $relatedId,
     ): int {
-        $recipientCount = User::query()
-            ->where('role', $role)
-            ->where('is_active', true)
-            ->count();
-
-        if ($recipientCount === 0) {
-            return 0;
-        }
-
-        FanOutPortalNotificationsJob::dispatch(
-            $role->value,
+        return $this->insertFanOutForRole(
+            $role,
             $title,
             $message,
             $type,
-            $module?->value,
-            $relatedId,
             $author?->id,
+            $module,
+            $relatedId,
         );
-
-        return $recipientCount;
     }
 
     /**
-     * Synchronous bulk insert used by FanOutPortalNotificationsJob.
+     * Bulk insert used by live fan-out and leftover FanOutPortalNotificationsJob rows.
      */
     public function insertFanOutForRole(
         UserRole $role,

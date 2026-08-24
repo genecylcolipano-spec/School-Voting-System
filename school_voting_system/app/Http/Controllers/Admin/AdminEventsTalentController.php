@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Admin\Concerns\LogsAdminActions;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
-use App\Models\TalentEvent;
 use App\Services\Admin\AdminScopeService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -22,19 +21,18 @@ class AdminEventsTalentController extends Controller
 
         Event::markOverdueAsCompleted();
 
-        $talentQuery = TalentEvent::query()->withCount('entries')->latest('event_date');
-        $eventsQuery = Event::query()->latest('event_date');
-
-        if ($election && ! $request->user()->isSuperAdmin()) {
-            $talentQuery->where('election_id', $election->id);
-        }
+        $talentEvents = $this->scope->talentEventsQuery($request->user())
+            ->withCount('entries')
+            ->latest('event_date')
+            ->limit(6)
+            ->get();
 
         return view('admin.events-talent.index', [
             'user' => $request->user()->loadCount('passkeys'),
             'notificationsCount' => $this->recoveryCount(),
             'election' => $election,
-            'talentEvents' => $talentQuery->limit(6)->get(),
-            'schoolEvents' => $eventsQuery->limit(6)->get(),
+            'talentEvents' => $talentEvents,
+            'schoolEvents' => Event::query()->latest('event_date')->limit(6)->get(),
             'canCreateTalent' => $this->scope->canCreateTalentEvents($request->user()),
             'canCreateEvents' => $request->user()->can('create', Event::class),
         ]);

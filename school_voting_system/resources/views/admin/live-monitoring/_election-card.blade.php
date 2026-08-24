@@ -7,6 +7,9 @@
         default => 'bg-slate-700/40 text-slate-300',
     };
     $turnout = min(100, max(0, (float) ($card['turnout_percent'] ?? 0)));
+    $hasBanner = ! empty($card['has_banner'])
+        && filled($card['banner_url'] ?? null)
+        && ! \App\Support\EventImageUrl::isLegacyRemotePlaceholder($card['banner_url'] ?? null);
 @endphp
 
 <article
@@ -16,8 +19,10 @@
     data-card-type="election"
     data-votes-cast="{{ (int) ($card['votes_cast'] ?? 0) }}"
 >
-    <div class="relative aspect-[21/7] overflow-hidden bg-slate-950">
-        <img src="{{ $card['banner_url'] }}" alt="" class="h-full w-full object-cover opacity-85">
+    <div class="relative aspect-[21/7] overflow-hidden bg-gradient-to-br from-violet-950 via-slate-950 to-slate-900">
+        @if ($hasBanner)
+            <img src="{{ $card['banner_url'] }}" alt="" class="h-full w-full object-cover opacity-85" onerror="this.remove()">
+        @endif
         <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/25 to-transparent"></div>
         <div class="absolute left-3 top-3">
             @include('admin.live-monitoring._live-badge', ['isLive' => ! empty($card['is_live'])])
@@ -39,6 +44,8 @@
 
     <div class="space-y-3.5 p-4">
         @include('admin.live-monitoring._phase-timeline', ['steps' => $card['phase_steps'] ?? []])
+
+        @include('admin.live-monitoring._countdown', ['card' => $card])
 
         <div class="grid grid-cols-3 gap-3">
             <div>
@@ -77,6 +84,8 @@
                 </div>
             </dl>
         </details>
+
+        @include('admin.live-monitoring._position-leaders', ['card' => $card])
 
         <div class="flex flex-wrap gap-2 pt-0.5">
             <a href="{{ $card['details_url'] }}" class="rounded-xl border border-slate-700 px-3 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-800">Open Details</a>

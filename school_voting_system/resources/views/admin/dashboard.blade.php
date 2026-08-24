@@ -8,6 +8,7 @@
         @if ($user->passkeys->isEmpty())
             <div class="max-w-xl">
                 <x-passkey-register
+                    theme="dark"
                     :register-options-url="route('register.passkey.options')"
                     :register-verify-url="route('register.passkey.verify')"
                 />

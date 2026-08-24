@@ -19,25 +19,55 @@
 <?php endif; ?>
 <?php $component->withAttributes(['title' => 'Score Performance','user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount)]); ?>
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <a href="<?php echo e(route('faculty.judging.show', $competition)); ?>" class="text-sm font-semibold text-teal-300 hover:text-teal-200">&larr; Back to <?php echo e($competition->title); ?></a>
-            <?php if($locked): ?>
-                <span class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-200">Submitted</span>
-            <?php elseif(! $acceptingScores): ?>
-                <span class="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-200">Judging closed</span>
-            <?php endif; ?>
+            <a href="<?php echo e($backUrl); ?>" class="text-sm font-semibold text-teal-300 hover:text-teal-200">&larr; <?php echo e($backLabel); ?></a>
+            <div class="flex flex-wrap items-center justify-end gap-2">
+                <a
+                    href="<?php echo e(route('faculty.judging.profile', filled($from) ? [$competition, $entry, 'from' => $from] : [$competition, $entry])); ?>"
+                    class="rounded-xl border border-slate-600 px-3 py-1.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
+                >
+                    View profile
+                </a>
+                <?php if (isset($component)) { $__componentOriginalaba5df20cb4f1c691f51aa563c38f95d = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalaba5df20cb4f1c691f51aa563c38f95d = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.faculty.judging-phase-badge','data' => ['event' => $competition,'locked' => $locked,'showOpensAt' => true,'class' => 'text-right']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('faculty.judging-phase-badge'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['event' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($competition),'locked' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($locked),'show-opens-at' => true,'class' => 'text-right']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalaba5df20cb4f1c691f51aa563c38f95d)): ?>
+<?php $attributes = $__attributesOriginalaba5df20cb4f1c691f51aa563c38f95d; ?>
+<?php unset($__attributesOriginalaba5df20cb4f1c691f51aa563c38f95d); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalaba5df20cb4f1c691f51aa563c38f95d)): ?>
+<?php $component = $__componentOriginalaba5df20cb4f1c691f51aa563c38f95d; ?>
+<?php unset($__componentOriginalaba5df20cb4f1c691f51aa563c38f95d); ?>
+<?php endif; ?>
+            </div>
         </div>
 
         <div class="grid gap-6 lg:grid-cols-2">
             <section class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 sm:p-6">
-                <h2 class="text-xl font-bold text-white"><?php echo e($entry->display_name); ?></h2>
-                <p class="mt-1 text-sm text-slate-400">
-                    <?php echo e($entry->performance_title ?: 'Untitled performance'); ?>
+                <div class="flex items-start gap-4">
+                    <div class="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-slate-800 bg-slate-950">
+                        <?php echo $__env->make('faculty.judging._entry-photo', ['entry' => $entry], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="text-xl font-bold text-white"><?php echo e($entry->display_name); ?></h2>
+                        <p class="mt-1 text-sm text-slate-400">
+                            <?php echo e($entry->performance_title ?: 'Untitled performance'); ?>
 
-                    <?php if($entry->grade_level || $entry->section): ?>
-                        · <?php echo e(trim(($entry->grade_level ?? '').' '.($entry->section ?? ''))); ?>
+                            <?php if($entry->grade_level || $entry->section): ?>
+                                · <?php echo e(trim(($entry->grade_level ?? '').' '.($entry->section ?? ''))); ?>
 
-                    <?php endif; ?>
-                </p>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                </div>
 
                 <?php if($entry->performance_description): ?>
                     <p class="mt-4 whitespace-pre-line text-sm text-slate-300"><?php echo e($entry->performance_description); ?></p>

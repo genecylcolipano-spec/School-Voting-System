@@ -20,10 +20,36 @@
 <?php $component->withAttributes(['title' => ''.e($competition->title).'','user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount)]); ?>
         <div class="flex flex-wrap items-center justify-between gap-3">
             <a href="<?php echo e(route('faculty.judging.index')); ?>" class="text-sm font-semibold text-teal-300 hover:text-teal-200">&larr; Assigned competitions</a>
-            <span class="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide <?php echo e($acceptingScores ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200' : 'border-amber-500/30 bg-amber-500/10 text-amber-200'); ?>">
-                <?php echo e($acceptingScores ? 'Judging open' : 'Judging closed'); ?>
-
-            </span>
+            <div class="flex flex-wrap items-center justify-end gap-2">
+                <?php if($competition->hasPublishedResults()): ?>
+                    <a
+                        href="<?php echo e(route('faculty.results.talent.show', [$competition, 'from' => 'assigned'])); ?>"
+                        class="rounded-xl border border-teal-500/30 bg-teal-500/10 px-3 py-1.5 text-sm font-semibold text-teal-100 transition hover:bg-teal-500/20"
+                    >
+                        View official results
+                    </a>
+                <?php endif; ?>
+                <?php if (isset($component)) { $__componentOriginalaba5df20cb4f1c691f51aa563c38f95d = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalaba5df20cb4f1c691f51aa563c38f95d = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.faculty.judging-phase-badge','data' => ['event' => $competition,'showOpensAt' => true,'class' => 'text-right']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('faculty.judging-phase-badge'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['event' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($competition),'show-opens-at' => true,'class' => 'text-right']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalaba5df20cb4f1c691f51aa563c38f95d)): ?>
+<?php $attributes = $__attributesOriginalaba5df20cb4f1c691f51aa563c38f95d; ?>
+<?php unset($__attributesOriginalaba5df20cb4f1c691f51aa563c38f95d); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalaba5df20cb4f1c691f51aa563c38f95d)): ?>
+<?php $component = $__componentOriginalaba5df20cb4f1c691f51aa563c38f95d; ?>
+<?php unset($__componentOriginalaba5df20cb4f1c691f51aa563c38f95d); ?>
+<?php endif; ?>
+            </div>
         </div>
 
         <section class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 sm:p-6">
@@ -41,42 +67,11 @@
 
         <div class="space-y-3">
             <?php $__empty_1 = true; $__currentLoopData = $entries; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $entry): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                <?php
-                    $sheet = $sheets->get($entry->id);
-                    $status = $sheet?->status?->label() ?? 'Not started';
-                    $tone = match ($sheet?->status?->value ?? null) {
-                        'submitted' => 'text-emerald-200',
-                        'draft' => 'text-amber-200',
-                        default => 'text-slate-400',
-                    };
-                ?>
-                <article class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-teal-500/15 bg-slate-900/70 p-4 sm:p-5">
-                    <div class="min-w-0">
-                        <p class="font-semibold text-white"><?php echo e($entry->display_name); ?></p>
-                        <p class="mt-1 text-sm text-slate-400">
-                            <?php echo e($entry->performance_title ?: 'Performance'); ?>
-
-                            <?php if($entry->talent_category): ?>
-                                · <?php echo e($entry->talent_category->label()); ?>
-
-                            <?php endif; ?>
-                        </p>
-                        <p class="mt-1 text-xs <?php echo e($tone); ?>">
-                            <?php echo e($status); ?>
-
-                            <?php if($sheet): ?>
-                                · <?php echo e(number_format((float) $sheet->total_score, 2)); ?> pts
-                            <?php endif; ?>
-                        </p>
-                    </div>
-                    <a
-                        href="<?php echo e(route('faculty.judging.score', [$competition, $entry])); ?>"
-                        class="rounded-xl bg-gradient-to-r from-teal-500 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950"
-                    >
-                        <?php echo e($sheet?->isLocked() ? 'View scores' : ($sheet ? 'Continue' : 'Score')); ?>
-
-                    </a>
-                </article>
+                <?php echo $__env->make('faculty.judging._performance-row', [
+                    'competition' => $competition,
+                    'entry' => $entry,
+                    'sheet' => $sheets->get($entry->id),
+                ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <div class="rounded-2xl border border-dashed border-slate-700 px-4 py-10 text-center text-sm text-slate-500">
                     No approved performances are ready for judging yet.

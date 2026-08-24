@@ -22,12 +22,12 @@ class StudentResultsService
     /**
      * @return Collection<int, array<string, mixed>>
      */
-    public function listEvents(): Collection
+    public function listEvents(?User $student = null): Collection
     {
         $events = collect();
 
         foreach ($this->visibleElections() as $election) {
-            $events->push($this->summarizeElection($election));
+            $events->push($this->summarizeElection($election, $student));
         }
 
         foreach ($this->visibleTalentEvents() as $talentEvent) {
@@ -208,7 +208,7 @@ class StudentResultsService
             'student_status' => $studentStatus['label'],
             'student_status_tone' => $studentStatus['tone'],
             'is_official' => $official,
-            'is_open' => ! $official && $studentStatus['label'] !== 'Upcoming',
+            'is_open' => $this->isLiveForStudents($official, $studentStatus),
             'starts_at' => $election->voting_starts_at?->format('M d, Y g:i A'),
             'ends_at' => $election->voting_ends_at?->format('M d, Y g:i A'),
             'event_date' => $election->voting_ends_at?->format('M d, Y') ?? $election->voting_starts_at?->format('M d, Y'),
@@ -264,7 +264,7 @@ class StudentResultsService
             'student_status' => $studentStatus['label'],
             'student_status_tone' => $studentStatus['tone'],
             'is_official' => $official,
-            'is_open' => ! $official && $studentStatus['label'] !== 'Upcoming',
+            'is_open' => $this->isLiveForStudents($official, $studentStatus),
             'starts_at' => $talentEvent->voting_starts_at?->format('M d, Y g:i A'),
             'ends_at' => $talentEvent->voting_ends_at?->format('M d, Y g:i A'),
             'event_date' => $talentEvent->event_date?->format('M d, Y'),
@@ -380,12 +380,22 @@ class StudentResultsService
     }
 
     /**
+     * @param  array{label: string, tone: string}  $studentStatus
+     */
+    protected function isLiveForStudents(bool $official, array $studentStatus): bool
+    {
+        return ! $official && ($studentStatus['tone'] ?? '') === 'live';
+    }
+
+    /**
      * @return array<string, mixed>
      */
-    protected function summarizeElection(Election $election): array
+    protected function summarizeElection(Election $election, ?User $student = null): array
     {
         $status = $this->electionStudentStatus($election);
         $official = $this->isElectionOfficial($election);
+        $acceptingVotes = $election->isAcceptingVotes();
+        $alreadyVoted = $acceptingVotes && $student && $election->hasStudentCompletedBallot($student);
 
         return [
             'type' => 'election',
@@ -400,7 +410,8 @@ class StudentResultsService
             'student_status_tone' => $status['tone'],
             'is_official' => $official,
             'can_view_results' => $election->shouldShowOfficialResultsToStudents(),
-            'can_vote' => $election->isAcceptingVotes(),
+            'can_vote' => $acceptingVotes && ! $alreadyVoted,
+            'already_voted' => $alreadyVoted,
             'vote_url' => route('student.voting.show', $election),
             'date' => $election->voting_ends_at?->format('M d, Y') ?? $election->voting_starts_at?->format('M d, Y'),
             'show_url' => route('student.results.election.show', $election),

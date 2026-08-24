@@ -122,14 +122,14 @@
                         <div class="max-w-xl">
                             <?php if (isset($component)) { $__componentOriginal15a615f1c082febb5f28527938415021 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal15a615f1c082febb5f28527938415021 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.passkey-register','data' => ['registerOptionsUrl' => route('register.passkey.options'),'registerVerifyUrl' => route('register.passkey.verify')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.passkey-register','data' => ['theme' => 'dark','registerOptionsUrl' => route('register.passkey.options'),'registerVerifyUrl' => route('register.passkey.verify')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('passkey-register'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['register-options-url' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('register.passkey.options')),'register-verify-url' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('register.passkey.verify'))]); ?>
+<?php $component->withAttributes(['theme' => 'dark','register-options-url' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('register.passkey.options')),'register-verify-url' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('register.passkey.verify'))]); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal15a615f1c082febb5f28527938415021)): ?>
@@ -152,7 +152,7 @@
                         </p>
 
                         <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                            <?php if($hasActiveElection): ?>
+                            <?php if($canVoteNow): ?>
                                 <a
                                     href="<?php echo e($voteNowUrl); ?>"
                                     class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 sm:w-auto"
@@ -180,8 +180,8 @@
                             </a>
                         </div>
 
-                        <?php if (! ($hasActiveElection)): ?>
-                            <p class="mt-3 text-sm text-slate-400">No active elections at the moment.</p>
+                        <?php if($voteNowHint): ?>
+                            <p class="mt-3 text-sm text-slate-400"><?php echo e($voteNowHint); ?></p>
                         <?php endif; ?>
                     </section>
 
@@ -194,20 +194,13 @@
 
                         <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
                             <?php $__currentLoopData = $activityCards; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $card): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <?php
-                                    $cardClasses = 'group relative flex h-full min-h-[9.5rem] flex-col rounded-2xl border border-cyan-500/15 bg-slate-900/70 p-4 shadow-lg shadow-black/10 transition duration-300 sm:p-5 '
-                                        .($card['enabled']
-                                            ? 'cursor-pointer hover:-translate-y-1 hover:border-violet-400/45 hover:bg-slate-900 hover:shadow-xl hover:shadow-violet-900/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950'
-                                            : 'cursor-default opacity-80');
-                                ?>
-
-                                <?php if($card['enabled']): ?>
-                                    <a href="<?php echo e($card['href']); ?>" class="<?php echo e($cardClasses); ?>" aria-label="<?php echo e($card['title']); ?>">
-                                <?php else: ?>
-                                    <div class="<?php echo e($cardClasses); ?>" aria-disabled="true">
-                                <?php endif; ?>
+                                <a
+                                    href="<?php echo e($card['href']); ?>"
+                                    class="group relative flex h-full min-h-[9.5rem] flex-col rounded-2xl border border-cyan-500/15 bg-slate-900/70 p-4 shadow-lg shadow-black/10 transition duration-300 hover:-translate-y-1 hover:border-violet-400/45 hover:bg-slate-900 hover:shadow-xl hover:shadow-violet-900/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:p-5"
+                                    aria-label="<?php echo e($card['title']); ?>"
+                                >
                                     <div class="mb-3 flex items-start justify-between gap-2">
-                                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300 ring-1 ring-violet-500/20 <?php echo e($card['enabled'] ? 'transition group-hover:bg-violet-500/25' : ''); ?>">
+                                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300 ring-1 ring-violet-500/20 transition group-hover:bg-violet-500/25">
                                             <?php switch($card['icon']):
                                                 case ('vote'): ?>
                                                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
@@ -221,6 +214,9 @@
                                                 <?php case ('fundraising'): ?>
                                                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                                     <?php break; ?>
+                                                <?php case ('campaigns'): ?>
+                                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                    <?php break; ?>
                                                 <?php default: ?>
                                                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
                                             <?php endswitch; ?>
@@ -230,25 +226,8 @@
 
                                     <p class="text-sm font-semibold text-white"><?php echo e($card['title']); ?></p>
                                     <p class="mt-1 text-xs text-slate-400"><?php echo e($card['status']); ?></p>
-
-                                    <p class="<?php echo \Illuminate\Support\Arr::toCssClasses([
-                                        'mt-auto pt-3 text-sm font-semibold',
-                                        'text-cyan-300 transition group-hover:text-cyan-200' => $card['enabled'],
-                                        'text-slate-500' => ! $card['enabled'],
-                                    ]); ?>">
-                                        <?php if($card['enabled']): ?>
-                                            <?php echo e($card['action']); ?>
-
-                                        <?php else: ?>
-                                            Unavailable
-                                        <?php endif; ?>
-                                    </p>
-
-                                <?php if($card['enabled']): ?>
-                                    </a>
-                                <?php else: ?>
-                                    </div>
-                                <?php endif; ?>
+                                    <p class="mt-auto pt-3 text-sm font-semibold text-cyan-300 transition group-hover:text-cyan-200"><?php echo e($card['action']); ?></p>
+                                </a>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
                     </section>
@@ -280,38 +259,6 @@
                                 </article>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                 <p class="text-sm text-slate-500 md:col-span-2 xl:col-span-3">No announcements right now.</p>
-                            <?php endif; ?>
-                        </div>
-                    </section>
-
-                    
-                    <section>
-                        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                                <h2 class="text-xl font-bold text-white">Recent Notifications</h2>
-                                <p class="mt-1 text-sm text-slate-400">Your latest portal alerts.</p>
-                            </div>
-                            <a href="<?php echo e(route('student.notifications.index')); ?>" class="text-sm font-semibold text-cyan-300 hover:text-cyan-200">View All Notifications</a>
-                        </div>
-                        <div class="divide-y divide-slate-800 rounded-2xl border border-cyan-500/15 bg-slate-900/70">
-                            <?php $__empty_1 = true; $__currentLoopData = $notifications; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $note): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                                <div class="flex gap-3 px-5 py-4">
-                                    <span class="text-xl" aria-hidden="true"><?php echo e($note['icon']); ?></span>
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <p class="text-sm font-medium text-slate-200"><?php echo e($note['title']); ?></p>
-                                            <?php if($note['read']): ?>
-                                                <span class="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Read</span>
-                                            <?php else: ?>
-                                                <span class="rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-300">Unread</span>
-                                            <?php endif; ?>
-                                        </div>
-                                        <p class="mt-1 line-clamp-2 text-sm text-slate-400"><?php echo e($note['message']); ?></p>
-                                        <p class="mt-1 text-xs text-slate-500"><?php echo e($note['time']); ?></p>
-                                    </div>
-                                </div>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                                <p class="px-5 py-8 text-center text-sm text-slate-500">No notifications yet.</p>
                             <?php endif; ?>
                         </div>
                     </section>

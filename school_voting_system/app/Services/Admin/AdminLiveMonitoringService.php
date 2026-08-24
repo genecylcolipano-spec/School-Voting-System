@@ -5,6 +5,7 @@ namespace App\Services\Admin;
 use App\Enums\ElectionStatus;
 use App\Enums\TalentJudgeScoreStatus;
 use App\Enums\UserRole;
+use App\Models\Candidate;
 use App\Models\Election;
 use App\Models\TalentEvent;
 use App\Models\TalentEventEntry;
@@ -14,7 +15,6 @@ use App\Models\TalentJudgeScoreSheet;
 use App\Models\User;
 use App\Models\Vote;
 use App\Services\Talent\TalentResultsRankingService;
-use App\Support\EventImageUrl;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -67,12 +67,19 @@ class AdminLiveMonitoringService
             ->groupBy('election_id')
             ->pluck('unique_voters', 'election_id');
 
-        $cards = $elections->map(function (Election $election) use ($lastVotes, $uniqueVoters, $viewer) {
+        $liveElectionIds = $elections
+            ->filter(fn (Election $election) => in_array($this->electionPhase($election)['key'], ['voting_open', 'voting_paused'], true))
+            ->pluck('id');
+
+        $positionLeaders = $this->batchElectionPositionLeaders($liveElectionIds);
+
+        $cards = $elections->map(function (Election $election) use ($lastVotes, $uniqueVoters, $viewer, $positionLeaders) {
             return $this->mapElection(
                 $election,
                 $lastVotes[$election->id] ?? null,
                 (int) ($uniqueVoters[$election->id] ?? 0),
                 $viewer,
+                $positionLeaders->get($election->id, []),
             );
         });
 
@@ -241,12 +248,19 @@ class AdminLiveMonitoringService
     }
 
     /**
+     * @param  list<array<string, mixed>>  $positionLeaders
      * @return array<string, mixed>
      */
-    protected function mapElection(Election $election, mixed $lastVoteAt, int $uniqueVoters, User $viewer): array
-    {
+    protected function mapElection(
+        Election $election,
+        mixed $lastVoteAt,
+        int $uniqueVoters,
+        User $viewer,
+        array $positionLeaders = [],
+    ): array {
         $phase = $this->electionPhase($election);
         $isLive = $phase['key'] === 'voting_open';
+        $showPositionLeaders = in_array($phase['key'], ['voting_open', 'voting_paused'], true);
         $eligible = $election->eligibleVoterCount();
         $votesCast = (int) ($election->votes_count ?? 0);
         $turnout = $eligible > 0 ? round(($uniqueVoters / $eligible) * 100, 1) : 0.0;
@@ -255,7 +269,7 @@ class AdminLiveMonitoringService
             || $this->scope->assignedElection($viewer)?->id === $election->id;
         $canManageLive = $this->scope->canPauseElection($viewer)
             && $inScope
-            && in_array($phase['key'], ['voting_open', 'voting_paused'], true);
+            && $showPositionLeaders;
 
         $schedule = collect([
             $election->voting_starts_at?->format('M d, Y g:i A'),
@@ -267,7 +281,8 @@ class AdminLiveMonitoringService
             'id' => $election->id,
             'slug' => $election->slug,
             'name' => $election->title,
-            'banner_url' => EventImageUrl::placeholder(),
+            'banner_url' => null,
+            'has_banner' => false,
             'owner_id' => $election->created_by,
             'owner_name' => $election->creator?->name ?? 'System',
             'owner_account' => $election->creator?->account_id,
@@ -286,6 +301,9 @@ class AdminLiveMonitoringService
             'candidates_count' => (int) ($election->candidates_count ?? 0),
             'last_vote_at' => $lastAt?->diffForHumans() ?? '—',
             'last_vote_at_iso' => $lastAt?->toIso8601String(),
+            'countdown' => $this->compactCountdown($election->countdownSnapshot()),
+            'show_position_leaders' => $showPositionLeaders,
+            'position_leaders' => $showPositionLeaders ? $positionLeaders : [],
             'school_year' => ($election->voting_starts_at ?? $election->created_at)?->year,
             'details_url' => route('admin.elections.edit', $election),
             'results_url' => route('admin.results.election.show', $election),
@@ -325,7 +343,8 @@ class AdminLiveMonitoringService
             'id' => $event->id,
             'slug' => $event->slug,
             'name' => $event->title,
-            'banner_url' => $event->cardBannerUrl(),
+            'banner_url' => $event->hasLandscapeCompetitionBanner() ? $event->image_url : null,
+            'has_banner' => $event->hasLandscapeCompetitionBanner(),
             'owner_id' => $event->created_by,
             'owner_name' => $event->creator?->name ?? 'System',
             'owner_account' => $event->creator?->account_id,
@@ -346,6 +365,7 @@ class AdminLiveMonitoringService
             'judges_total' => $judgesTotal,
             'last_vote_at' => $lastAt?->diffForHumans() ?? '—',
             'last_vote_at_iso' => $lastAt?->toIso8601String(),
+            'countdown' => $this->compactCountdown($event->countdownSnapshot()),
             'school_year' => ($event->event_date ?? $event->created_at)?->year,
             'rankings' => $rankings,
             'details_url' => route('admin.talent-competition.show', $event),
@@ -365,6 +385,152 @@ class AdminLiveMonitoringService
             'freeze_totals' => in_array($phase['key'], ['voting_closed', 'results_pending', 'published'], true),
             'urgency_rank' => $this->urgencyRank($phase['key']),
         ];
+    }
+
+    /**
+     * @param  Collection<int, int|string>  $electionIds
+     * @return Collection<int|string, list<array<string, mixed>>>
+     */
+    protected function batchElectionPositionLeaders(Collection $electionIds): Collection
+    {
+        if ($electionIds->isEmpty()) {
+            return collect();
+        }
+
+        $candidates = Candidate::query()
+            ->whereIn('election_id', $electionIds)
+            ->where('is_active', true)
+            ->with(['category:id,name,sort_order'])
+            ->withCount('votes')
+            ->get();
+
+        return $candidates
+            ->groupBy('election_id')
+            ->map(fn (Collection $group) => $this->positionLeadersFromCandidates($group));
+    }
+
+    /**
+     * @param  Collection<int, Candidate>  $candidates
+     * @return list<array{
+     *     position: string,
+     *     name: ?string,
+     *     display: string,
+     *     votes: int,
+     *     percent: float,
+     *     tied: bool,
+     *     tie_count: int
+     * }>
+     */
+    protected function positionLeadersFromCandidates(Collection $candidates): array
+    {
+        $grouped = $candidates->groupBy(fn (Candidate $candidate) => $candidate->election_category_id
+            ?: 'position:'.strtolower(trim((string) ($candidate->position ?: 'position'))));
+
+        $rows = $grouped->map(function (Collection $group) {
+            $first = $group->first();
+            $position = $first?->category?->name ?? $first?->position ?? 'Position';
+            $total = (int) $group->sum('votes_count');
+            $maxVotes = (int) $group->max('votes_count');
+
+            $leaders = $group
+                ->filter(fn (Candidate $candidate) => $maxVotes > 0 && (int) $candidate->votes_count === $maxVotes)
+                ->sortBy(fn (Candidate $candidate) => strtolower((string) $candidate->display_name))
+                ->values();
+
+            $names = $leaders->pluck('display_name')->filter()->values();
+            $tieCount = $names->count();
+            $tied = $tieCount > 1;
+            $leadName = $names->first();
+
+            return [
+                'position' => $position,
+                'name' => $leadName,
+                'display' => match (true) {
+                    $tieCount === 0 => '—',
+                    $tied => $leadName.' +'.($tieCount - 1),
+                    default => (string) $leadName,
+                },
+                'votes' => $maxVotes,
+                'percent' => $total > 0 ? round(($maxVotes / $total) * 100, 1) : 0.0,
+                'tied' => $tied,
+                'tie_count' => $tieCount,
+                'sort_order' => (int) ($first?->category?->sort_order ?? 999),
+                'position_rank' => $this->positionRank($position),
+            ];
+        });
+
+        return $rows
+            ->sortBy(fn (array $row) => [
+                $row['position_rank'],
+                $row['sort_order'],
+                strtolower($row['position']),
+            ])
+            ->values()
+            ->map(fn (array $row) => collect($row)->except(['sort_order', 'position_rank'])->all())
+            ->all();
+    }
+
+    /**
+     * @param  array{
+     *     label?: string,
+     *     remaining?: string,
+     *     phase?: string,
+     *     target_at_iso?: string,
+     *     is_closed?: bool
+     * }|null  $snapshot
+     * @return array{label: string, remaining: string, phase: string, target_at_iso: string, is_closed: bool}|null
+     */
+    protected function compactCountdown(?array $snapshot): ?array
+    {
+        if (! $snapshot || empty($snapshot['target_at_iso'])) {
+            return null;
+        }
+
+        $phase = (string) ($snapshot['phase'] ?? 'active');
+        $isClosed = (bool) ($snapshot['is_closed'] ?? $phase === 'ended');
+
+        if ($isClosed) {
+            return null;
+        }
+
+        return [
+            'label' => (string) ($snapshot['label'] ?? 'Time remaining'),
+            'remaining' => (string) ($snapshot['remaining'] ?? '—'),
+            'phase' => $phase,
+            'target_at_iso' => (string) $snapshot['target_at_iso'],
+            'is_closed' => false,
+        ];
+    }
+
+    protected function positionRank(string $position): int
+    {
+        $normalized = strtolower(trim($position));
+
+        if (preg_match('/\bvice[\s-]*president\b/', $normalized)) {
+            return 2;
+        }
+
+        if (preg_match('/\bpresident\b/', $normalized)) {
+            return 1;
+        }
+
+        if (str_contains($normalized, 'secretary')) {
+            return 3;
+        }
+
+        if (str_contains($normalized, 'treasurer')) {
+            return 4;
+        }
+
+        if (str_contains($normalized, 'auditor')) {
+            return 5;
+        }
+
+        if (str_contains($normalized, 'pro')) {
+            return 6;
+        }
+
+        return 100;
     }
 
     /**

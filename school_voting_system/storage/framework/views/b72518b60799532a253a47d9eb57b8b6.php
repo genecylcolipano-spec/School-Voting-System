@@ -20,15 +20,11 @@
 <?php $component->withAttributes(['title' => 'Talent Competition Reports','user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount)]); ?>
         <?php echo $__env->make('admin.partials.page-header', [
             'title' => 'Talent Competition Reports',
-            'description' => 'Participants, votes, performance statistics, and winners across all competitions.',
+            'description' => 'Participants, ranking metric, and actual winners across competitions.',
             'showAction' => false,
         ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
-        <div class="mb-5 flex flex-wrap items-center gap-2">
-            <a href="<?php echo e(route('admin.reports.index')); ?>" class="rounded-full px-4 py-1.5 text-sm font-semibold text-slate-400 transition hover:bg-slate-800/70 hover:text-white">Election Reports</a>
-            <a href="<?php echo e(route('admin.reports.talent')); ?>" class="rounded-full bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-1.5 text-sm font-semibold text-white">Talent Reports</a>
-            <a href="<?php echo e(route('admin.reports.fundraising')); ?>" class="rounded-full px-4 py-1.5 text-sm font-semibold text-slate-400 transition hover:bg-slate-800/70 hover:text-white">Fundraising Reports</a>
-        </div>
+        <?php echo $__env->make('admin.reports.partials.report-tabs', ['active' => 'talent'], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
         <div class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
             <div class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-4">
@@ -61,7 +57,7 @@
                         <th class="px-4 py-3 text-center">Rejected</th>
                         <th class="px-4 py-3 text-center">Votes</th>
                         <th class="px-4 py-3">Voting Method</th>
-                        <th class="px-4 py-3 text-center">Winners</th>
+                        <th class="px-4 py-3">Winner(s)</th>
                         <th class="px-4 py-3 text-right">Reports</th>
                     </tr>
                 </thead>
@@ -76,7 +72,10 @@
                             <td class="px-4 py-3 text-center text-rose-300"><?php echo e(number_format($row['rejected'])); ?></td>
                             <td class="px-4 py-3 text-center font-bold text-white"><?php echo e(number_format($row['votes'])); ?></td>
                             <td class="px-4 py-3 text-xs"><?php echo e($row['voting_method']); ?></td>
-                            <td class="px-4 py-3 text-center"><?php echo e($row['winners']); ?></td>
+                            <td class="px-4 py-3 text-xs text-emerald-300">
+                                <?php echo e(count($row['winners']) ? implode(', ', $row['winners']) : '—'); ?>
+
+                            </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center justify-end gap-2 text-xs">
                                     <a href="<?php echo e($row['show_url']); ?>" class="font-semibold text-violet-300 hover:text-violet-200">View</a>

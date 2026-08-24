@@ -5,7 +5,6 @@ namespace Tests\Unit\Portal;
 use App\Enums\ElectionStatus;
 use App\Enums\TalentEventStatus;
 use App\Enums\TalentVotingMethod;
-use App\Jobs\FanOutPortalNotificationsJob;
 use App\Jobs\SendTalentVotingClosingSoonJob;
 use App\Mail\AnnouncementPublishedMail;
 use App\Models\Announcement;
@@ -158,16 +157,28 @@ class PortalNotificationDeliveryTest extends TestCase
         );
     }
 
-    public function test_role_fan_out_dispatches_queue_job(): void
+    public function test_role_fan_out_inserts_immediately_without_a_queue_worker(): void
     {
         Queue::fake();
 
         $admin = User::factory()->admin()->create();
-        User::factory()->create(); // active student recipient
+        $student = User::factory()->create();
+        $faculty = User::factory()->faculty()->create();
+        $election = Election::factory()->closed()->create(['title' => 'Immediate Bell Election']);
 
-        $this->notifications->fundraiserCreated('Queued Drive', $admin, 3, true);
+        $this->notifications->resultsPublished($election, $admin);
 
-        Queue::assertPushed(FanOutPortalNotificationsJob::class);
+        Queue::assertNothingPushed();
+        $this->assertDatabaseHas('portal_notifications', [
+            'user_id' => $student->id,
+            'type' => 'student_results_published',
+            'related_id' => $election->id,
+        ]);
+        $this->assertDatabaseHas('portal_notifications', [
+            'user_id' => $faculty->id,
+            'type' => 'faculty_results_published',
+            'related_id' => $election->id,
+        ]);
     }
 
     public function test_talent_voting_paused_notifies_students(): void
@@ -304,6 +315,61 @@ class PortalNotificationDeliveryTest extends TestCase
         $this->assertNotNull($notification);
         $this->assertSame(
             route('student.voting.show', $election),
+            $this->notifications->actionUrlFor($notification)
+        );
+    }
+
+    public function test_published_election_results_notify_faculty_with_results_url(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $faculty = User::factory()->faculty()->create();
+        $election = Election::factory()->closed()->create(['title' => 'Faculty Results Election']);
+
+        $this->notifications->resultsPublished($election, $admin);
+
+        $notification = PortalNotification::query()
+            ->where('user_id', $faculty->id)
+            ->where('type', 'faculty_results_published')
+            ->where('related_id', $election->id)
+            ->first();
+
+        $this->assertNotNull($notification);
+        $this->assertSame(
+            route('faculty.results.election.show', $election),
+            $this->notifications->actionUrlFor($notification)
+        );
+    }
+
+    public function test_published_talent_results_notify_faculty_with_results_url(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $faculty = User::factory()->faculty()->create();
+        $election = Election::factory()->create();
+        $event = TalentEvent::query()->create([
+            'election_id' => $election->id,
+            'title' => 'Faculty Results Night',
+            'slug' => 'faculty-results-night',
+            'event_date' => now()->subDay(),
+            'status' => TalentEventStatus::ResultsPublished,
+            'voting_method' => TalentVotingMethod::StudentOnly->value,
+            'voting_starts_at' => now()->subDays(2),
+            'voting_ends_at' => now()->subHour(),
+            'results_published_at' => now(),
+            'published_to_students' => true,
+            'created_by' => $admin->id,
+        ]);
+
+        $this->notifications->talentResultsPublished($event, $admin);
+
+        $notification = PortalNotification::query()
+            ->where('user_id', $faculty->id)
+            ->where('type', 'faculty_talent_results_published')
+            ->where('related_id', $event->id)
+            ->first();
+
+        $this->assertNotNull($notification);
+        $this->assertSame(
+            route('faculty.results.talent.show', $event),
             $this->notifications->actionUrlFor($notification)
         );
     }

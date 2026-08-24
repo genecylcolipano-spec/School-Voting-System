@@ -31,7 +31,10 @@ class SchoolEventVisibilityTest extends TestCase
             ->get(route('student.events.index'))
             ->assertOk()
             ->assertSee('Foundation Day')
-            ->assertDontSee('Cancelled Fair');
+            ->assertDontSee('Cancelled Fair')
+            ->assertSee('Welcome back')
+            ->assertSee('Browse upcoming and past school events')
+            ->assertDontSee('Browse school events and announcements');
 
         $this->actingAs($student)
             ->get(route('student.events.show', $visible))
@@ -67,6 +70,54 @@ class SchoolEventVisibilityTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_faculty_event_pages_show_time_status_badge_and_filters(): void
+    {
+        $faculty = User::factory()->faculty()->create();
+        $startsAt = now()->addDays(2)->setTime(14, 30);
+        $upcoming = $this->makeEvent([
+            'title' => 'Faculty Science Exhibit',
+            'slug' => 'faculty-science-exhibit',
+            'event_date' => $startsAt,
+            'venue' => 'AVR 2',
+            'status' => EventStatus::Scheduled,
+        ]);
+        $this->makeEvent([
+            'title' => 'Past Faculty Intramurals',
+            'slug' => 'past-faculty-intramurals',
+            'event_date' => now()->subDay(),
+            'status' => EventStatus::Completed,
+        ]);
+
+        $expectedSchedule = $startsAt->format('M d, Y · g:i A');
+
+        $this->actingAs($faculty)
+            ->get(route('faculty.events.index'))
+            ->assertOk()
+            ->assertSee('All')
+            ->assertSee('Upcoming')
+            ->assertSee('Faculty Science Exhibit')
+            ->assertSee('Past Faculty Intramurals')
+            ->assertSee($expectedSchedule)
+            ->assertSee('Upcoming')
+            ->assertSee('Completed')
+            ->assertDontSee('Show all events');
+
+        $this->actingAs($faculty)
+            ->get(route('faculty.events.index', ['filter' => 'upcoming']))
+            ->assertOk()
+            ->assertSee('Faculty Science Exhibit')
+            ->assertDontSee('Past Faculty Intramurals');
+
+        $this->actingAs($faculty)
+            ->get(route('faculty.events.show', $upcoming))
+            ->assertOk()
+            ->assertSee('View only')
+            ->assertSee('Faculty Science Exhibit')
+            ->assertSee($expectedSchedule)
+            ->assertSee('AVR 2')
+            ->assertSee('Upcoming');
+    }
+
     public function test_past_scheduled_event_is_marked_completed_on_student_list(): void
     {
         $student = User::factory()->create();
@@ -84,6 +135,38 @@ class SchoolEventVisibilityTest extends TestCase
             ->assertSee('Completed');
 
         $this->assertSame(EventStatus::Completed, $event->fresh()->status);
+    }
+
+    public function test_student_event_pages_show_time_and_status_badge(): void
+    {
+        $student = User::factory()->create();
+        $startsAt = now()->addDays(2)->setTime(14, 30);
+        $event = $this->makeEvent([
+            'title' => 'Science Exhibit',
+            'slug' => 'science-exhibit',
+            'event_date' => $startsAt,
+            'venue' => 'AVR 2',
+            'status' => EventStatus::Scheduled,
+        ]);
+
+        $expectedSchedule = $startsAt->format('M d, Y · g:i A');
+
+        $this->actingAs($student)
+            ->get(route('student.events.index'))
+            ->assertOk()
+            ->assertSee('Science Exhibit')
+            ->assertSee($expectedSchedule)
+            ->assertSee('Upcoming')
+            ->assertSee('View details');
+
+        $this->actingAs($student)
+            ->get(route('student.events.show', $event))
+            ->assertOk()
+            ->assertSee('Welcome back')
+            ->assertSee('Science Exhibit')
+            ->assertSee($expectedSchedule)
+            ->assertSee('AVR 2')
+            ->assertSee('Upcoming');
     }
 
     public function test_updating_event_keeps_slug_when_title_is_unchanged(): void

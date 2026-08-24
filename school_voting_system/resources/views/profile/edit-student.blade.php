@@ -7,6 +7,16 @@
     $isStudentProfile = $user->isStudent();
     $accentBorder = $isFacultyPortal ? 'border-teal-500/15' : 'border-cyan-500/15';
     $accent = $isFacultyPortal ? 'teal' : 'cyan';
+    $accentBtn = $isFacultyPortal
+        ? 'bg-gradient-to-r from-teal-500 to-emerald-400'
+        : 'bg-gradient-to-r from-cyan-500 to-sky-400';
+    $accentFile = $isFacultyPortal
+        ? 'file:bg-teal-500 hover:file:bg-teal-400'
+        : 'file:bg-cyan-500 hover:file:bg-cyan-400';
+    $accentInitials = $isFacultyPortal
+        ? 'bg-gradient-to-br from-teal-500 to-emerald-400'
+        : 'bg-gradient-to-br from-cyan-500 to-sky-400';
+    $currentAssignedCompetitionsCount = (int) ($currentAssignedCompetitionsCount ?? 0);
     $accountStatus = $accountStatus ?? (filled($user->archived_at ?? null) ? 'Archived' : ($user->is_active ? 'Active' : 'Inactive'));
     $passwordlessEnabled = $passwordlessEnabled ?? ($user->passkeys_count > 0);
     $securityContext = $securityContext ?? [];
@@ -23,8 +33,8 @@
     if ($isFacultyPortal) {
         $summaryRows[] = [
             'label' => 'Assigned Competitions',
-            'value' => ($user->judging_assignments_count ?? 0) > 0
-                ? (string) $user->judging_assignments_count
+            'value' => $currentAssignedCompetitionsCount > 0
+                ? (string) $currentAssignedCompetitionsCount
                 : 'None Assigned',
         ];
     } elseif ($isStudentProfile) {
@@ -61,10 +71,7 @@
 @endphp
 <x-app-layout>
     <x-dynamic-component :component="$portalComponent" title="Settings" :user="$user" :notifications-count="$notificationsCount">
-        <div class="mb-6">
-            <h1 class="text-xl font-bold text-white">Settings</h1>
-            <p class="mt-1 text-sm text-slate-400">Manage your profile, authentication devices, and account security.</p>
-        </div>
+        <p class="mb-6 text-sm text-slate-400">Manage your profile, authentication devices, and account security.</p>
 
         <nav class="mb-6 flex flex-wrap gap-2" aria-label="Settings sections">
             <a href="{{ route('profile.edit', ['section' => 'profile']) }}" class="{{ $navClass('profile') }}">My Profile</a>
@@ -100,7 +107,7 @@
                                     <img :src="preview" alt="Profile photo" class="h-full w-full object-cover">
                                 </template>
                                 <template x-if="!preview || removeAvatar">
-                                    <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-500 to-sky-400 text-2xl font-bold text-slate-950">{{ $user->initials() }}</div>
+                                    <div class="flex h-full w-full items-center justify-center {{ $accentInitials }} text-2xl font-bold text-slate-950">{{ $user->initials() }}</div>
                                 </template>
                             </div>
                             <div class="min-w-0 flex-1">
@@ -109,7 +116,7 @@
                                     type="file"
                                     name="avatar"
                                     accept="image/jpeg,image/png,image/webp"
-                                    class="mt-2 block w-full text-sm text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-950 hover:file:bg-cyan-400"
+                                    class="mt-2 block w-full text-sm text-slate-400 file:mr-3 file:rounded-lg file:border-0 {{ $accentFile }} file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-950"
                                     @change="
                                         removeAvatar = false;
                                         const file = $event.target.files?.[0];
@@ -184,7 +191,7 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-5 py-2.5 text-sm font-semibold text-slate-950 hover:opacity-90">
+                        <button type="submit" class="rounded-xl {{ $accentBtn }} px-5 py-2.5 text-sm font-semibold text-slate-950 hover:opacity-90">
                             Save Profile
                         </button>
                     </form>
@@ -198,9 +205,11 @@
             <div class="grid gap-6 lg:grid-cols-2">
                 <section class="rounded-2xl border {{ $accentBorder }} bg-slate-900/70 p-5 sm:p-6">
                     <h2 class="text-lg font-semibold text-white">Register New Passkey</h2>
-                    <p class="mt-1 text-sm text-slate-400">Add another device for passwordless sign-in. Credential secrets are never stored or displayed.</p>
-                    <div class="mt-5 [&_.rounded-xl]:border-cyan-500/20 [&_.rounded-xl]:bg-slate-950/50 [&_p]:text-slate-300 [&_label]:text-slate-300 [&_input]:border-slate-700 [&_input]:bg-slate-950 [&_input]:text-slate-100">
+                    <p class="mt-1 text-sm text-slate-400">Use another computer if this device is already listed. Names only help you tell devices apart.</p>
+                    <div class="mt-5">
                         <x-passkey-register
+                            theme="dark"
+                            :accent="$accent"
                             :register-options-url="route('register.passkey.options')"
                             :register-verify-url="route('register.passkey.verify')"
                         />
@@ -254,7 +263,7 @@
                     </x-slot:actions>
 
                     <div class="flex flex-wrap gap-3">
-                        <a href="{{ route('profile.edit', ['section' => 'devices']) }}" class="rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:opacity-90">
+                        <a href="{{ route('profile.edit', ['section' => 'devices']) }}" class="rounded-xl {{ $accentBtn }} px-4 py-2 text-sm font-semibold text-slate-950 hover:opacity-90">
                             Register Passkey
                         </a>
                         <a href="{{ route('profile.edit', ['section' => 'devices']) }}" class="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800/70">

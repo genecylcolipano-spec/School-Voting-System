@@ -66,6 +66,12 @@ class AdminScopeStatisticsTest extends TestCase
         $this->assertTrue($ids->contains($unassigned->id));
         $this->assertTrue($ids->contains($inScope->id));
         $this->assertFalse($ids->contains($outOfScope->id));
+
+        $manageableIds = app(AdminScopeService::class)
+            ->manageableStudentsQuery($admin)
+            ->pluck('id');
+
+        $this->assertTrue($manageableIds->contains($outOfScope->id));
     }
 
     public function test_statistics_count_election_votes_even_when_voter_outside_grade_scope(): void

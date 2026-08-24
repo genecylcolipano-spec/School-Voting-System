@@ -115,6 +115,149 @@ function updateLeaderboard(card, rankings) {
     `).join('');
 }
 
+function formatCountdownRemaining(isoString) {
+    if (!isoString) {
+        return null;
+    }
+
+    const target = new Date(isoString);
+    if (Number.isNaN(target.getTime())) {
+        return null;
+    }
+
+    const ms = target.getTime() - Date.now();
+    if (ms <= 0) {
+        return '0s';
+    }
+
+    const totalSec = Math.floor(ms / 1000);
+    const days = Math.floor(totalSec / 86400);
+    const hours = Math.floor((totalSec % 86400) / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+
+    if (days > 0) {
+        return `${days}d ${hours}h`;
+    }
+
+    if (hours > 0) {
+        return `${hours}h ${String(mins).padStart(2, '0')}m`;
+    }
+
+    if (mins > 0) {
+        return `${mins}m ${String(secs).padStart(2, '0')}s`;
+    }
+
+    return `${secs}s`;
+}
+
+function countdownRemainingNode(el) {
+    if (el.hasAttribute('data-countdown-remaining')) {
+        return el;
+    }
+
+    return el.querySelector('[data-countdown-remaining]');
+}
+
+function applyCountdown(root, countdown) {
+    const nodes = root.querySelectorAll('[data-countdown]');
+    const has = Boolean(countdown?.target_at_iso) && !countdown?.is_closed;
+
+    nodes.forEach((el) => {
+        const isPanel = !el.hasAttribute('data-countdown-remaining');
+        if (isPanel) {
+            el.classList.toggle('hidden', !has);
+        }
+
+        if (!has) {
+            el.dataset.targetIso = '';
+            el.dataset.countdownPhase = '';
+            const remaining = countdownRemainingNode(el);
+            if (remaining) {
+                remaining.textContent = '—';
+            }
+            return;
+        }
+
+        el.dataset.targetIso = countdown.target_at_iso;
+        el.dataset.countdownPhase = countdown.phase || '';
+
+        const label = el.querySelector('[data-countdown-label]');
+        if (label && countdown.label) {
+            label.textContent = countdown.label;
+        }
+
+        const remaining = countdownRemainingNode(el);
+        if (remaining) {
+            remaining.textContent = formatCountdownRemaining(countdown.target_at_iso) || countdown.remaining || '—';
+        }
+    });
+}
+
+function tickCountdowns(root) {
+    root.querySelectorAll('[data-countdown]').forEach((el) => {
+        const iso = el.dataset.targetIso;
+        if (!iso) {
+            return;
+        }
+
+        const remaining = countdownRemainingNode(el);
+        const text = formatCountdownRemaining(iso);
+        if (remaining && text) {
+            remaining.textContent = text;
+        }
+    });
+}
+
+function updatePositionLeaders(card, leaders, show) {
+    const panel = card.querySelector('[data-position-leaders]');
+    if (!panel) {
+        return;
+    }
+
+    const visible = Boolean(show);
+    panel.classList.toggle('hidden', !visible);
+
+    const list = panel.querySelector('[data-position-leaders-list]');
+    const empty = panel.querySelector('[data-position-leaders-empty]');
+    if (!list) {
+        return;
+    }
+
+    if (!visible) {
+        return;
+    }
+
+    const rows = Array.isArray(leaders) ? leaders : [];
+
+    if (!rows.length) {
+        list.innerHTML = '';
+        list.classList.add('hidden');
+        if (empty) {
+            empty.classList.remove('hidden');
+            empty.textContent = 'No candidates yet.';
+        }
+        return;
+    }
+
+    if (empty) {
+        empty.classList.add('hidden');
+    }
+
+    list.classList.remove('hidden');
+    list.innerHTML = rows.map((row) => `
+        <li class="flex items-center gap-3 px-3 py-2 text-sm">
+            <span class="w-28 shrink-0 truncate text-[11px] font-semibold uppercase tracking-wide text-violet-300">${escapeHtml(row.position)}</span>
+            <span class="min-w-0 flex-1 truncate text-slate-200">
+                ${escapeHtml(row.display ?? row.name ?? '—')}
+                ${row.tied ? '<span class="ml-1 text-[10px] font-semibold uppercase tracking-wide text-amber-300">Tie</span>' : ''}
+            </span>
+            <span class="font-bold text-white">${formatNumber(row.votes)}</span>
+            <span class="w-12 text-right text-xs text-slate-400">${escapeHtml(row.percent ?? 0)}%</span>
+        </li>
+    `).join('');
+}
+
 function applySharedFields(root, data) {
     setText(root, 'name', data.name);
     setText(root, 'owner_name', data.owner_name);
@@ -122,6 +265,7 @@ function applySharedFields(root, data) {
     setText(root, 'votes_cast', formatNumber(data.votes_cast), { flashOnChange: true });
     setText(root, 'last_vote_at', data.last_vote_at ?? '—', { flashOnChange: true });
     setText(root, 'phase', data.phase ?? '—');
+    applyCountdown(root, data.countdown);
 }
 
 function applyElectionCard(card, data) {
@@ -139,6 +283,7 @@ function applyElectionCard(card, data) {
     card.classList.toggle('border-emerald-500/30', Boolean(data.is_live));
     card.classList.toggle('border-violet-500/15', !data.is_live);
     syncLiveBadge(card, Boolean(data.is_live));
+    updatePositionLeaders(card, data.position_leaders || [], Boolean(data.show_position_leaders));
 }
 
 function applyTalentCard(card, data) {
@@ -328,6 +473,7 @@ function boot() {
 
     const refreshBtn = document.querySelector('[data-live-refresh]');
     let timer = null;
+    let countdownTimer = null;
     let inFlight = false;
 
     const run = async () => {
@@ -351,6 +497,8 @@ function boot() {
     });
 
     timer = window.setInterval(run, POLL_MS);
+    countdownTimer = window.setInterval(() => tickCountdowns(root), 1000);
+    tickCountdowns(root);
     run();
 
     document.addEventListener('visibilitychange', () => {
@@ -362,6 +510,9 @@ function boot() {
     window.addEventListener('beforeunload', () => {
         if (timer) {
             window.clearInterval(timer);
+        }
+        if (countdownTimer) {
+            window.clearInterval(countdownTimer);
         }
     });
 }

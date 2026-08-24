@@ -18,6 +18,7 @@ use App\Models\Passkey;
 use App\Models\PasskeyRecoveryRequest;
 use App\Models\SystemBackup;
 use App\Models\User;
+use App\Services\Admin\AdminScopeService;
 use App\Services\Admin\ElectionResultsPublishingService;
 use App\Services\Auth\PasskeyEnrollmentLinkService;
 use App\Services\Portal\PortalNotificationService;
@@ -43,6 +44,7 @@ class SuperAdminActionController extends Controller
         protected SuperAdminDashboardService $dashboard,
         protected PortalNotificationService $notifications,
         protected PasskeyEnrollmentLinkService $enrollmentLinks,
+        protected AdminScopeService $scope,
     ) {}
 
     public function search(Request $request): JsonResponse
@@ -465,12 +467,22 @@ class SuperAdminActionController extends Controller
 
     protected function voterTurnoutReport(): string
     {
-        $stats = $this->dashboard->statistics();
+        $election = $this->scope->resolveReportElection(auth()->user(), null);
+
+        if (! $election) {
+            return $this->reportShell('Voter Turnout Report', '<p>No election is available to report on.</p>');
+        }
+
+        $eligible = $election->eligibleVoterCount();
+        $voted = (int) $election->votes()->distinct('user_id')->count('user_id');
+        $turnout = $eligible > 0 ? round(($voted / $eligible) * 100, 1) : 0.0;
+        $status = $election->status?->label() ?? '—';
 
         return $this->reportShell('Voter Turnout Report', "
-            <p>Eligible Students: {$stats['eligible_students']}</p>
-            <p>Students Voted: {$stats['voted_students']}</p>
-            <p>Turnout: {$stats['voter_turnout']}%</p>
+            <p>Election: {$election->title} ({$status})</p>
+            <p>Eligible Students: {$eligible}</p>
+            <p>Students Voted: {$voted}</p>
+            <p>Turnout: {$turnout}%</p>
         ");
     }
 

@@ -133,6 +133,22 @@ class Election extends Model
         return ! in_array($this->status, [ElectionStatus::Draft, ElectionStatus::Archived], true);
     }
 
+    /**
+     * Faculty/student campus list label. Paused voting is not shown as Active/Open.
+     */
+    public function campusStatusLabel(): string
+    {
+        if ($this->is_paused && $this->status === ElectionStatus::Active) {
+            return 'Paused';
+        }
+
+        if ($this->status === ElectionStatus::Active && $this->isAcceptingVotes()) {
+            return 'Open';
+        }
+
+        return $this->status?->label() ?? (string) $this->status;
+    }
+
     public function scopeVisibleToCampus(Builder $query): Builder
     {
         return $query

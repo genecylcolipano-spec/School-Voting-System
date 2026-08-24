@@ -1,11 +1,17 @@
 <?php
     $onDashboard = request()->routeIs('faculty.dashboard');
-    $onAssigned = request()->routeIs('faculty.judging.index', 'faculty.judging.show', 'faculty.judging.score');
-    $onPerformances = request()->routeIs('faculty.judging.performances');
-    $onSubmitted = request()->routeIs('faculty.judging.submitted');
+    $fromPerformances = request()->query('from') === 'performances';
+    $fromSubmitted = request()->query('from') === 'submitted';
+    $onAssigned = request()->routeIs('faculty.judging.index', 'faculty.judging.show')
+        || (request()->routeIs('faculty.judging.score', 'faculty.judging.profile') && ! $fromPerformances && ! $fromSubmitted);
+    $onPerformances = request()->routeIs('faculty.judging.performances')
+        || (request()->routeIs('faculty.judging.score', 'faculty.judging.profile') && $fromPerformances);
+    $onSubmitted = request()->routeIs('faculty.judging.submitted')
+        || (request()->routeIs('faculty.judging.score', 'faculty.judging.profile') && $fromSubmitted);
     $onElections = request()->routeIs('faculty.elections.*');
     $onEvents = request()->routeIs('faculty.events.*');
     $onAnnouncements = request()->routeIs('faculty.announcements.*');
+    $onResults = request()->routeIs('faculty.results.*');
     $onSettings = request()->routeIs('profile.edit') && auth()->user()?->isFaculty();
 ?>
 
@@ -189,6 +195,32 @@
          <?php $__env->slot('icon', null, []); ?> 
             <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+            </svg>
+         <?php $__env->endSlot(); ?>
+     <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7)): ?>
+<?php $attributes = $__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7; ?>
+<?php unset($__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal866f5e2d42640ffa335179aba2fdf6c7)): ?>
+<?php $component = $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7; ?>
+<?php unset($__componentOriginal866f5e2d42640ffa335179aba2fdf6c7); ?>
+<?php endif; ?>
+
+    <?php if (isset($component)) { $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.portal-sidebar-link','data' => ['href' => route('faculty.results.index'),'label' => 'Results','active' => $onResults]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('portal-sidebar-link'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['href' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('faculty.results.index')),'label' => 'Results','active' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($onResults)]); ?>
+         <?php $__env->slot('icon', null, []); ?> 
+            <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
             </svg>
          <?php $__env->endSlot(); ?>
      <?php echo $__env->renderComponent(); ?>

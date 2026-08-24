@@ -20,8 +20,37 @@
 <?php $component->withAttributes(['title' => 'Elections','user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount)]); ?>
         <section class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 sm:p-6">
             <p class="text-sm text-slate-400">
-                Browse school elections and candidate lineups. Faculty accounts are view-only and cannot cast votes.
+                <?php if($showOpenOnly): ?>
+                    Showing elections currently open for voting. Faculty accounts are view-only and cannot cast votes.
+                <?php else: ?>
+                    Browse school elections and candidate lineups. Faculty accounts are view-only and cannot cast votes.
+                <?php endif; ?>
             </p>
+
+            <nav class="mt-4 flex flex-wrap gap-2" aria-label="Election lists">
+                <a
+                    href="<?php echo e(route('faculty.elections.index')); ?>"
+                    class="<?php echo \Illuminate\Support\Arr::toCssClasses([
+                        'inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition',
+                        'bg-gradient-to-r from-teal-500 to-emerald-400 text-slate-950' => ! $showOpenOnly,
+                        'border border-slate-700 text-slate-300 hover:bg-slate-800' => $showOpenOnly,
+                    ]); ?>"
+                >
+                    All
+                    <span class="rounded-full bg-black/10 px-1.5 py-0.5 text-[11px] leading-none"><?php echo e($allCount); ?></span>
+                </a>
+                <a
+                    href="<?php echo e(route('faculty.elections.index', ['filter' => 'open'])); ?>"
+                    class="<?php echo \Illuminate\Support\Arr::toCssClasses([
+                        'inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition',
+                        'bg-gradient-to-r from-teal-500 to-emerald-400 text-slate-950' => $showOpenOnly,
+                        'border border-slate-700 text-slate-300 hover:bg-slate-800' => ! $showOpenOnly,
+                    ]); ?>"
+                >
+                    Open
+                    <span class="rounded-full bg-black/10 px-1.5 py-0.5 text-[11px] leading-none"><?php echo e($openCount); ?></span>
+                </a>
+            </nav>
         </section>
 
         <div class="space-y-4">
@@ -35,7 +64,7 @@
                             <?php endif; ?>
                         </div>
                         <div class="sm:shrink-0 sm:text-right">
-                            <p class="text-xs uppercase tracking-wide text-slate-500"><?php echo e($election->status?->label() ?? $election->status); ?></p>
+                            <?php echo $__env->make('faculty.elections._status-badge', ['election' => $election], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                             <?php if($election->voting_starts_at): ?>
                                 <p class="mt-1 text-xs text-slate-400">Starts: <?php echo e($election->voting_starts_at->format('M d, Y g:i A')); ?></p>
                             <?php endif; ?>
@@ -45,16 +74,27 @@
                         </div>
                     </div>
 
-                    <a
-                        href="<?php echo e(route('faculty.elections.show', $election)); ?>"
-                        class="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-gradient-to-r from-teal-500 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 sm:w-auto"
-                    >
-                        View details
-                    </a>
+                    <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                        <a
+                            href="<?php echo e(route('faculty.elections.show', $election)); ?>"
+                            class="inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-gradient-to-r from-teal-500 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 sm:w-auto"
+                        >
+                            View details
+                        </a>
+                        <?php if($election->shouldShowOfficialResultsToStudents()): ?>
+                            <a
+                                href="<?php echo e(route('faculty.results.election.show', $election)); ?>"
+                                class="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-teal-400/40 px-4 py-2 text-sm font-semibold text-teal-100 sm:w-auto"
+                            >
+                                View official results
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </article>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <div class="rounded-2xl border border-dashed border-slate-700 px-4 py-8 text-center text-sm text-slate-500">
-                    No elections found.
+                    <?php echo e($showOpenOnly ? 'No elections are currently open for voting.' : 'No elections found.'); ?>
+
                 </div>
             <?php endif; ?>
         </div>

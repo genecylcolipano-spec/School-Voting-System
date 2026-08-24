@@ -49,9 +49,7 @@ class AdminTalentCompetitionController extends Controller
         $category = (string) $request->query('category', '');
         $sort = (string) $request->query('sort', 'newest');
 
-        $eventIds = $user->isSuperAdmin()
-            ? TalentEvent::query()->pluck('id')
-            : $this->scope->talentEvents($user)->pluck('id');
+        $eventIds = $this->scope->talentEventsQuery($user)->pluck('id');
 
         $query = TalentEvent::query()
             ->whereIn('id', $eventIds->isEmpty() ? [-1] : $eventIds)

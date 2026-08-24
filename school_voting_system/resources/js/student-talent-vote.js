@@ -1,8 +1,11 @@
 document.addEventListener('alpine:init', () => {
-    Alpine.data('talentVoteConfirm', () => ({
+    Alpine.data('talentVoteConfirm', (options = {}) => ({
         confirmOpen: false,
         entryName: '',
         formEl: null,
+        watchedIds: Object.fromEntries(
+            (Array.isArray(options.watchedIds) ? options.watchedIds : []).map((id) => [String(id), true]),
+        ),
 
         // Watch performance modal
         watchOpen: false,
@@ -18,6 +21,18 @@ document.addEventListener('alpine:init', () => {
         // Participant detail modal
         viewOpen: false,
         participant: {},
+
+        hasWatched(id) {
+            return Boolean(this.watchedIds[String(id)]);
+        },
+
+        markWatched(id) {
+            if (!id) {
+                return;
+            }
+
+            this.watchedIds[String(id)] = true;
+        },
 
         openConfirm(form, name) {
             this.formEl = form;
@@ -42,15 +57,24 @@ document.addEventListener('alpine:init', () => {
             };
             this.watchOpen = true;
 
-            if (data.viewUrl && data.csrf) {
-                fetch(data.viewUrl, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': data.csrf,
-                        Accept: 'application/json',
-                    },
-                }).catch(() => {});
+            if (!data.viewUrl || !data.csrf) {
+                this.markWatched(data.entryId);
+                return;
             }
+
+            fetch(data.viewUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': data.csrf,
+                    Accept: 'application/json',
+                },
+            })
+                .then((response) => {
+                    if (response.ok) {
+                        this.markWatched(data.entryId);
+                    }
+                })
+                .catch(() => {});
         },
 
         closeWatch() {

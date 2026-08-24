@@ -9,8 +9,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
 /**
- * Async role fan-out so opening voting / publishing results does not block
- * the HTTP request while inserting one row per active recipient.
+ * Legacy queued fan-out. Live delivery now inserts in-request so bells appear
+ * without queue:work. This job still processes any leftover queued rows.
  */
 class FanOutPortalNotificationsJob implements ShouldQueue
 {

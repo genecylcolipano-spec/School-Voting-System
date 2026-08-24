@@ -24,6 +24,14 @@
             'showAction' => false,
         ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
+        <?php if(auth()->user()?->isSuperAdmin()): ?>
+            <div class="mb-6 flex flex-wrap justify-end gap-3">
+                <a href="<?php echo e(route('super-admin.roster.students.index')); ?>" class="rounded-xl border border-violet-500/30 px-4 py-2 text-sm font-semibold text-violet-300 hover:bg-violet-500/10">
+                    Manage Student Roster
+                </a>
+            </div>
+        <?php endif; ?>
+
         <?php if(session('success')): ?>
             <div class="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200"><?php echo e(session('success')); ?></div>
         <?php endif; ?>
@@ -69,6 +77,9 @@
                 </select>
             <?php endif; ?>
             <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white sm:w-auto">Search</button>
+            <?php if($hasFilters ?? false): ?>
+                <a href="<?php echo e(route('admin.students.index')); ?>" class="w-full rounded-xl border border-slate-700 px-4 py-2 text-center text-sm font-semibold text-slate-300 hover:bg-slate-800 sm:w-auto">Clear</a>
+            <?php endif; ?>
         </form>
 
         <div class="overflow-x-auto rounded-2xl border border-violet-500/15 bg-slate-900/70">
@@ -147,7 +158,17 @@
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
-                            <td colspan="9" class="px-4 py-6 text-slate-400">No registered student accounts found.</td>
+                            <td colspan="9" class="px-4 py-10 text-center text-slate-400">
+                                <?php if($hasFilters ?? false): ?>
+                                    <p>No registered student accounts match your filters.</p>
+                                <?php else: ?>
+                                    <p class="font-medium text-slate-300">No registered student accounts yet.</p>
+                                    <p class="mt-2 text-sm">Students appear here after they are added to the Student Roster and complete passkey enrollment. This list is not the official roster.</p>
+                                    <?php if(auth()->user()?->isSuperAdmin()): ?>
+                                        <a href="<?php echo e(route('super-admin.roster.students.index')); ?>" class="mt-4 inline-flex rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Open Student Roster</a>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -165,8 +186,6 @@
 <?php $component = $__componentOriginal57da683fe32826f08aa9f05c3342a7e2; ?>
 <?php unset($__componentOriginal57da683fe32826f08aa9f05c3342a7e2); ?>
 <?php endif; ?>
-
-    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/regular-admin-dashboard.js']); ?>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>

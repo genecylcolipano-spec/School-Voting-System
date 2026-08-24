@@ -1,23 +1,34 @@
 <x-app-layout>
     <x-faculty-portal title="Score Performance" :user="$user" :notifications-count="$notificationsCount">
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <a href="{{ route('faculty.judging.show', $competition) }}" class="text-sm font-semibold text-teal-300 hover:text-teal-200">&larr; Back to {{ $competition->title }}</a>
-            @if ($locked)
-                <span class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-200">Submitted</span>
-            @elseif (! $acceptingScores)
-                <span class="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-200">Judging closed</span>
-            @endif
+            <a href="{{ $backUrl }}" class="text-sm font-semibold text-teal-300 hover:text-teal-200">&larr; {{ $backLabel }}</a>
+            <div class="flex flex-wrap items-center justify-end gap-2">
+                <a
+                    href="{{ route('faculty.judging.profile', filled($from) ? [$competition, $entry, 'from' => $from] : [$competition, $entry]) }}"
+                    class="rounded-xl border border-slate-600 px-3 py-1.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
+                >
+                    View profile
+                </a>
+                <x-faculty.judging-phase-badge :event="$competition" :locked="$locked" show-opens-at class="text-right" />
+            </div>
         </div>
 
         <div class="grid gap-6 lg:grid-cols-2">
             <section class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 sm:p-6">
-                <h2 class="text-xl font-bold text-white">{{ $entry->display_name }}</h2>
-                <p class="mt-1 text-sm text-slate-400">
-                    {{ $entry->performance_title ?: 'Untitled performance' }}
-                    @if ($entry->grade_level || $entry->section)
-                        · {{ trim(($entry->grade_level ?? '').' '.($entry->section ?? '')) }}
-                    @endif
-                </p>
+                <div class="flex items-start gap-4">
+                    <div class="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-slate-800 bg-slate-950">
+                        @include('faculty.judging._entry-photo', ['entry' => $entry])
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="text-xl font-bold text-white">{{ $entry->display_name }}</h2>
+                        <p class="mt-1 text-sm text-slate-400">
+                            {{ $entry->performance_title ?: 'Untitled performance' }}
+                            @if ($entry->grade_level || $entry->section)
+                                · {{ trim(($entry->grade_level ?? '').' '.($entry->section ?? '')) }}
+                            @endif
+                        </p>
+                    </div>
+                </div>
 
                 @if ($entry->performance_description)
                     <p class="mt-4 whitespace-pre-line text-sm text-slate-300">{{ $entry->performance_description }}</p>

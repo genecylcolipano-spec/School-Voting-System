@@ -31,7 +31,7 @@ function applyTurnoutBreakdown(sections) {
     }
 
     if (!sections?.length) {
-        container.innerHTML = '<p class="text-sm text-slate-400">No turnout data for your assigned election yet.</p>';
+        container.innerHTML = '<p class="text-sm text-slate-400">No turnout data for the selected election yet.</p>';
         return;
     }
 
@@ -83,6 +83,83 @@ function applyFundraisingPerformance(fundraising) {
     }
 }
 
+function applyCampaignPerformance(campaigns) {
+    const container = document.getElementById('analytics-campaign-performance');
+
+    if (!container) {
+        return;
+    }
+
+    if (!campaigns?.length) {
+        container.innerHTML = '<p class="text-sm text-slate-400">No campaign vote data for the selected election yet.</p>';
+        return;
+    }
+
+    container.innerHTML = campaigns.map((campaign) => {
+        const color = campaign.color
+            ? `<span class="inline-block h-3 w-3 rounded-full" style="background: ${escapeHtml(campaign.color)}"></span>`
+            : '';
+        const acronym = campaign.acronym
+            ? `<span class="text-xs text-violet-300">${escapeHtml(campaign.acronym)}</span>`
+            : '';
+        const positions = Array.isArray(campaign.winning_positions) && campaign.winning_positions.length
+            ? `<p class="mt-1 text-xs text-emerald-300">Won: ${escapeHtml(campaign.winning_positions.join(', '))}</p>`
+            : '';
+        const share = Number(campaign.vote_share) || 0;
+
+        return `
+            <div class="rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        ${color}
+                        <p class="text-sm font-medium text-white">${escapeHtml(campaign.name)}</p>
+                        ${acronym}
+                    </div>
+                    <span class="shrink-0 text-sm font-semibold text-violet-300">${share}%</span>
+                </div>
+                <p class="mt-1 text-xs text-slate-500">
+                    ${Number(campaign.total_votes || 0).toLocaleString()} votes · ${Number(campaign.total_candidates || 0).toLocaleString()} candidate(s) · ${Number(campaign.winning_candidates || 0).toLocaleString()} winning
+                </p>
+                ${positions}
+                <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
+                    <div class="h-full rounded-full bg-violet-500" style="width:${Math.min(100, share)}%"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function applyTalentCompetitions(events) {
+    const container = document.getElementById('analytics-talent-competitions');
+
+    if (!container) {
+        return;
+    }
+
+    if (!events?.length) {
+        container.innerHTML = '<tr><td colspan="7" class="px-3 py-6 text-center text-slate-400">No talent competition data in your scope yet.</td></tr>';
+        return;
+    }
+
+    container.innerHTML = events.map((event) => {
+        const winners = Array.isArray(event.winners) && event.winners.length
+            ? escapeHtml(event.winners.join(', '))
+            : '—';
+
+        return `
+            <tr class="text-slate-300">
+                <td class="px-3 py-3 font-medium text-white">${escapeHtml(event.name)}</td>
+                <td class="px-3 py-3">${escapeHtml(event.talent_category)}</td>
+                <td class="px-3 py-3">${Number(event.contestants || 0).toLocaleString()}</td>
+                <td class="px-3 py-3">${Number(event.total_votes || 0).toLocaleString()}</td>
+                <td class="px-3 py-3">${escapeHtml(event.voting_method)}</td>
+                <td class="px-3 py-3 text-emerald-300">${winners}</td>
+                <td class="px-3 py-3">${escapeHtml(event.display_status)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
 function applyAnalyticsReport(report) {
     if (!report) {
         return;
@@ -105,6 +182,8 @@ function applyAnalyticsReport(report) {
 
     applyTurnoutBreakdown(report.turnoutSections ?? []);
     applyFundraisingPerformance(report.fundraising);
+    applyCampaignPerformance(report.campaignPerformance ?? []);
+    applyTalentCompetitions(report.talentCompetitions ?? []);
 
     const stamp = document.getElementById('analytics-live-updated');
     if (stamp && report.updated_at) {

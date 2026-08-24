@@ -32,6 +32,7 @@ use App\Services\Portal\AnnouncementService;
 use App\Services\Portal\PortalNotificationService;
 use App\Services\Payments\DonationCheckoutService;
 use App\Services\Student\StudentResultsService;
+use App\Services\Student\StudentStatisticsService;
 use App\Services\SuperAdmin\AuditLogService;
 use App\Services\Talent\StudentTalentHeroActionResolver;
 use App\Services\Talent\StudentTalentService;
@@ -56,240 +57,36 @@ class StudentPortalController extends Controller
         protected AnnouncementService $announcements,
         protected AuditLogService $audit,
         protected DonationCheckoutService $donationCheckout,
+        protected StudentStatisticsService $statistics,
     ) {}
 
     public function events(Request $request): View
     {
         Event::markOverdueAsCompleted();
 
+        $user = $request->user()->loadCount('passkeys');
+
         $events = Event::query()
             ->campusListing()
             ->paginate(12);
 
         return view('student.events.index', [
-            'user' => $request->user()->loadCount('passkeys'),
+            'user' => $user,
+            'notificationsCount' => $this->notifications->unreadCountFor($user),
             'events' => $events,
         ]);
     }
 
     public function statistics(Request $request): View
     {
-        $user = $request->user()->loadCount([
-            'passkeys',
-            'votes',
-            'donations' => fn ($query) => $query->paid(),
-        ]);
-
-        $electionsJoined = (int) $user->votes()->distinct()->count('election_id');
-        $competitionsJoined = TalentEventEntry::query()
-            ->where('user_id', $user->id)
-            ->distinct()
-            ->count('talent_event_id');
-        $fundraisersSupported = Donation::query()
-            ->paid()
-            ->where('user_id', $user->id)
-            ->distinct()
-            ->count('fundraiser_id');
-        $totalDonated = (float) $user->donations()->paid()->sum('amount');
-
-        $eligibleElections = Election::query()
-            ->whereIn('status', [
-                \App\Enums\ElectionStatus::Active,
-                \App\Enums\ElectionStatus::Closed,
-            ])
-            ->count();
-
-        $openCategoryIds = ElectionCategory::query()
-            ->whereHas('election', fn ($query) => $query->acceptingVotes())
-            ->pluck('id');
-        $openCategoryCount = $openCategoryIds->count();
-        $votesInOpenElections = $openCategoryCount > 0
-            ? $user->votes()->whereIn('election_category_id', $openCategoryIds)->count()
-            : 0;
-
-        $lifetimeVotingPercent = $eligibleElections > 0
-            ? (int) round(($electionsJoined / $eligibleElections) * 100)
-            : 0;
-        $openVotingPercent = $openCategoryCount > 0
-            ? (int) round(($votesInOpenElections / $openCategoryCount) * 100)
-            : 0;
-
-        $lastVote = Vote::query()
-            ->with(['election:id,title,slug'])
-            ->where('user_id', $user->id)
-            ->orderByDesc('voted_at')
-            ->first();
-
-        $lastCompetition = TalentEventEntry::query()
-            ->with(['talentEvent:id,title,slug'])
-            ->where('user_id', $user->id)
-            ->orderByDesc('created_at')
-            ->first();
-
-        $lastDonation = Donation::query()
-            ->paid()
-            ->with(['fundraiser:id,title,slug'])
-            ->where('user_id', $user->id)
-            ->orderByDesc('donated_at')
-            ->first();
-
-        $recentDonations = Donation::query()
-            ->paid()
-            ->with(['fundraiser:id,title,slug'])
-            ->where('user_id', $user->id)
-            ->orderByDesc('donated_at')
-            ->limit(5)
-            ->get();
-
-        $publishedCompetitions = TalentEvent::query()->publishedToStudents()->count();
-        $visibleFundraisers = Fundraiser::query()->count();
-
-        $engagement = [
-            'voting' => min(100, $lifetimeVotingPercent),
-            'events' => null, // no event registration module yet
-            'competitions' => $publishedCompetitions > 0
-                ? (int) round(($competitionsJoined / $publishedCompetitions) * 100)
-                : 0,
-            'fundraising' => $visibleFundraisers > 0
-                ? (int) round(($fundraisersSupported / $visibleFundraisers) * 100)
-                : 0,
-        ];
-
-        $totalActivities = $electionsJoined + $competitionsJoined + $fundraisersSupported + $user->passkeys_count;
-        $participationLevel = match (true) {
-            $totalActivities >= 15 => 'Excellent',
-            $totalActivities >= 8 => 'Very Active',
-            $totalActivities >= 3 => 'Active',
-            default => 'New Participant',
-        };
-
-        $notificationsCount = $this->notifications->unreadCountFor($user);
+        $user = $request->user()->loadCount('passkeys');
+        $stats = $this->statistics->forStudent($user);
 
         return view('student.statistics.index', [
             'user' => $user,
-            'notificationsCount' => $notificationsCount,
-            'overview' => [
-                'votes_cast' => $user->votes_count,
-                'elections_joined' => $electionsJoined,
-                'competitions_joined' => $competitionsJoined,
-                'fundraisers_supported' => $fundraisersSupported,
-            ],
-            'activitySummary' => [
-                'recent_vote' => $lastVote?->election?->title,
-                'last_event' => null,
-                'last_competition' => $lastCompetition?->talentEvent?->title,
-                'last_donation' => $lastDonation?->fundraiser?->title,
-                'passkeys' => $user->passkeys_count,
-                'member_since' => $user->created_at,
-            ],
-            'votingAnalytics' => [
-                'has_open_elections' => $openCategoryCount > 0,
-                'has_history' => $electionsJoined > 0 || $user->votes_count > 0,
-                'elections_joined' => $electionsJoined,
-                'eligible_elections' => $eligibleElections,
-                'lifetime_percent' => $lifetimeVotingPercent,
-                'open_percent' => $openVotingPercent,
-                'completed_votes' => $user->votes_count,
-                'votes_in_open' => $votesInOpenElections,
-                'open_categories' => $openCategoryCount,
-                'last_vote_at' => $lastVote?->voted_at,
-            ],
-            'recentActivity' => $this->studentRecentActivity($user),
-            'donationSummary' => [
-                'total_donated' => $totalDonated,
-                'campaigns_supported' => $fundraisersSupported,
-                'donations_made' => $user->donations_count,
-                'latest_title' => $lastDonation?->fundraiser?->title,
-                'latest_amount' => $lastDonation ? (float) $lastDonation->amount : null,
-                'latest_at' => $lastDonation?->donated_at,
-                'history' => $recentDonations,
-            ],
-            'engagement' => $engagement,
-            'achievements' => [
-                'most_active_semester' => $totalActivities > 0
-                    ? now()->format('F Y')
-                    : null,
-                'total_activities' => $totalActivities,
-                'certificates_earned' => 0,
-                'participation_level' => $participationLevel,
-            ],
+            'notificationsCount' => $this->notifications->unreadCountFor($user),
+            ...$stats,
         ]);
-    }
-
-    /**
-     * @return \Illuminate\Support\Collection<int, array{message: string, time: string}>
-     */
-    protected function studentRecentActivity($user): \Illuminate\Support\Collection
-    {
-        $items = collect();
-
-        Vote::query()
-            ->with(['election:id,title'])
-            ->where('user_id', $user->id)
-            ->orderByDesc('voted_at')
-            ->limit(8)
-            ->get()
-            ->unique('election_id')
-            ->take(3)
-            ->each(function (Vote $vote) use ($items) {
-                $items->push([
-                    'message' => 'Voted in '.($vote->election?->title ?? 'an election'),
-                    'time' => $vote->voted_at?->diffForHumans() ?? 'Recently',
-                    'at' => $vote->voted_at,
-                ]);
-            });
-
-        TalentEventEntry::query()
-            ->with(['talentEvent:id,title'])
-            ->where('user_id', $user->id)
-            ->orderByDesc('created_at')
-            ->limit(3)
-            ->get()
-            ->each(function (TalentEventEntry $entry) use ($items) {
-                $items->push([
-                    'message' => 'Joined '.($entry->talentEvent?->title ?? 'a talent competition'),
-                    'time' => $entry->created_at?->diffForHumans() ?? 'Recently',
-                    'at' => $entry->created_at,
-                ]);
-            });
-
-        Donation::query()
-            ->paid()
-            ->with(['fundraiser:id,title'])
-            ->where('user_id', $user->id)
-            ->orderByDesc('donated_at')
-            ->limit(3)
-            ->get()
-            ->each(function (Donation $donation) use ($items) {
-                $amount = number_format((float) $donation->amount, 2);
-                $title = $donation->fundraiser?->title ?? 'a fundraiser';
-                $items->push([
-                    'message' => 'Donated ₱'.$amount.' to '.$title,
-                    'time' => $donation->donated_at?->diffForHumans() ?? 'Recently',
-                    'at' => $donation->donated_at,
-                ]);
-            });
-
-        $user->passkeys()
-            ->orderByDesc('created_at')
-            ->limit(2)
-            ->get()
-            ->each(function ($passkey) use ($items) {
-                $items->push([
-                    'message' => 'Registered Passkey',
-                    'time' => $passkey->created_at?->diffForHumans() ?? 'Recently',
-                    'at' => $passkey->created_at,
-                ]);
-            });
-
-        return $items
-            ->sortByDesc(fn (array $item) => $item['at']?->getTimestamp() ?? 0)
-            ->take(8)
-            ->values()
-            ->map(fn (array $item) => [
-                'message' => $item['message'],
-                'time' => $item['time'],
-            ]);
     }
 
     public function eventShow(Request $request, Event $event): View
@@ -298,8 +95,11 @@ class StudentPortalController extends Controller
         Event::markOverdueAsCompleted();
         $event->refresh();
 
+        $user = $request->user()->loadCount('passkeys');
+
         return view('student.events.show', [
-            'user' => $request->user()->loadCount('passkeys'),
+            'user' => $user,
+            'notificationsCount' => $this->notifications->unreadCountFor($user),
             'event' => $event,
         ]);
     }
@@ -555,6 +355,7 @@ class StudentPortalController extends Controller
             'talentEvent' => $talentEvent,
             'hasVoted' => $hasVoted,
             'votedEntryId' => $votedEntryId,
+            'watchedEntryIds' => $this->talentService->watchedEntryIds($student, $talentEvent),
             'canViewStandings' => $canViewStandings,
             'studentEntry' => $studentEntry,
             'heroActions' => $heroActions,
@@ -596,9 +397,14 @@ class StudentPortalController extends Controller
 
         abort_unless($entry->isApproved(), 404);
 
+        $this->talentService->recordWatch($request->user(), $entry);
         $entry->incrementViews();
 
-        return response()->json(['views' => $entry->fresh()->view_count]);
+        return response()->json([
+            'views' => $entry->fresh()->view_count,
+            'watched' => true,
+            'entry_id' => $entry->id,
+        ]);
     }
 
     public function fundraising(Request $request): View
@@ -814,10 +620,12 @@ class StudentPortalController extends Controller
 
     public function resultsIndex(Request $request): View
     {
-        $events = $this->resultsService->listEvents();
+        $user = $request->user()->loadCount('passkeys');
+        $events = $this->resultsService->listEvents($user);
 
         return view('student.results.index', [
-            'user' => $request->user()->loadCount('passkeys'),
+            'user' => $user,
+            'notificationsCount' => $this->notifications->unreadCountFor($user),
             'events' => $events,
             'hasEvents' => $this->resultsService->hasAnyEvents(),
             'hasCompletedEvents' => $this->resultsService->hasCompletedEvents(),
@@ -828,8 +636,11 @@ class StudentPortalController extends Controller
     {
         $this->resultsService->assertVisibleElection($election);
 
+        $user = $request->user()->loadCount('passkeys');
+
         return view('student.results.show', [
-            'user' => $request->user()->loadCount('passkeys'),
+            'user' => $user,
+            'notificationsCount' => $this->notifications->unreadCountFor($user),
             'detail' => $this->resultsService->electionDetail($election),
         ]);
     }
@@ -838,8 +649,11 @@ class StudentPortalController extends Controller
     {
         $this->resultsService->assertVisibleTalentEvent($talentEvent);
 
+        $user = $request->user()->loadCount('passkeys');
+
         return view('student.results.show', [
-            'user' => $request->user()->loadCount('passkeys'),
+            'user' => $user,
+            'notificationsCount' => $this->notifications->unreadCountFor($user),
             'detail' => $this->resultsService->talentDetail($talentEvent),
         ]);
     }

@@ -93,6 +93,24 @@ class TalentResultsRankingService
     }
 
     /**
+     * Rank-1 contestants with a positive metric (ties included).
+     *
+     * @return list<array{name: string, metric: float, rank: int}>
+     */
+    public function winners(TalentEvent $event): array
+    {
+        return collect($this->rankings($event))
+            ->filter(fn (array $row) => ($row['status'] ?? '') === 'Winner')
+            ->map(fn (array $row) => [
+                'name' => (string) ($row['name'] ?? ''),
+                'metric' => (float) ($row['metric'] ?? 0),
+                'rank' => (int) ($row['rank'] ?? 0),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * Competition ranking: ties share a rank and the next rank is skipped (1, 1, 3).
      *
      * @param  list<array<string, mixed>>  $rows

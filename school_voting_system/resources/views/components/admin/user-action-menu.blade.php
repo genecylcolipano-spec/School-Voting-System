@@ -36,8 +36,8 @@
 
     $removeLabel = $isFaculty ? 'Remove Faculty' : 'Remove Administrator';
     $removeConfirm = $isFaculty
-        ? 'Remove Faculty?\n\nThis action cannot be undone if the account has no active assignments. Accounts with active judging or unpublished scores cannot be removed — deactivate instead.'
-        : 'Remove Administrator?\n\nThis action cannot be undone if the account has no active assignments. Accounts tied to active elections, competitions, or fundraising cannot be removed — deactivate instead.';
+        ? 'Remove Faculty?\n\nThis cannot be undone if the account has no blocking assignments. Accounts with active judging or unpublished scores cannot be removed — suspend or archive instead.'
+        : 'Remove Administrator?\n\nThis cannot be undone if the account has no blocking assignments. Accounts tied to active elections, competitions, or fundraising cannot be removed — suspend or archive instead.';
 
     $itemClass = 'flex w-full items-center gap-3 px-3.5 py-2.5 text-left text-sm text-slate-200 transition hover:bg-slate-800/90 hover:text-white';
     $dangerClass = 'flex w-full items-center gap-3 px-3.5 py-2.5 text-left text-sm text-rose-300 transition hover:bg-rose-500/10 hover:text-rose-200';
@@ -123,12 +123,12 @@
                     </button>
                 </form>
             @elseif ($account->is_active)
-                <form method="POST" action="{{ $toggleRoute }}" onsubmit="return confirm('Deactivate {{ addslashes($account->name) }}?\n\nThey will not be able to sign in until reactivated.');">
+                <form method="POST" action="{{ $toggleRoute }}" onsubmit="return confirm('Suspend {{ addslashes($account->name) }}?\n\nThey will not be able to sign in until reactivated. This is not the same as archiving.');">
                     @csrf
                     @method('PATCH')
                     <button type="submit" data-popover-close role="menuitem" class="{{ $itemClass }}">
                         <span class="w-5 shrink-0 text-center" aria-hidden="true">🚫</span>
-                        <span>Deactivate Account</span>
+                        <span>Suspend Account</span>
                     </button>
                 </form>
             @else
@@ -148,7 +148,7 @@
         @if ($isStudent)
             @can('updateStudentRecord', $account)
                 @unless ($account->archived_at)
-                    <form method="POST" action="{{ $archiveRoute }}" onsubmit="return confirm('Archive Student?\n\nVotes, submissions, donations, and login history are preserved. Students are never permanently deleted.');">
+                    <form method="POST" action="{{ $archiveRoute }}" onsubmit="return confirm('Archive {{ addslashes($account->name) }}?\n\nStatus becomes Deactivated. Votes, submissions, donations, and login history are preserved. Students are never permanently deleted.');">
                         @csrf
                         <button type="submit" data-popover-close role="menuitem" class="{{ $dangerClass }}">
                             <span class="w-5 shrink-0 text-center" aria-hidden="true">📦</span>
@@ -158,6 +158,15 @@
                 @endunless
             @endcan
         @else
+            @unless ($account->archived_at)
+                <form method="POST" action="{{ $archiveRoute }}" onsubmit="return confirm('Archive {{ addslashes($account->name) }}?\n\nStatus becomes Deactivated. They cannot sign in until restored.');">
+                    @csrf
+                    <button type="submit" data-popover-close role="menuitem" class="{{ $itemClass }}">
+                        <span class="w-5 shrink-0 text-center" aria-hidden="true">📦</span>
+                        <span>Archive Account</span>
+                    </button>
+                </form>
+            @endunless
             <form method="POST" action="{{ $removeRoute }}" onsubmit="return confirm(@js($removeConfirm));">
                 @csrf
                 @method('DELETE')

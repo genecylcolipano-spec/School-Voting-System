@@ -38,6 +38,7 @@ use App\Http\Controllers\Admin\AdminTalentJudgingController;
 use App\Http\Controllers\Admin\AdminTalentParticipantController;
 use App\Http\Controllers\Faculty\FacultyDashboardController;
 use App\Http\Controllers\Faculty\FacultyJudgingController;
+use App\Http\Controllers\Faculty\FacultyResultsController;
 use App\Http\Controllers\Faculty\FacultyPortalController;
 use App\Http\Controllers\Student\StudentPortalController;
 use App\Http\Controllers\Student\StudentTalentRegistrationController;
@@ -151,10 +152,15 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
         Route::get('/announcements/{announcement:slug}/attachments/{attachment}', [FacultyPortalController::class, 'downloadAnnouncementAttachment'])
             ->name('announcements.attachments.download');
 
+        Route::get('/results', [FacultyResultsController::class, 'index'])->name('results.index');
+        Route::get('/results/election/{election:slug}', [FacultyResultsController::class, 'showElection'])->name('results.election.show');
+        Route::get('/results/talent/{talentEvent:slug}', [FacultyResultsController::class, 'showTalent'])->name('results.talent.show');
+
         Route::get('/judging', [FacultyJudgingController::class, 'index'])->name('judging.index');
         Route::get('/judging/performances', [FacultyJudgingController::class, 'performances'])->name('judging.performances');
         Route::get('/judging/submitted', [FacultyJudgingController::class, 'submitted'])->name('judging.submitted');
         Route::get('/judging/{talentEvent:slug}', [FacultyJudgingController::class, 'show'])->name('judging.show');
+        Route::get('/judging/{talentEvent:slug}/entries/{entry}/profile', [FacultyJudgingController::class, 'profile'])->name('judging.profile');
         Route::get('/judging/{talentEvent:slug}/entries/{entry}', [FacultyJudgingController::class, 'scoreForm'])->name('judging.score');
         Route::post('/judging/{talentEvent:slug}/entries/{entry}/draft', [FacultyJudgingController::class, 'saveDraft'])
             ->middleware('throttle:30,1')
@@ -360,6 +366,7 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
         Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/talent', [AdminReportController::class, 'talent'])->name('reports.talent');
         Route::get('/reports/fundraising', [AdminReportController::class, 'fundraising'])->name('reports.fundraising');
+        Route::get('/reports/fundraising/export', [AdminReportController::class, 'exportFundraising'])->name('reports.fundraising.export');
 
         Route::get('/live-monitoring/elections', [AdminLiveMonitoringController::class, 'election'])->name('live.election');
         Route::get('/live-monitoring/elections/poll', [AdminLiveMonitoringController::class, 'electionPoll'])

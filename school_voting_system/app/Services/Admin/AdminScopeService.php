@@ -64,6 +64,103 @@ class AdminScopeService
         return null;
     }
 
+    /**
+     * Elections an administrator may generate reports and analytics for.
+     * Super Admins see every non-annulled election. Regular admins see
+     * the assigned election plus elections they created.
+     *
+     * @return Collection<int, Election>
+     */
+    public function reportableElections(User $admin, bool $preferClosed = true): Collection
+    {
+        $query = Election::query()
+            ->whereNull('annulled_at')
+            ->orderByDesc('voting_ends_at')
+            ->orderByDesc('id');
+
+        if (! $admin->isSuperAdmin()) {
+            $assignedId = $this->assignment($admin)?->election_id;
+
+            $query->where(function ($inner) use ($admin, $assignedId) {
+                $inner->where('created_by', $admin->id);
+
+                if ($assignedId) {
+                    $inner->orWhere('id', $assignedId);
+                }
+            });
+        }
+
+        return $query->get()
+            ->sortBy(fn (Election $election) => $preferClosed
+                ? $this->reportElectionSortKey($election)
+                : $this->liveReportElectionSortKey($election))
+            ->values();
+    }
+
+    public function resolveReportElection(User $admin, ?int $electionId, bool $preferClosed = true): ?Election
+    {
+        $elections = $this->reportableElections($admin, $preferClosed);
+
+        if ($electionId) {
+            $picked = $elections->firstWhere('id', $electionId);
+
+            abort_unless(
+                $picked instanceof Election,
+                403,
+                'This election is outside your report scope.',
+            );
+
+            return $picked;
+        }
+
+        return $elections->first();
+    }
+
+    /**
+     * @return array{0: int, 1: int}
+     */
+    protected function reportElectionSortKey(Election $election): array
+    {
+        $statusRank = match ($election->status) {
+            ElectionStatus::Closed => $election->public_results_published ? 0 : 1,
+            ElectionStatus::Active => 2,
+            ElectionStatus::Archived => 3,
+            default => 4,
+        };
+
+        $ended = $election->voting_ends_at?->getTimestamp() ?? 0;
+
+        return [$statusRank, -$ended];
+    }
+
+    /**
+     * @return array{0: int, 1: int}
+     */
+    protected function liveReportElectionSortKey(Election $election): array
+    {
+        $statusRank = match ($election->status) {
+            ElectionStatus::Active => 0,
+            ElectionStatus::Closed => $election->public_results_published ? 1 : 2,
+            ElectionStatus::Archived => 3,
+            default => 4,
+        };
+
+        $ended = $election->voting_ends_at?->getTimestamp() ?? 0;
+
+        return [$statusRank, -$ended];
+    }
+
+    public function fundraisersForReports(User $admin): Builder
+    {
+        $query = Fundraiser::query();
+
+        if (! $admin->isSuperAdmin()) {
+            $query->where('created_by', $admin->id);
+        }
+
+        return $query;
+    }
+
     public function assertElectionInScope(User $admin, Election $election): void
     {
         if ($admin->isSuperAdmin()) {
@@ -97,20 +194,14 @@ class AdminScopeService
     }
 
     /**
-     * Students an administrator may view and assign grade/section for.
-     * Includes unassigned students (null/empty grade or section) within admin scope.
+     * Registered student accounts for User Management.
+     * Super Admins and regular admins both see every student user, including
+     * inactive and archived accounts. Election assignment grade/section is not
+     * applied here — that scope belongs to turnout and live monitoring.
      */
     public function manageableStudentsQuery(User $admin): Builder
     {
-        if ($admin->isSuperAdmin()) {
-            return User::query()->where('role', UserRole::Student);
-        }
-
-        $query = User::query()
-            ->where('role', UserRole::Student)
-            ->where('is_active', true);
-
-        return $this->applyAssignmentStudentFilters($query, $admin, includeUnassigned: true);
+        return User::query()->where('role', UserRole::Student);
     }
 
     /**
@@ -188,6 +279,40 @@ class AdminScopeService
         }
 
         return array_values($this->assignment($admin)?->sections ?? []);
+    }
+
+    /**
+     * Grade options for the Students list filter.
+     *
+     * @return list<string>
+     */
+    public function studentFilterGradeLevels(User $admin): array
+    {
+        return $this->manageableStudentsQuery($admin)
+            ->whereNotNull('grade_level')
+            ->where('grade_level', '!=', '')
+            ->distinct()
+            ->orderBy('grade_level')
+            ->pluck('grade_level')
+            ->map(fn ($grade) => (string) $grade)
+            ->all();
+    }
+
+    /**
+     * Section options for the Students list filter.
+     *
+     * @return list<string>
+     */
+    public function studentFilterSections(User $admin): array
+    {
+        return $this->manageableStudentsQuery($admin)
+            ->whereNotNull('section')
+            ->where('section', '!=', '')
+            ->distinct()
+            ->orderBy('section')
+            ->pluck('section')
+            ->map(fn ($section) => (string) $section)
+            ->all();
     }
 
     public function statistics(User $admin): array
@@ -279,9 +404,9 @@ class AdminScopeService
      *     turnout_percent: float
      * }>
      */
-    public function turnoutBySection(User $admin): Collection
+    public function turnoutBySection(User $admin, ?Election $election = null): Collection
     {
-        $election = $this->assignedElection($admin);
+        $election ??= $this->assignedElection($admin);
 
         if (! $election) {
             return collect();
@@ -781,10 +906,34 @@ class AdminScopeService
             ->get();
     }
 
+    /**
+     * Talent competitions an administrator may manage.
+     * Super Admins see every competition. Regular admins see competitions they
+     * created plus those linked to their assigned election.
+     */
+    public function talentEventsQuery(User $admin): Builder
+    {
+        $query = TalentEvent::query();
+
+        if ($admin->isSuperAdmin()) {
+            return $query;
+        }
+
+        $assignedId = $this->assignment($admin)?->election_id;
+
+        return $query->where(function (Builder $inner) use ($admin, $assignedId) {
+            $inner->where('created_by', $admin->id);
+
+            if ($assignedId) {
+                $inner->orWhere('election_id', $assignedId);
+            }
+        });
+    }
+
     public function talentEvents(User $admin): Collection
     {
         if ($admin->isSuperAdmin()) {
-            return TalentEvent::query()
+            return $this->talentEventsQuery($admin)
                 ->with([
                     'entries' => fn ($q) => $q->withCount('votes')->orderBy('display_name'),
                 ])
@@ -793,21 +942,12 @@ class AdminScopeService
                 ->get();
         }
 
-        $assignedId = $this->assignment($admin)?->election_id;
         $election = $this->assignedElection($admin);
         $scopedStudentIds = $election
             ? $this->scopedStudentsQuery($admin)->pluck('id')
             : collect();
 
-        $query = TalentEvent::query()
-            ->where(function ($inner) use ($admin, $assignedId) {
-                $inner->where('created_by', $admin->id);
-
-                if ($assignedId) {
-                    $inner->orWhere('election_id', $assignedId);
-                }
-            })
-            ->orderByDesc('event_date');
+        $query = $this->talentEventsQuery($admin)->orderByDesc('event_date');
 
         if ($scopedStudentIds->isNotEmpty()) {
             $query

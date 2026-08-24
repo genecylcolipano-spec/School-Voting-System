@@ -35,6 +35,19 @@ class ProfileTest extends TestCase
         $response->assertSee('Logout Other Devices');
     }
 
+    public function test_admin_settings_profile_labels_staff_role_not_department(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('profile.edit', ['section' => 'profile']))
+            ->assertOk()
+            ->assertSee('Staff role')
+            ->assertDontSee('>Department</label>', false)
+            ->assertSee('Manage your administrator profile, devices, and account security.')
+            ->assertDontSee('<h1 class="text-xl font-bold text-white">Settings</h1>', false);
+    }
+
     public function test_profile_information_can_be_updated(): void
     {
         $user = User::factory()->create();

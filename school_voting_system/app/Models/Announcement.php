@@ -274,17 +274,43 @@ class Announcement extends Model
     protected function relatedRecordUrlForFaculty(): ?string
     {
         return match ($this->related_module) {
-            AnnouncementRelatedModule::Election => $this->relatedElection()?->slug
-                ? route('faculty.elections.show', $this->relatedElection())
-                : null,
-            AnnouncementRelatedModule::TalentCompetition => $this->relatedTalentEvent()?->slug
-                ? route('faculty.judging.show', $this->relatedTalentEvent())
-                : null,
+            AnnouncementRelatedModule::Election => $this->facultyElectionUrl(),
+            AnnouncementRelatedModule::TalentCompetition => $this->facultyTalentUrl(),
             AnnouncementRelatedModule::SchoolEvent => $this->relatedEvent()?->slug
                 ? route('faculty.events.show', $this->relatedEvent())
                 : null,
             default => null,
         };
+    }
+
+    protected function facultyElectionUrl(): ?string
+    {
+        $election = $this->relatedElection();
+
+        if (! $election?->slug) {
+            return null;
+        }
+
+        if ($this->auto_source_type === 'results_published' || $election->shouldShowOfficialResultsToStudents()) {
+            return route('faculty.results.election.show', $election);
+        }
+
+        return route('faculty.elections.show', $election);
+    }
+
+    protected function facultyTalentUrl(): ?string
+    {
+        $event = $this->relatedTalentEvent();
+
+        if (! $event?->slug) {
+            return null;
+        }
+
+        if ($this->auto_source_type === 'results_published' || $event->hasPublishedResults()) {
+            return route('faculty.results.talent.show', $event);
+        }
+
+        return route('faculty.judging.show', $event);
     }
 
     protected function studentElectionUrl(): ?string
