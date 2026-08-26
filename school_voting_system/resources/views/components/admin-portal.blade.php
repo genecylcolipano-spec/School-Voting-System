@@ -73,7 +73,7 @@
         :class="collapsed ? 'lg:pl-20' : 'lg:pl-72'"
     >
         <header class="sticky top-0 z-30 border-b border-violet-500/10 bg-slate-950/90 backdrop-blur-md">
-            <div class="flex flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
                 <div class="flex min-w-0 items-center gap-3">
                     <button
                         type="button"
@@ -89,17 +89,13 @@
                     </div>
                 </div>
 
-                <div class="relative flex max-w-xl flex-1 items-center gap-2">
-                    @if ($isSuperAdmin)
-                        <div class="relative hidden w-full sm:block">
-                            <input id="super-admin-search" type="search" placeholder="Search accounts, students, elections…"
-                                class="w-full rounded-xl border border-violet-500/20 bg-slate-900/80 px-4 py-2 text-sm text-white placeholder:text-slate-500 focus:border-violet-400/50 focus:outline-none">
-                            <div id="super-admin-search-results" class="absolute left-0 right-0 top-full z-50 mt-2 hidden max-h-64 overflow-y-auto rounded-xl border border-violet-500/20 bg-slate-900 shadow-xl"></div>
-                        </div>
-                    @endif
-                </div>
+                @if ($isSuperAdmin)
+                    <div class="relative mx-2 hidden min-w-0 max-w-xl flex-1 lg:block">
+                        @include('admin.partials.super-admin-search', ['inputId' => 'super-admin-search'])
+                    </div>
+                @endif
 
-                <div class="relative flex items-center gap-2">
+                <div class="relative flex shrink-0 items-center gap-2">
                     <x-notification-center
                         :feed-url="route('admin.notifications.feed')"
                         :index-url="route('admin.notifications.index')"
@@ -190,12 +186,24 @@
                     </x-responsive-popover>
                 </div>
             </div>
+
+            @if ($isSuperAdmin)
+                <div class="border-t border-violet-500/10 px-4 py-3 lg:hidden">
+                    @include('admin.partials.super-admin-search', ['inputId' => 'super-admin-search-mobile'])
+                </div>
+            @endif
         </header>
 
         <main class="space-y-6 bg-slate-950 px-4 py-6 pb-8 sm:px-6 lg:px-8">
             @if (session('success'))
                 <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
                     {{ session('success') }}
+                </div>
+            @endif
+
+            @if (session('warning'))
+                <div class="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                    {{ session('warning') }}
                 </div>
             @endif
 
@@ -210,5 +218,10 @@
     </div>
 
     @include('admin.partials.confirm-modal')
-    @vite(['resources/js/notification-center.js', 'resources/js/admin-confirm.js'])
+    @if ($isSuperAdmin)
+        <script>
+            window.superAdminPortal = { searchUrl: @json(route('super-admin.search')) };
+        </script>
+        @vite(['resources/js/super-admin-dashboard.js'])
+    @endif
 </div>

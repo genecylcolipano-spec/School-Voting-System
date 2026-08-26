@@ -13,10 +13,6 @@
             'action' => route('admin.talent-competition.create'),
         ])
 
-        @if (session('success'))
-            <div class="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">{{ session('success') }}</div>
-        @endif
-
         <form method="GET" action="{{ route('admin.talent-competition.index') }}" class="mb-4 flex flex-wrap items-end gap-3">
             <div class="min-w-[12rem] flex-1">
                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Search</label>

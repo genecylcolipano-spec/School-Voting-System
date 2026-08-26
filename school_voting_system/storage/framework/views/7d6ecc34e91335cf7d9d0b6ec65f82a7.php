@@ -20,6 +20,7 @@
 <?php $component->withAttributes(['title' => 'Announcements','user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount)]); ?>
         <?php echo $__env->make('admin.partials.page-header', [
             'title' => 'Communication Center',
+            'description' => 'Publish targeted announcements. The notification inbox is under Communication → Notifications.',
             'action' => route('admin.announcements.create'),
             'actionLabel' => 'New announcement',
             'showAction' => auth()->user()->can('create', App\Models\Announcement::class),
@@ -67,7 +68,12 @@
                     </div>
                 </article>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                <p class="text-slate-400">No announcements yet.</p>
+                <div class="rounded-2xl border border-violet-500/15 bg-slate-900/70 px-4 py-8 text-center text-sm text-slate-400">
+                    No announcements yet.
+                    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('create', App\Models\Announcement::class)): ?>
+                        <a href="<?php echo e(route('admin.announcements.create')); ?>" class="ml-2 text-violet-300 hover:text-violet-200">Create your first announcement</a>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
         </div>
         <div class="mt-6"><?php echo e($announcements->links()); ?></div>

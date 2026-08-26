@@ -2,7 +2,7 @@
     <x-admin-portal title="Elections" :user="$user" :notifications-count="$notificationsCount">
         @include('admin.partials.page-header', [
             'title' => 'Elections',
-            'description' => 'Set up election details, positions, and candidates.',
+            'description' => 'Workspace for election details, positions, and candidates. Open, pause, and close voting from the dashboard or live monitoring.',
             'action' => route('admin.elections.create'),
             'actionLabel' => 'Create election',
             'showAction' => auth()->user()->can('create', App\Models\Election::class),

@@ -75,8 +75,10 @@ unset($__defined_vars, $__key, $__value); ?>
 
     $plotW = 280;
     $plotH = 120;
-    $padL = 44;
-    $padB = 30;
+    $needsAngledLabels = $type === 'bar'
+        && collect($labels)->contains(fn ($label) => mb_strlen((string) $label) > 8);
+    $padL = $needsAngledLabels ? 52 : 44;
+    $padB = $needsAngledLabels ? 58 : 30;
     $padT = 10;
     $padR = 10;
     $width = $padL + $plotW + $padR;
@@ -165,6 +167,7 @@ unset($__defined_vars, $__key, $__value); ?>
                         $barH = $rowH * 0.56;
                     ?>
                     <text x="<?php echo e($padL - 4); ?>" y="<?php echo e(round($y + ($barH / 2) + 3, 1)); ?>" text-anchor="end" fill="#94a3b8" font-size="8" font-family="ui-sans-serif, system-ui, sans-serif">
+                        <title><?php echo e($label); ?></title>
                         <?php echo e(\Illuminate\Support\Str::limit($label, 14)); ?>
 
                     </text>
@@ -174,14 +177,20 @@ unset($__defined_vars, $__key, $__value); ?>
 
             <?php if($type !== 'horizontal-bar'): ?>
                 <?php $__currentLoopData = $labels; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php
+                        $labelX = round($toX($index), 1);
+                        $labelY = $needsAngledLabels ? $padT + $plotH + 12 : $padT + $plotH + 18;
+                    ?>
                     <text
-                        x="<?php echo e(round($toX($index), 1)); ?>"
-                        y="<?php echo e($padT + $plotH + 18); ?>"
-                        text-anchor="middle"
+                        x="<?php echo e($labelX); ?>"
+                        y="<?php echo e($labelY); ?>"
+                        text-anchor="<?php echo e($needsAngledLabels ? 'end' : 'middle'); ?>"
                         fill="#94a3b8"
-                        font-size="9"
+                        font-size="<?php echo e($needsAngledLabels ? 8 : 9); ?>"
                         font-family="ui-sans-serif, system-ui, sans-serif"
+                        <?php if($needsAngledLabels): ?> transform="rotate(-38 <?php echo e($labelX); ?> <?php echo e($labelY); ?>)" <?php endif; ?>
                     >
+                        <title><?php echo e($label); ?></title>
                         <?php echo e($label); ?>
 
                     </text>

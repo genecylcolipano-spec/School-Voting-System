@@ -131,7 +131,7 @@ class AdminAnalyticsService
         }
 
         return $this->chartPayload(
-            array_map(fn (array $row) => $row['acronym'] ?: $row['name'], $performance),
+            array_map(fn (array $row) => $this->campaignChartLabel($row), $performance),
             array_map(fn (array $row) => (float) $row['vote_share'], $performance),
             100,
             [0, 25, 50, 75, 100],
@@ -373,6 +373,18 @@ class AdminAnalyticsService
      * @param  array<int, int|float>  $yTicks
      * @return array<string, mixed>
      */
+    /**
+     * Prefer a short acronym on the chart axis; keep the full name when none exists.
+     *
+     * @param  array{acronym?: ?string, name?: string}  $row
+     */
+    protected function campaignChartLabel(array $row): string
+    {
+        $acronym = trim((string) ($row['acronym'] ?? ''));
+
+        return $acronym !== '' ? $acronym : (string) ($row['name'] ?? 'Campaign');
+    }
+
     protected function chartPayload(
         array $labels,
         array $values,

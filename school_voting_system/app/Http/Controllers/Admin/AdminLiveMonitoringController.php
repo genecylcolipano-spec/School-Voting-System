@@ -41,12 +41,12 @@ class AdminLiveMonitoringController extends Controller
 
         return view('admin.live-monitoring.index', [
             'user' => $user,
-            'notificationsCount' => $isSuper ? AdminPortal::recoveryCount() : 0,
+            'notificationsCount' => AdminPortal::notificationCount($user),
             'mode' => 'election',
             'title' => $isSuper ? 'Institution Election Monitoring' : 'My Election Monitoring',
             'description' => $isSuper
-                ? 'Institution-wide live monitoring of every election across all administrators.'
-                : 'Live monitoring of elections you created or manage.',
+                ? 'Institution-wide live monitoring of every election across all administrators. Positions and candidates stay in Elections.'
+                : 'Live monitoring of elections you created or manage. Positions and candidates stay in Elections.',
             'cards' => $cards,
             'urgentCards' => $cards->where('is_urgent', true)->values(),
             'otherCards' => $cards->where('is_urgent', false)->values(),
@@ -74,7 +74,7 @@ class AdminLiveMonitoringController extends Controller
 
         return view('admin.live-monitoring.talent', [
             'user' => $user,
-            'notificationsCount' => $isSuper ? AdminPortal::recoveryCount() : 0,
+            'notificationsCount' => AdminPortal::notificationCount($user),
             'mode' => 'talent',
             'title' => $isSuper ? 'Institution Talent Monitoring' : 'My Talent Monitoring',
             'description' => $isSuper

@@ -32,8 +32,10 @@
 
     $plotW = 280;
     $plotH = 120;
-    $padL = 44;
-    $padB = 30;
+    $needsAngledLabels = $type === 'bar'
+        && collect($labels)->contains(fn ($label) => mb_strlen((string) $label) > 8);
+    $padL = $needsAngledLabels ? 52 : 44;
+    $padB = $needsAngledLabels ? 58 : 30;
     $padT = 10;
     $padR = 10;
     $width = $padL + $plotW + $padR;
@@ -120,6 +122,7 @@
                         $barH = $rowH * 0.56;
                     @endphp
                     <text x="{{ $padL - 4 }}" y="{{ round($y + ($barH / 2) + 3, 1) }}" text-anchor="end" fill="#94a3b8" font-size="8" font-family="ui-sans-serif, system-ui, sans-serif">
+                        <title>{{ $label }}</title>
                         {{ \Illuminate\Support\Str::limit($label, 14) }}
                     </text>
                     <rect x="{{ $padL }}" y="{{ round($y, 1) }}" width="{{ round($barW, 1) }}" height="{{ round($barH, 1) }}" rx="2" fill="{{ $accent }}" opacity="0.85" />
@@ -128,14 +131,20 @@
 
             @if ($type !== 'horizontal-bar')
                 @foreach ($labels as $index => $label)
+                    @php
+                        $labelX = round($toX($index), 1);
+                        $labelY = $needsAngledLabels ? $padT + $plotH + 12 : $padT + $plotH + 18;
+                    @endphp
                     <text
-                        x="{{ round($toX($index), 1) }}"
-                        y="{{ $padT + $plotH + 18 }}"
-                        text-anchor="middle"
+                        x="{{ $labelX }}"
+                        y="{{ $labelY }}"
+                        text-anchor="{{ $needsAngledLabels ? 'end' : 'middle' }}"
                         fill="#94a3b8"
-                        font-size="9"
+                        font-size="{{ $needsAngledLabels ? 8 : 9 }}"
                         font-family="ui-sans-serif, system-ui, sans-serif"
+                        @if ($needsAngledLabels) transform="rotate(-38 {{ $labelX }} {{ $labelY }})" @endif
                     >
+                        <title>{{ $label }}</title>
                         {{ $label }}
                     </text>
                 @endforeach

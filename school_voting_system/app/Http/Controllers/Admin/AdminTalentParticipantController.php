@@ -15,6 +15,7 @@ use App\Services\Media\ImageCompressionService;
 use App\Services\Portal\PortalNotificationService;
 use App\Services\SuperAdmin\AuditLogService;
 use App\Services\Talent\TalentEventPublishingService;
+use App\Support\AdminPortal;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -78,7 +79,7 @@ class AdminTalentParticipantController extends Controller
 
         return view('admin.talent-participants.index', [
             'user' => $user,
-            'notificationsCount' => 0,
+            'notificationsCount' => AdminPortal::notificationCount(auth()->user()),
             'participants' => $participants,
             'counts' => $counts,
             'activeStatus' => in_array($status, $validStatuses, true) ? $status : 'all',
@@ -106,7 +107,7 @@ class AdminTalentParticipantController extends Controller
 
         return view('admin.talent-participants.create', [
             'user' => $user,
-            'notificationsCount' => 0,
+            'notificationsCount' => AdminPortal::notificationCount(auth()->user()),
             'events' => $events,
             'categories' => TalentCategory::cases(),
             'preselectedEvent' => $preselected,
@@ -169,7 +170,7 @@ class AdminTalentParticipantController extends Controller
 
         return view('admin.talent-participants.show', [
             'user' => $request->user()->load(['staffRole', 'passkeys']),
-            'notificationsCount' => 0,
+            'notificationsCount' => AdminPortal::notificationCount(auth()->user()),
             'entry' => $entry,
             'canManage' => $this->scope->canCreateTalentEvents($request->user()),
         ]);
@@ -184,7 +185,7 @@ class AdminTalentParticipantController extends Controller
 
         return view('admin.talent-participants.edit', [
             'user' => $request->user()->load(['staffRole', 'passkeys']),
-            'notificationsCount' => 0,
+            'notificationsCount' => AdminPortal::notificationCount(auth()->user()),
             'entry' => $entry,
             'categories' => TalentCategory::cases(),
         ]);

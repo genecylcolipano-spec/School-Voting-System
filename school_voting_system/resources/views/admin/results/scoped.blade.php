@@ -20,10 +20,10 @@
             <div class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-violet-500/20 bg-slate-900/50 px-6 py-16 text-center">
                 <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10 text-3xl">🏆</div>
                 <h2 class="text-xl font-bold text-white">No {{ $mode === 'talent' ? 'Talent Competition' : 'Election' }} Results</h2>
-                <p class="mt-2 max-w-md text-sm text-slate-400">Results will appear here once {{ $mode === 'talent' ? 'competitions' : 'elections' }} in your scope have voting activity.</p>
+                <p class="mt-2 max-w-md text-sm text-slate-400">Results will appear here once {{ $mode === 'talent' ? 'competitions' : 'elections' }}{{ ($isSuperAdmin ?? false) ? ' are created.' : ' in your scope have voting activity.' }}</p>
             </div>
         @else
-            <p class="mb-4 text-sm text-slate-400">{{ $events->count() }} {{ \Illuminate\Support\Str::plural($mode === 'talent' ? 'competition' : 'election', $events->count()) }} in your scope</p>
+            <p class="mb-4 text-sm text-slate-400">{{ $events->count() }} {{ \Illuminate\Support\Str::plural($mode === 'talent' ? 'competition' : 'election', $events->count()) }}{{ ($isSuperAdmin ?? false) ? '' : ' in your scope' }}</p>
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 @foreach ($events as $event)
                     @include('admin.results._event-card', ['event' => $event])

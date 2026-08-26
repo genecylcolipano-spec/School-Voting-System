@@ -23,6 +23,20 @@
             'description' => 'School events and talent competitions — separate from election voting.',
         ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
+        <section class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <?php $__currentLoopData = [
+                ['label' => 'Open competitions', 'value' => $overview['competitions_open']],
+                ['label' => 'All competitions', 'value' => $overview['competitions_total']],
+                ['label' => 'Upcoming school events', 'value' => $overview['school_events_upcoming']],
+                ['label' => 'All school events', 'value' => $overview['school_events_total']],
+            ]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $stat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="rounded-2xl border border-violet-500/10 bg-slate-900/70 p-4">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400"><?php echo e($stat['label']); ?></p>
+                    <p class="mt-1 text-xl font-bold text-white"><?php echo e($stat['value']); ?></p>
+                </div>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </section>
+
         <div class="grid gap-6 lg:grid-cols-2">
             
             <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-4 sm:p-6">
@@ -67,7 +81,10 @@
                                     <p class="mt-1 text-xs text-slate-500"><?php echo e($event->entries_count); ?> entries · <?php echo e($event->event_date?->format('M d, Y')); ?></p>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <a href="<?php echo e(route('admin.talent-competition.edit', $event)); ?>" class="inline-flex min-h-10 items-center rounded-lg border border-violet-500/30 px-3 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">Manage</a>
+                                    <a href="<?php echo e(route('admin.talent-competition.show', $event)); ?>" class="inline-flex min-h-10 items-center rounded-lg border border-violet-500/30 px-3 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">Manage</a>
+                                    <?php if($canCreateTalent): ?>
+                                        <a href="<?php echo e(route('admin.talent-competition.edit', $event)); ?>" class="inline-flex min-h-10 items-center rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800">Edit</a>
+                                    <?php endif; ?>
                                     <?php if($canCreateTalent && (auth()->user()->isSuperAdmin() || (int) $event->created_by === (int) auth()->id())): ?>
                                         <?php
                                             $talentWarning = $event->entries_count > 0
@@ -99,7 +116,12 @@
                             </div>
                         </div>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                        <p class="text-sm text-slate-400">No talent events yet.</p>
+                        <p class="text-sm text-slate-400">
+                            No talent events yet.
+                            <?php if($canCreateTalent): ?>
+                                <a href="<?php echo e(route('admin.talent-competition.create')); ?>" class="font-semibold text-violet-300 hover:text-violet-200">Create a competition</a>
+                            <?php endif; ?>
+                        </p>
                     <?php endif; ?>
                 </div>
 
@@ -152,7 +174,12 @@
                             </div>
                         </div>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                        <p class="text-sm text-slate-400">No school events yet.</p>
+                        <p class="text-sm text-slate-400">
+                            No school events yet.
+                            <?php if($canCreateEvents): ?>
+                                <a href="<?php echo e(route('admin.events.create')); ?>" class="font-semibold text-violet-300 hover:text-violet-200">Create a school event</a>
+                            <?php endif; ?>
+                        </p>
                     <?php endif; ?>
                 </div>
 

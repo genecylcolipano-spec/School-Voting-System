@@ -2,8 +2,6 @@
  * Super Admin Dashboard — universal search, bulk actions, live filters.
  */
 
-import { initAdminConfirmations } from './admin-confirm';
-
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 
 async function fetchJson(url, options = {}) {
@@ -21,49 +19,122 @@ async function fetchJson(url, options = {}) {
     return response.json().catch(() => ({}));
 }
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function hideSearchPanel(panel) {
+    panel.classList.add('hidden');
+    panel.innerHTML = '';
+}
+
 function initUniversalSearch() {
-    const input = document.getElementById('super-admin-search');
-    const panel = document.getElementById('super-admin-search-results');
+    const roots = document.querySelectorAll('[data-super-admin-search]');
+    if (!roots.length || !window.superAdminPortal?.searchUrl) return;
 
-    if (!input || !panel) return;
+    const panels = [];
 
-    let timer;
+    roots.forEach((root) => {
+        const input = root.querySelector('input[type="search"]');
+        const panel = root.querySelector('[data-super-admin-search-results]');
+        if (!input || !panel) return;
 
-    input.addEventListener('input', () => {
-        clearTimeout(timer);
-        const q = input.value.trim();
+        panels.push(panel);
+        let timer;
 
-        if (q.length < 2) {
-            panel.classList.add('hidden');
-            panel.innerHTML = '';
-            return;
-        }
+        input.addEventListener('input', () => {
+            clearTimeout(timer);
+            const q = input.value.trim();
 
-        timer = setTimeout(async () => {
-            const data = await fetchJson(`${window.superAdminPortal.searchUrl}?q=${encodeURIComponent(q)}`);
-            const accounts = data.results?.accounts ?? [];
-            const elections = data.results?.elections ?? [];
+            panels.forEach((other) => {
+                if (other !== panel) hideSearchPanel(other);
+            });
 
-            if (!accounts.length && !elections.length) {
-                panel.innerHTML = '<p class="px-4 py-3 text-sm text-slate-400">No matches found.</p>';
-            } else {
-                panel.innerHTML = [
-                    ...accounts.map((u) => `<a href="#" class="block px-4 py-2 text-sm text-slate-200 hover:bg-slate-800" data-account="${u.account_id}">${u.name} <span class="text-slate-500">(${u.account_id})</span></a>`),
-                    ...elections.map((e) => `<div class="px-4 py-2 text-sm text-violet-300">Election: ${e.title}</div>`),
-                ].join('');
+            if (q.length < 2) {
+                hideSearchPanel(panel);
+                return;
             }
 
-            panel.classList.remove('hidden');
-        }, 250);
+            timer = setTimeout(async () => {
+                const data = await fetchJson(`${window.superAdminPortal.searchUrl}?q=${encodeURIComponent(q)}`);
+                const accounts = data.results?.accounts ?? [];
+                const elections = data.results?.elections ?? [];
+
+                if (!accounts.length && !elections.length) {
+                    panel.innerHTML = '<p class="px-4 py-3 text-sm text-slate-400">No matches found.</p>';
+                } else {
+                    panel.innerHTML = [
+                        ...accounts.map((u) => `<a href="${escapeHtml(u.url || '#')}" class="block px-4 py-2 text-sm text-slate-200 hover:bg-slate-800">${escapeHtml(u.name)} <span class="text-slate-500">(${escapeHtml(u.account_id)})</span></a>`),
+                        ...elections.map((e) => `<a href="${escapeHtml(e.url || '#')}" class="block px-4 py-2 text-sm text-violet-300 hover:bg-slate-800">Election: ${escapeHtml(e.title)}</a>`),
+                    ].join('');
+                }
+
+                panel.classList.remove('hidden');
+            }, 250);
+        });
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+        roots.forEach((root) => {
+            if (!root.contains(event.target)) {
+                const panel = root.querySelector('[data-super-admin-search-results]');
+                if (panel) hideSearchPanel(panel);
+            }
+        });
     });
 }
 
-function initBulkSelect() {
-    const master = document.getElementById('bulk-select-all');
-    const checks = document.querySelectorAll('[data-bulk-user]');
+function layoutIsDesktop() {
+    return window.matchMedia('(min-width: 1024px)').matches;
+}
 
-    master?.addEventListener('change', () => {
-        checks.forEach((c) => { c.checked = master.checked; });
+function syncBulkLayout() {
+    const desktop = layoutIsDesktop();
+
+    document.querySelectorAll('[data-bulk-user][data-bulk-layout="mobile"]').forEach((el) => {
+        el.disabled = desktop;
+        if (desktop) {
+            el.checked = false;
+        }
+    });
+
+    document.querySelectorAll('[data-bulk-user][data-bulk-layout="desktop"]').forEach((el) => {
+        el.disabled = !desktop;
+        if (!desktop) {
+            el.checked = false;
+        }
+    });
+}
+
+function enabledBulkChecks() {
+    return document.querySelectorAll('[data-bulk-user]:not(:disabled)');
+}
+
+function initBulkSelect() {
+    syncBulkLayout();
+    window.matchMedia('(min-width: 1024px)').addEventListener('change', syncBulkLayout);
+
+    const masters = [
+        document.getElementById('bulk-select-all'),
+        document.getElementById('bulk-select-all-mobile'),
+    ].filter(Boolean);
+
+    masters.forEach((master) => {
+        master.addEventListener('change', () => {
+            enabledBulkChecks().forEach((c) => {
+                c.checked = master.checked;
+            });
+            masters.forEach((other) => {
+                if (other !== master) {
+                    other.checked = master.checked;
+                }
+            });
+        });
     });
 }
 
@@ -83,17 +154,13 @@ function initAuditFilter() {
     });
 }
 
-function initSensitiveConfirmations() {
-    initAdminConfirmations();
-}
-
 function initPortalBulkForm() {
     const form = document.querySelector('[data-portal-bulk-form]');
     if (!form) return;
 
     form.addEventListener('submit', (event) => {
         const action = form.querySelector('[data-portal-bulk-action]')?.value ?? '';
-        const selected = form.querySelectorAll('[data-bulk-user]:checked').length;
+        const selected = form.querySelectorAll('[data-bulk-user]:checked:not(:disabled)').length;
 
         if (selected === 0) {
             event.preventDefault();
@@ -126,6 +193,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initUniversalSearch();
     initBulkSelect();
     initAuditFilter();
-    initSensitiveConfirmations();
     initPortalBulkForm();
 });

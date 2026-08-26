@@ -5,6 +5,20 @@
             'description' => 'School events and talent competitions — separate from election voting.',
         ])
 
+        <section class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            @foreach ([
+                ['label' => 'Open competitions', 'value' => $overview['competitions_open']],
+                ['label' => 'All competitions', 'value' => $overview['competitions_total']],
+                ['label' => 'Upcoming school events', 'value' => $overview['school_events_upcoming']],
+                ['label' => 'All school events', 'value' => $overview['school_events_total']],
+            ] as $stat)
+                <div class="rounded-2xl border border-violet-500/10 bg-slate-900/70 p-4">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{{ $stat['label'] }}</p>
+                    <p class="mt-1 text-xl font-bold text-white">{{ $stat['value'] }}</p>
+                </div>
+            @endforeach
+        </section>
+
         <div class="grid gap-6 lg:grid-cols-2">
             {{-- Talent --}}
             <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-4 sm:p-6">
@@ -30,7 +44,10 @@
                                     <p class="mt-1 text-xs text-slate-500">{{ $event->entries_count }} entries · {{ $event->event_date?->format('M d, Y') }}</p>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <a href="{{ route('admin.talent-competition.edit', $event) }}" class="inline-flex min-h-10 items-center rounded-lg border border-violet-500/30 px-3 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">Manage</a>
+                                    <a href="{{ route('admin.talent-competition.show', $event) }}" class="inline-flex min-h-10 items-center rounded-lg border border-violet-500/30 px-3 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">Manage</a>
+                                    @if ($canCreateTalent)
+                                        <a href="{{ route('admin.talent-competition.edit', $event) }}" class="inline-flex min-h-10 items-center rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800">Edit</a>
+                                    @endif
                                     @if ($canCreateTalent && (auth()->user()->isSuperAdmin() || (int) $event->created_by === (int) auth()->id()))
                                         @php
                                             $talentWarning = $event->entries_count > 0
@@ -47,7 +64,12 @@
                             </div>
                         </div>
                     @empty
-                        <p class="text-sm text-slate-400">No talent events yet.</p>
+                        <p class="text-sm text-slate-400">
+                            No talent events yet.
+                            @if ($canCreateTalent)
+                                <a href="{{ route('admin.talent-competition.create') }}" class="font-semibold text-violet-300 hover:text-violet-200">Create a competition</a>
+                            @endif
+                        </p>
                     @endforelse
                 </div>
 
@@ -81,7 +103,12 @@
                             </div>
                         </div>
                     @empty
-                        <p class="text-sm text-slate-400">No school events yet.</p>
+                        <p class="text-sm text-slate-400">
+                            No school events yet.
+                            @if ($canCreateEvents)
+                                <a href="{{ route('admin.events.create') }}" class="font-semibold text-violet-300 hover:text-violet-200">Create a school event</a>
+                            @endif
+                        </p>
                     @endforelse
                 </div>
 

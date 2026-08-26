@@ -2,6 +2,7 @@
     <x-admin-portal title="Announcements" :user="$user" :notifications-count="$notificationsCount">
         @include('admin.partials.page-header', [
             'title' => 'Communication Center',
+            'description' => 'Publish targeted announcements. The notification inbox is under Communication → Notifications.',
             'action' => route('admin.announcements.create'),
             'actionLabel' => 'New announcement',
             'showAction' => auth()->user()->can('create', App\Models\Announcement::class),
@@ -49,7 +50,12 @@
                     </div>
                 </article>
             @empty
-                <p class="text-slate-400">No announcements yet.</p>
+                <div class="rounded-2xl border border-violet-500/15 bg-slate-900/70 px-4 py-8 text-center text-sm text-slate-400">
+                    No announcements yet.
+                    @can('create', App\Models\Announcement::class)
+                        <a href="{{ route('admin.announcements.create') }}" class="ml-2 text-violet-300 hover:text-violet-200">Create your first announcement</a>
+                    @endcan
+                </div>
             @endforelse
         </div>
         <div class="mt-6">{{ $announcements->links() }}</div>

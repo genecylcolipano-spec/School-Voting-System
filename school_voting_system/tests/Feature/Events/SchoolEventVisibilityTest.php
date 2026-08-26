@@ -191,6 +191,27 @@ class SchoolEventVisibilityTest extends TestCase
         $this->assertSame('sports-fest', $event->fresh()->slug);
     }
 
+    public function test_regular_admin_cannot_update_another_admins_school_event(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $event = $this->makeEvent([
+            'title' => 'Other Admin Event',
+            'slug' => 'other-admin-event',
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.events.update', $event), [
+                'title' => 'Hijacked Title',
+                'description' => 'Nope',
+                'event_date' => now()->addDays(4)->format('Y-m-d\TH:i'),
+                'venue' => 'Main Gym',
+                'status' => EventStatus::Scheduled->value,
+            ])
+            ->assertForbidden();
+
+        $this->assertSame('Other Admin Event', $event->fresh()->title);
+    }
+
     public function test_cancelled_create_does_not_generate_an_announcement(): void
     {
         $admin = User::factory()->admin()->create();

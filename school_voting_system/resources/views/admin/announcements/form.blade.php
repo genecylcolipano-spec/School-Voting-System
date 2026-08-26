@@ -8,10 +8,6 @@
 @endphp
 <x-app-layout>
     <x-admin-portal :title="$isEdit ? 'Edit Announcement' : 'New Announcement'" :user="$user" :notifications-count="$notificationsCount">
-        @if (session('success'))
-            <div class="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">{{ session('success') }}</div>
-        @endif
-
         @if ($isEdit && $announcement->is_auto_generated)
             <div class="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
                 This announcement was auto-generated from a system event. Review and publish when ready.

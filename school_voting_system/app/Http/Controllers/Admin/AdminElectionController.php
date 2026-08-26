@@ -49,7 +49,7 @@ class AdminElectionController extends Controller
 
         return view('admin.elections.index', [
             'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'notificationsCount' => AdminPortal::notificationCount($request->user()),
             'elections' => $query->paginate(15),
         ]);
     }
@@ -60,7 +60,7 @@ class AdminElectionController extends Controller
 
         return view('admin.elections.create', [
             'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'notificationsCount' => AdminPortal::notificationCount($request->user()),
             'statuses' => ElectionStatus::cases(),
             'campaigns' => Partylist::query()->selectableForElections()->orderBy('name')->get(),
             'selectedPartylistIds' => collect(old('partylists', []))->map(fn ($id) => (int) $id)->all(),
@@ -143,7 +143,7 @@ class AdminElectionController extends Controller
 
         return view('admin.elections.edit', [
             'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'notificationsCount' => AdminPortal::notificationCount($request->user()),
             'election' => $election,
             'statuses' => ElectionStatus::cases(),
             'campaigns' => $campaigns,
@@ -218,6 +218,6 @@ class AdminElectionController extends Controller
             $electionId,
         );
 
-        return redirect()->route('admin.elections.index')->with('success', 'Activity deleted successfully.');
+        return redirect()->route('admin.elections.index')->with('success', 'Election deleted successfully.');
     }
 }

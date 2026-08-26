@@ -82,18 +82,6 @@
             </div>
         </section>
 
-        <?php if(session('success')): ?>
-            <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200"><?php echo e(session('success')); ?></div>
-        <?php endif; ?>
-
-        <?php if(session('warning')): ?>
-            <div class="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"><?php echo e(session('warning')); ?></div>
-        <?php endif; ?>
-
-        <?php if(session('error')): ?>
-            <div class="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200"><?php echo e(session('error')); ?></div>
-        <?php endif; ?>
-
         <?php if(session('enrollment_url')): ?>
             <div class="rounded-xl border border-violet-500/20 bg-slate-900/70 p-4">
                 <p class="text-sm text-slate-300">Enrollment link (valid 2 hours):</p>
@@ -116,39 +104,94 @@
         <?php endif; ?>
 
         
-        <section class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-9">
+        <section class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-9">
             <?php $__currentLoopData = [
-                ['label' => 'Students', 'value' => $statistics['students'], 'color' => 'emerald'],
-                ['label' => 'Staff Admins', 'value' => $statistics['admins'], 'color' => 'cyan'],
-                ['label' => 'Super Admins', 'value' => $statistics['super_admins'], 'color' => 'violet'],
-                ['label' => 'Passkeys', 'value' => $statistics['passkeys'], 'color' => 'sky'],
-                ['label' => 'Pending Recovery', 'value' => $statistics['pending_recoveries'], 'color' => 'rose'],
-                ['label' => 'Active Elections', 'value' => $statistics['active_elections'], 'color' => 'amber'],
-                ['label' => 'Votes Cast', 'value' => number_format($statistics['total_votes']), 'color' => 'indigo'],
-                ['label' => 'Turnout', 'value' => $statistics['voter_turnout'].'%', 'color' => 'fuchsia'],
-                ['label' => 'System', 'value' => $systemHealth['overall'], 'color' => $systemHealth['overall'] === 'Healthy' ? 'emerald' : 'amber'],
+                ['label' => 'Students', 'value' => $statistics['students']],
+                ['label' => 'Faculty', 'value' => $statistics['faculty']],
+                ['label' => 'Staff Admins', 'value' => $statistics['admins']],
+                ['label' => 'Super Admins', 'value' => $statistics['super_admins']],
+                ['label' => 'Passkeys', 'value' => $statistics['passkeys']],
+                ['label' => 'Pending Recovery', 'value' => $statistics['pending_recoveries']],
+                ['label' => 'Active Elections', 'value' => $statistics['active_elections']],
+                ['label' => 'Live Votes', 'value' => number_format($statistics['total_votes'])],
+                ['label' => 'Live Turnout', 'value' => $statistics['voter_turnout'].'%'],
             ]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $stat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <div class="rounded-2xl border border-violet-500/10 bg-slate-900/70 p-3 sm:p-4">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400"><?php echo e($stat['label']); ?></p>
-                    <p class="mt-1 text-lg font-bold text-white sm:text-xl"><?php echo e($stat['value']); ?></p>
+                <div class="min-w-0 rounded-2xl border border-violet-500/10 bg-slate-900/70 p-3 sm:p-4">
+                    <p class="text-[10px] font-semibold uppercase leading-tight tracking-wide text-slate-400 break-words"><?php echo e($stat['label']); ?></p>
+                    <p class="mt-1 truncate text-lg font-bold text-white sm:text-xl"><?php echo e($stat['value']); ?></p>
                 </div>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </section>
 
         
-        <section class="grid gap-4 lg:grid-cols-4">
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <?php $__currentLoopData = $systemHealth; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <?php if($key !== 'overall' && is_array($item)): ?>
                     <div class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-4">
                         <p class="text-xs font-semibold uppercase text-slate-400"><?php echo e(str($key)->replace('_', ' ')->title()); ?></p>
-                        <p class="mt-2 flex items-center gap-2 text-sm text-white">
-                            <span class="h-2 w-2 rounded-full <?php echo e($item['status'] === 'ok' ? 'bg-emerald-400' : ($item['status'] === 'warning' ? 'bg-amber-400' : 'bg-rose-400')); ?>"></span>
-                            <?php echo e($item['message']); ?>
-
+                        <p class="mt-2 flex min-w-0 items-start gap-2 text-sm text-white">
+                            <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full <?php echo e($item['status'] === 'ok' ? 'bg-emerald-400' : ($item['status'] === 'warning' ? 'bg-amber-400' : 'bg-rose-400')); ?>"></span>
+                            <span class="min-w-0 break-words"><?php echo e($item['message']); ?></span>
                         </p>
                     </div>
                 <?php endif; ?>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </section>
+
+        
+        <section class="grid gap-4 lg:grid-cols-3">
+            <div class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-white">Live election</h3>
+                        <p class="mt-1 break-words text-sm text-slate-300"><?php echo e($statistics['election_scope']); ?></p>
+                    </div>
+                    <a href="<?php echo e(route('admin.elections.index')); ?>" class="shrink-0 text-xs font-semibold text-violet-300 hover:text-violet-200">View all</a>
+                </div>
+                <p class="mt-3 text-xs text-slate-500">Votes and turnout on this dashboard are for the live election only.</p>
+            </div>
+            <div class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-white">Competitions</h3>
+                        <p class="mt-1 text-sm text-slate-300"><?php echo e($activitySnapshot['competitions_open']); ?> open</p>
+                    </div>
+                    <a href="<?php echo e(route('admin.talent-competition.index')); ?>" class="shrink-0 text-xs font-semibold text-violet-300 hover:text-violet-200">View all</a>
+                </div>
+                <ul class="mt-3 space-y-2 text-sm">
+                    <?php $__empty_1 = true; $__currentLoopData = $activitySnapshot['competitions']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $competition): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <li>
+                            <a href="<?php echo e(route('admin.talent-competition.show', $competition)); ?>" class="block min-w-0 rounded-lg border border-slate-800 px-3 py-2 hover:border-violet-500/30">
+                                <span class="block truncate font-medium text-white"><?php echo e($competition->title); ?></span>
+                                <span class="text-xs text-slate-400"><?php echo e($competition->status?->label()); ?> · <?php echo e($competition->votes_count); ?> votes</span>
+                            </a>
+                        </li>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                        <li class="text-xs text-slate-500">No open competitions.</li>
+                    <?php endif; ?>
+                </ul>
+            </div>
+            <div class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-white">Fundraising</h3>
+                        <p class="mt-1 text-sm text-slate-300"><?php echo e($activitySnapshot['fundraisers_active']); ?> active</p>
+                    </div>
+                    <a href="<?php echo e(route('admin.fundraisers.index')); ?>" class="shrink-0 text-xs font-semibold text-violet-300 hover:text-violet-200">View all</a>
+                </div>
+                <ul class="mt-3 space-y-2 text-sm">
+                    <?php $__empty_1 = true; $__currentLoopData = $activitySnapshot['fundraisers']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $fundraiser): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <li>
+                            <a href="<?php echo e(route('admin.fundraisers.edit', $fundraiser)); ?>" class="block min-w-0 rounded-lg border border-slate-800 px-3 py-2 hover:border-violet-500/30">
+                                <span class="block truncate font-medium text-white"><?php echo e($fundraiser->title); ?></span>
+                                <span class="text-xs text-slate-400">₱<?php echo e(number_format((float) $fundraiser->amount_raised, 0)); ?> / ₱<?php echo e(number_format((float) $fundraiser->goal_amount, 0)); ?></span>
+                            </a>
+                        </li>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                        <li class="text-xs text-slate-500">No active fundraisers.</li>
+                    <?php endif; ?>
+                </ul>
+            </div>
         </section>
 
         <div class="grid gap-6 xl:grid-cols-2">
@@ -156,7 +199,25 @@
             <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5 xl:col-span-2">
                 <h3 class="text-lg font-semibold text-white">Granular Role & Permission Matrix</h3>
                 <p class="mt-1 text-sm text-slate-400">Chief Super Admin, Operations Admin, Student Records Admin, Auditor, Read-Only Admin</p>
-                <div class="mt-4 overflow-x-auto">
+
+                <div class="mt-4 space-y-3 xl:hidden" data-permission-matrix-cards>
+                    <?php $__empty_1 = true; $__currentLoopData = $staffRoles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $role): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+                            <p class="font-semibold text-white"><?php echo e($role->name); ?></p>
+                            <ul class="mt-2 flex flex-wrap gap-1.5">
+                                <?php $__empty_2 = true; $__currentLoopData = $role->permissions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $permission): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_2 = false; ?>
+                                    <li class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-200"><?php echo e($permission->label); ?></li>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_2): ?>
+                                    <li class="text-xs text-slate-500">No permissions assigned</li>
+                                <?php endif; ?>
+                            </ul>
+                        </div>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                        <p class="text-sm text-slate-500">No staff roles defined yet.</p>
+                    <?php endif; ?>
+                </div>
+
+                <div class="mt-4 hidden overflow-x-auto xl:block" data-permission-matrix-table>
                     <table class="min-w-full text-left text-xs sm:text-sm">
                         <thead class="border-b border-slate-800 text-slate-400">
                             <tr>
@@ -188,26 +249,54 @@
 
             
             <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5 xl:col-span-2">
-                <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                     <h3 class="text-lg font-semibold text-white">Audit Log / Activity History</h3>
-                    <div class="flex flex-wrap gap-2">
-                        <form id="audit-filter-form" class="flex flex-wrap gap-2">
-                            <select name="action_type" class="rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-white">
+                    <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+                        <form id="audit-filter-form" class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+                            <select name="action_type" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-white sm:w-auto">
                                 <option value="">All types</option>
                                 <?php $__currentLoopData = ['auth','election','passkey','user','backup','security','report','system']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $type): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                     <option value="<?php echo e($type); ?>"><?php echo e(ucfirst($type)); ?></option>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </select>
-                            <select name="status" class="rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-white">
+                            <select name="status" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-white sm:w-auto">
                                 <option value="">All status</option>
                                 <option value="success">Success</option>
                                 <option value="failed">Failed</option>
                             </select>
                         </form>
-                        <a href="<?php echo e(route('super-admin.audit.export')); ?>" class="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-500">Export CSV</a>
+                        <a href="<?php echo e(route('super-admin.audit.export')); ?>" class="inline-flex w-full items-center justify-center rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-500 sm:w-auto">Export CSV</a>
                     </div>
                 </div>
-                <div class="mt-4 overflow-x-auto">
+
+                <div class="mt-4 space-y-3 lg:hidden" data-audit-cards>
+                    <?php $__empty_1 = true; $__currentLoopData = $auditLogs; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $log): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <article class="rounded-xl border border-slate-800 bg-slate-950/50 p-3" data-audit-row data-type="<?php echo e($log->action_type?->value); ?>" data-status="<?php echo e($log->status); ?>">
+                            <div class="flex items-start justify-between gap-3">
+                                <p class="min-w-0 break-words text-sm font-medium text-white"><?php echo e($log->action); ?></p>
+                                <span class="shrink-0 rounded-full px-2 py-0.5 text-xs <?php echo e($log->status === 'success' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-rose-500/15 text-rose-300'); ?>"><?php echo e(ucfirst($log->status)); ?></span>
+                            </div>
+                            <dl class="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-400">
+                                <div>
+                                    <dt class="uppercase tracking-wide text-slate-500">When</dt>
+                                    <dd class="mt-0.5 text-slate-200"><?php echo e($log->created_at?->format('M d, H:i')); ?></dd>
+                                </div>
+                                <div>
+                                    <dt class="uppercase tracking-wide text-slate-500">Admin</dt>
+                                    <dd class="mt-0.5 break-words text-slate-200"><?php echo e($log->admin_name); ?></dd>
+                                </div>
+                                <div class="col-span-2">
+                                    <dt class="uppercase tracking-wide text-slate-500">IP</dt>
+                                    <dd class="mt-0.5 font-mono text-slate-200"><?php echo e($log->ip_address); ?></dd>
+                                </div>
+                            </dl>
+                        </article>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                        <p class="px-1 py-4 text-center text-sm text-slate-500">No audit entries yet.</p>
+                    <?php endif; ?>
+                </div>
+
+                <div class="mt-4 hidden overflow-x-auto lg:block">
                     <table class="min-w-full text-left text-xs sm:text-sm">
                         <thead class="border-b border-slate-800 text-slate-400">
                             <tr>
@@ -240,7 +329,41 @@
             
             <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5 xl:col-span-2">
                 <h3 class="text-lg font-semibold text-white">Advanced Passkey Management</h3>
-                <div class="mt-4 overflow-x-auto">
+
+                <div class="mt-4 space-y-3 lg:hidden" data-passkey-cards>
+                    <?php $__empty_1 = true; $__currentLoopData = $passkeys; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $passkey): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <article class="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+                            <p class="break-words font-medium text-white"><?php echo e($passkey->user?->name); ?></p>
+                            <p class="mt-1 break-all font-mono text-[10px] text-slate-500"><?php echo e(Str::limit($passkey->credential_id, 18)); ?></p>
+                            <dl class="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-400">
+                                <div>
+                                    <dt class="uppercase tracking-wide text-slate-500">Device</dt>
+                                    <dd class="mt-0.5 break-words text-slate-200"><?php echo e($passkey->device_name ?? $passkey->name); ?></dd>
+                                </div>
+                                <div>
+                                    <dt class="uppercase tracking-wide text-slate-500">Status</dt>
+                                    <dd class="mt-0.5 text-slate-200"><?php echo e($passkey->status?->label() ?? 'Active'); ?></dd>
+                                </div>
+                                <div>
+                                    <dt class="uppercase tracking-wide text-slate-500">Added</dt>
+                                    <dd class="mt-0.5 text-slate-200"><?php echo e($passkey->created_at?->format('M d, Y')); ?></dd>
+                                </div>
+                                <div>
+                                    <dt class="uppercase tracking-wide text-slate-500">Last used</dt>
+                                    <dd class="mt-0.5 text-slate-200"><?php echo e($passkey->last_used_at?->diffForHumans() ?? 'Never'); ?></dd>
+                                </div>
+                            </dl>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <form method="POST" action="<?php echo e(route('super-admin.passkeys.action', $passkey)); ?>"><?php echo csrf_field(); ?><input type="hidden" name="action" value="revoke"><button class="rounded-lg border border-rose-500/30 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/10">Revoke</button></form>
+                                <form method="POST" action="<?php echo e(route('super-admin.passkeys.action', $passkey)); ?>"><?php echo csrf_field(); ?><input type="hidden" name="action" value="lost"><button class="rounded-lg border border-amber-500/30 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/10">Lost</button></form>
+                            </div>
+                        </article>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                        <p class="px-1 py-4 text-center text-sm text-slate-500">No passkeys registered yet.</p>
+                    <?php endif; ?>
+                </div>
+
+                <div class="mt-4 hidden overflow-x-auto lg:block">
                     <table class="min-w-full text-left text-xs sm:text-sm">
                         <thead class="border-b border-slate-800 text-slate-400">
                             <tr>
@@ -254,7 +377,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800">
-                            <?php $__currentLoopData = $passkeys; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $passkey): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <?php $__empty_1 = true; $__currentLoopData = $passkeys; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $passkey): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                 <tr class="text-slate-200">
                                     <td class="px-3 py-2"><?php echo e($passkey->user?->name); ?></td>
                                     <td class="px-3 py-2 font-mono text-[10px]"><?php echo e(Str::limit($passkey->credential_id, 18)); ?></td>
@@ -269,7 +392,9 @@
                                         </div>
                                     </td>
                                 </tr>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                <tr><td colspan="7" class="px-3 py-6 text-center text-slate-500">No passkeys registered yet.</td></tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -290,36 +415,74 @@
 
         
         <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5">
-            <h3 class="text-lg font-semibold text-white">Election Lifecycle Controls</h3>
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-lg font-semibold text-white">Election Lifecycle Controls</h3>
+                    <p class="mt-1 text-sm text-slate-400">Open, pause, and close voting here. Positions and candidates are in Voting Management.</p>
+                </div>
+                <a href="<?php echo e(route('admin.elections.index')); ?>" class="shrink-0 text-xs font-semibold text-violet-300 hover:text-violet-200">View all</a>
+            </div>
             <div class="mt-4 space-y-4">
-                <?php $__currentLoopData = $elections; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $election): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <?php $__empty_1 = true; $__currentLoopData = $elections; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $election): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                    <?php
+                        $electionLifecycleActions = $election->dashboard_actions ?? [];
+                    ?>
                     <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                        <div class="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                                <p class="font-semibold text-white"><?php echo e($election->title); ?></p>
-                                <p class="text-xs text-slate-400"><?php echo e($election->status?->value); ?> · <?php echo e($election->votes_count); ?> votes · <?php echo e($election->candidates_count); ?> candidates
+                        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="font-semibold text-white"><?php echo e($election->title); ?></p>
+                                    <a href="<?php echo e(route('admin.elections.edit', $election)); ?>" class="text-xs font-semibold text-violet-300 hover:text-violet-200">Manage</a>
+                                </div>
+                                <p class="text-xs text-slate-400"><?php echo e($election->status?->label()); ?> · <?php echo e($election->votes_count); ?> votes · <?php echo e($election->candidates_count); ?> candidates
                                     <?php if($election->results_locked): ?> · <span class="text-amber-300">Results Locked</span> <?php endif; ?>
                                     <?php if($election->public_results_published): ?> · <span class="text-emerald-300">Results Published</span> <?php endif; ?>
                                     <?php if($election->is_paused): ?> · <span class="text-rose-300">Paused</span> <?php endif; ?>
                                 </p>
                                 <?php if($election->integrity_hash): ?>
-                                    <p class="mt-1 font-mono text-[10px] text-slate-500">Hash: <?php echo e(Str::limit($election->integrity_hash, 32)); ?></p>
+                                    <p class="mt-1 break-all font-mono text-[10px] text-slate-500">Hash: <?php echo e(Str::limit($election->integrity_hash, 32)); ?></p>
                                 <?php endif; ?>
                             </div>
-                            <div class="flex flex-wrap gap-1">
-                                <?php $__currentLoopData = ['open' => 'Open', 'pause' => 'Pause', 'resume' => 'Resume', 'close' => 'Close', 'annul' => 'Annul', 'rerun' => 'Re-run', 'lock' => 'Lock Results', 'publish_results' => 'Publish Results', 'unpublish_results' => 'Unpublish']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $action => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <form method="POST" action="<?php echo e(route('super-admin.elections.action', $election)); ?>"><?php echo csrf_field(); ?><input type="hidden" name="action" value="<?php echo e($action); ?>"><button class="rounded-lg border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:border-violet-500/40 hover:text-white"><?php echo e($label); ?></button></form>
-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                            </div>
+
+                            <?php if($electionLifecycleActions !== []): ?>
+                                <div class="hidden flex-wrap justify-end gap-1 lg:flex">
+                                    <?php $__currentLoopData = $electionLifecycleActions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $action => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <form method="POST" action="<?php echo e(route('super-admin.elections.action', $election)); ?>"><?php echo csrf_field(); ?><input type="hidden" name="action" value="<?php echo e($action); ?>"><button class="rounded-lg border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:border-violet-500/40 hover:text-white"><?php echo e($label); ?></button></form>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </div>
+
+                                <details class="relative lg:hidden">
+                                    <summary class="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 [&::-webkit-details-marker]:hidden">
+                                        Actions
+                                        <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    </summary>
+                                    <div class="absolute left-0 right-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-1 shadow-xl">
+                                        <?php $__currentLoopData = $electionLifecycleActions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $action => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <form method="POST" action="<?php echo e(route('super-admin.elections.action', $election)); ?>">
+                                                <?php echo csrf_field(); ?>
+                                                <input type="hidden" name="action" value="<?php echo e($action); ?>">
+                                                <button type="submit" class="w-full rounded-lg px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800 hover:text-white"><?php echo e($label); ?></button>
+                                            </form>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                    </div>
+                                </details>
+                            <?php endif; ?>
                         </div>
-                        <form method="POST" action="<?php echo e(route('super-admin.elections.action', $election)); ?>" class="mt-3 flex flex-wrap items-end gap-2">
-                            <?php echo csrf_field(); ?><input type="hidden" name="action" value="schedule">
-                            <input type="datetime-local" name="scheduled_open_at" class="rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-white">
-                            <input type="datetime-local" name="scheduled_close_at" class="rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-white">
-                            <button class="rounded-lg bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Schedule</button>
-                        </form>
+                        <?php if($election->can_schedule): ?>
+                            <form method="POST" action="<?php echo e(route('super-admin.elections.action', $election)); ?>" class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                                <?php echo csrf_field(); ?><input type="hidden" name="action" value="schedule">
+                                <input type="datetime-local" name="scheduled_open_at" class="w-full min-w-0 max-w-full rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-white">
+                                <input type="datetime-local" name="scheduled_close_at" class="w-full min-w-0 max-w-full rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-white">
+                                <button class="w-full rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white sm:col-span-2 lg:col-span-1 lg:w-auto">Schedule</button>
+                            </form>
+                        <?php endif; ?>
                     </div>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                    <p class="rounded-xl border border-slate-800 bg-slate-950/40 px-4 py-6 text-center text-sm text-slate-500">
+                        No elections yet.
+                        <a href="<?php echo e(route('admin.elections.create')); ?>" class="font-semibold text-violet-300 hover:text-violet-200">Create an election</a>
+                    </p>
+                <?php endif; ?>
             </div>
         </section>
 
@@ -327,20 +490,21 @@
         <div class="grid gap-6 lg:grid-cols-2">
             <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5">
                 <h3 class="text-lg font-semibold text-white">Vote Integrity & Verification</h3>
+                <p class="mt-1 text-xs text-slate-500">Scope: <?php echo e($statistics['election_scope']); ?></p>
                 <ul class="mt-4 space-y-3 text-sm text-slate-300">
-                    <li class="flex justify-between"><span>Anonymization</span><span class="text-emerald-300">Enabled (no voter-candidate public link)</span></li>
-                    <li class="flex justify-between"><span>Duplicate Vote Checker</span><span class="text-emerald-300">DB unique constraint per category</span></li>
-                    <li class="flex justify-between"><span>Eligible Voters</span><span class="text-white"><?php echo e($statistics['eligible_students']); ?></span></li>
-                    <li class="flex justify-between"><span>Total Voted</span><span class="text-white"><?php echo e($statistics['voted_students']); ?></span></li>
-                    <li class="flex justify-between"><span>Turnout</span><span class="text-white"><?php echo e($statistics['voter_turnout']); ?>%</span></li>
+                    <li class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4"><span class="shrink-0">Anonymization</span><span class="text-emerald-300 sm:text-right">Enabled (no voter-candidate public link)</span></li>
+                    <li class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4"><span class="shrink-0">Duplicate Vote Checker</span><span class="text-emerald-300 sm:text-right">DB unique constraint per category</span></li>
+                    <li class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4"><span class="shrink-0">Eligible Voters</span><span class="text-white sm:text-right"><?php echo e($statistics['eligible_students']); ?></span></li>
+                    <li class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4"><span class="shrink-0">Total Voted</span><span class="text-white sm:text-right"><?php echo e($statistics['voted_students']); ?></span></li>
+                    <li class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4"><span class="shrink-0">Turnout</span><span class="text-white sm:text-right"><?php echo e($statistics['voter_turnout']); ?>%</span></li>
                 </ul>
             </section>
             <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5">
                 <h3 class="text-lg font-semibold text-white">Voter Eligibility</h3>
                 <ul class="mt-4 space-y-3 text-sm">
-                    <li class="flex justify-between text-emerald-300"><span>Enrolled</span><span><?php echo e($voterEligibility['enrolled']); ?></span></li>
-                    <li class="flex justify-between text-amber-300"><span>Probation</span><span><?php echo e($voterEligibility['probation']); ?></span></li>
-                    <li class="flex justify-between text-rose-300"><span>Withdrawn</span><span><?php echo e($voterEligibility['withdrawn']); ?></span></li>
+                    <li class="flex flex-col gap-0.5 text-emerald-300 sm:flex-row sm:items-start sm:justify-between sm:gap-4"><span>Enrolled</span><span class="sm:text-right"><?php echo e($voterEligibility['enrolled']); ?></span></li>
+                    <li class="flex flex-col gap-0.5 text-amber-300 sm:flex-row sm:items-start sm:justify-between sm:gap-4"><span>Probation</span><span class="sm:text-right"><?php echo e($voterEligibility['probation']); ?></span></li>
+                    <li class="flex flex-col gap-0.5 text-rose-300 sm:flex-row sm:items-start sm:justify-between sm:gap-4"><span>Withdrawn</span><span class="sm:text-right"><?php echo e($voterEligibility['withdrawn']); ?></span></li>
                 </ul>
                 <div class="mt-4 flex flex-wrap gap-x-4 gap-y-2">
                     <a href="<?php echo e(route('admin.students.index')); ?>" class="text-sm font-semibold text-violet-300 hover:text-violet-200">Manage student records →</a>
@@ -353,34 +517,34 @@
 
         
         <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5">
-            <form method="GET" class="mb-4 flex flex-wrap gap-3">
+            <form method="GET" class="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <input
                     name="portal_q"
                     type="search"
                     value="<?php echo e(request('portal_q')); ?>"
                     placeholder="Search account ID, name, or email"
-                    class="min-w-[16rem] flex-1 rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-100"
+                    class="w-full min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-100 sm:min-w-[16rem]"
                 />
-                <button type="submit" class="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white">Search Accounts</button>
+                <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white sm:w-auto">Search Accounts</button>
                 <?php if(request()->filled('portal_q')): ?>
-                    <a href="<?php echo e(route('super-admin.dashboard')); ?>" class="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800">Clear</a>
+                    <a href="<?php echo e(route('super-admin.dashboard')); ?>" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800 sm:w-auto">Clear</a>
                 <?php endif; ?>
             </form>
 
             <form method="POST" action="<?php echo e(route('super-admin.users.bulk')); ?>" data-portal-bulk-form>
                 <?php echo csrf_field(); ?>
-                <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                     <div>
                         <h3 class="text-lg font-semibold text-white">Portal Accounts & Bulk Actions</h3>
                         <p class="mt-1 text-xs text-slate-500"><?php echo e($portalUsers->total()); ?> account(s) · Deactivated users cannot sign in</p>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                         <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('importStudentRecords')): ?>
-                            <a href="<?php echo e(route('super-admin.roster.students.index')); ?>" class="rounded-lg border border-violet-500/30 px-3 py-1.5 text-xs font-semibold text-violet-300 hover:bg-violet-500/10">
+                            <a href="<?php echo e(route('super-admin.roster.students.index')); ?>" class="inline-flex w-full items-center justify-center rounded-lg border border-violet-500/30 px-3 py-1.5 text-xs font-semibold text-violet-300 hover:bg-violet-500/10 sm:w-auto">
                                 Student Roster
                             </a>
                         <?php endif; ?>
-                        <select name="action" data-portal-bulk-action class="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-white" required>
+                        <select name="action" data-portal-bulk-action class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-white sm:w-auto" required>
                             <option value="">Bulk action…</option>
                             <option value="activate">Activate</option>
                             <option value="deactivate">Deactivate</option>
@@ -388,10 +552,47 @@
                             <option value="export">Export CSV</option>
                             <option value="delete">Delete</option>
                         </select>
-                        <button type="submit" class="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white">Apply</button>
+                        <button type="submit" class="w-full rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white sm:w-auto">Apply</button>
                     </div>
                 </div>
-                <div class="mt-4 overflow-x-auto">
+
+                <label class="mt-4 flex items-center gap-2 text-xs text-slate-400 lg:hidden">
+                    <input type="checkbox" id="bulk-select-all-mobile" class="rounded border-slate-600">
+                    Select all on this page
+                </label>
+
+                <div class="mt-3 space-y-3 lg:hidden" data-portal-account-cards>
+                    <?php $__empty_1 = true; $__currentLoopData = $portalUsers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $portalUser): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <article class="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+                            <div class="flex items-start gap-3">
+                                <input type="checkbox" name="user_ids[]" value="<?php echo e($portalUser->id); ?>" data-bulk-user data-bulk-layout="mobile" class="mt-1 rounded border-slate-600">
+                                <div class="min-w-0 flex-1">
+                                    <p class="break-words font-medium text-white"><?php echo e($portalUser->name); ?></p>
+                                    <p class="mt-0.5 font-mono text-xs text-violet-300"><?php echo e($portalUser->account_id); ?></p>
+                                    <p class="mt-1 break-all text-xs text-slate-400"><?php echo e($portalUser->email ?: '—'); ?></p>
+                                    <dl class="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                        <div>
+                                            <dt class="uppercase tracking-wide text-slate-500">Role</dt>
+                                            <dd class="mt-0.5 text-slate-200"><?php echo e($portalUser->staffRole?->name ?? str($portalUser->role?->value)->replace('_',' ')->title()); ?></dd>
+                                        </div>
+                                        <div>
+                                            <dt class="uppercase tracking-wide text-slate-500">Passkeys</dt>
+                                            <dd class="mt-0.5 text-slate-200"><?php echo e($portalUser->passkeys_count); ?></dd>
+                                        </div>
+                                        <div class="col-span-2">
+                                            <dt class="uppercase tracking-wide text-slate-500">Status</dt>
+                                            <dd class="mt-0.5 <?php echo e($portalUser->is_active ? 'text-emerald-300' : 'text-rose-300'); ?>"><?php echo e($portalUser->is_active ? 'Active' : 'Inactive'); ?></dd>
+                                        </div>
+                                    </dl>
+                                </div>
+                            </div>
+                        </article>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                        <p class="px-1 py-4 text-center text-sm text-slate-400">No portal accounts match your search.</p>
+                    <?php endif; ?>
+                </div>
+
+                <div class="mt-4 hidden overflow-x-auto lg:block">
                     <table class="min-w-full text-left text-sm">
                         <thead class="border-b border-slate-800 text-xs uppercase text-slate-400">
                             <tr>
@@ -407,7 +608,7 @@
                         <tbody class="divide-y divide-slate-800 text-slate-200">
                             <?php $__empty_1 = true; $__currentLoopData = $portalUsers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $portalUser): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                 <tr>
-                                    <td class="px-3 py-3"><input type="checkbox" name="user_ids[]" value="<?php echo e($portalUser->id); ?>" data-bulk-user class="rounded border-slate-600"></td>
+                                    <td class="px-3 py-3"><input type="checkbox" name="user_ids[]" value="<?php echo e($portalUser->id); ?>" data-bulk-user data-bulk-layout="desktop" class="rounded border-slate-600"></td>
                                     <td class="px-3 py-3 font-mono text-xs"><?php echo e($portalUser->account_id); ?></td>
                                     <td class="px-3 py-3"><?php echo e($portalUser->name); ?></td>
                                     <td class="px-3 py-3 text-xs text-slate-400"><?php echo e($portalUser->email ?: '—'); ?></td>
@@ -423,16 +624,17 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="mt-4"><?php echo e($portalUsers->links()); ?></div>
+                <div class="mt-4"><?php echo e($portalUsers->links('admin.partials.pagination')); ?></div>
             </form>
         </section>
 
         
         <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5">
             <h3 class="text-lg font-semibold text-white">Compliance & Official Reports</h3>
-            <div class="mt-4 flex flex-wrap gap-2">
+            <p class="mt-1 text-sm text-slate-400">Download compliance files here. Live charts and election exports are in Reports & Analytics.</p>
+            <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 <?php $__currentLoopData = ['election_summary' => 'Election Summary', 'voter_turnout' => 'Voter Turnout', 'audit_trail' => 'Audit Trail', 'passkey_inventory' => 'Passkey Inventory']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                    <a href="<?php echo e(route('super-admin.reports.generate', ['report' => $key])); ?>" class="rounded-xl border border-violet-500/30 px-4 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10"><?php echo e($label); ?></a>
+                    <a href="<?php echo e(route('super-admin.reports.generate', ['report' => $key])); ?>" class="inline-flex min-h-11 items-center justify-center rounded-xl border border-violet-500/30 px-4 py-2 text-center text-sm font-semibold text-violet-200 hover:bg-violet-500/10"><?php echo e($label); ?></a>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
             <p class="mt-4 text-sm text-slate-400">
@@ -473,10 +675,7 @@
 <?php unset($__componentOriginal57da683fe32826f08aa9f05c3342a7e2); ?>
 <?php endif; ?>
 
-    <script>
-        window.superAdminPortal = { searchUrl: <?php echo json_encode(route('super-admin.search'), 15, 512) ?> };
-    </script>
-    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/passkey-admin-recovery.js', 'resources/js/super-admin-dashboard.js']); ?>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/passkey-admin-recovery.js']); ?>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>

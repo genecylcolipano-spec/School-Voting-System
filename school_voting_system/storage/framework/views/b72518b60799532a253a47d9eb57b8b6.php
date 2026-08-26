@@ -85,7 +85,7 @@
                             </td>
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                        <tr><td colspan="10" class="px-4 py-10 text-center text-slate-400">No talent competitions in your scope yet.</td></tr>
+                        <tr><td colspan="10" class="px-4 py-10 text-center text-slate-400"><?php echo e($user->isSuperAdmin() ? 'No talent competitions yet.' : 'No talent competitions in your scope yet.'); ?></td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

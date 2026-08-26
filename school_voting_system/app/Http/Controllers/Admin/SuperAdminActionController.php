@@ -68,14 +68,35 @@ class SuperAdminActionController extends Controller
         $elections = Election::query()
             ->where('title', 'like', $term)
             ->limit(5)
-            ->get(['id', 'title', 'status']);
+            ->get(['id', 'title', 'status', 'slug']);
 
         return response()->json([
             'results' => [
-                'accounts' => $users,
-                'elections' => $elections,
+                'accounts' => $users->map(fn (User $user) => [
+                    'id' => $user->id,
+                    'account_id' => $user->account_id,
+                    'name' => $user->name,
+                    'role' => $user->role?->value,
+                    'url' => $this->accountSearchUrl($user),
+                ])->all(),
+                'elections' => $elections->map(fn (Election $election) => [
+                    'id' => $election->id,
+                    'title' => $election->title,
+                    'status' => $election->status?->value,
+                    'url' => route('admin.elections.edit', $election),
+                ])->all(),
             ],
         ]);
+    }
+
+    protected function accountSearchUrl(User $user): string
+    {
+        return match ($user->role) {
+            UserRole::Student => route('admin.students.show', $user),
+            UserRole::Admin => route('super-admin.administrators.show', $user),
+            UserRole::Faculty => route('super-admin.faculty.show', $user),
+            default => route('super-admin.dashboard', ['portal_q' => $user->account_id]),
+        };
     }
 
     public function bulkUsers(BulkUsersRequest $request): RedirectResponse|StreamedResponse
@@ -290,9 +311,18 @@ class SuperAdminActionController extends Controller
         $validated = $request->validated();
 
         $actor = $request->user();
+        $action = $validated['action'];
+
+        if ($action === 'schedule' && ! $this->elections->canSchedule($election)) {
+            return back()->with('error', 'This election cannot be scheduled.');
+        }
+
+        if ($action !== 'schedule' && ! array_key_exists($action, $this->elections->availableActions($election))) {
+            return back()->with('error', 'That action is not available for this election.');
+        }
 
         try {
-            match ($validated['action']) {
+            match ($action) {
                 'open' => $this->elections->open($election, $actor),
                 'pause' => $this->elections->pause($election, $actor),
                 'resume' => $this->elections->resume($election, $actor),
@@ -315,13 +345,21 @@ class SuperAdminActionController extends Controller
             return back()->with('error', $exception->getMessage());
         }
 
-        if (in_array($validated['action'], ['publish_results', 'unpublish_results'], true)) {
-            return back()->with('success', $validated['action'] === 'publish_results'
-                ? 'Official election results published.'
-                : 'Official election results unpublished.');
-        }
+        $messages = [
+            'open' => 'Election opened.',
+            'pause' => 'Election paused.',
+            'resume' => 'Election resumed.',
+            'close' => 'Election closed.',
+            'annul' => 'Election annulled.',
+            'rerun' => 'Election re-run created as a draft.',
+            'lock' => 'Election results locked.',
+            'unlock' => 'Election results unlocked.',
+            'schedule' => 'Election schedule saved.',
+            'publish_results' => 'Official election results published.',
+            'unpublish_results' => 'Official election results unpublished.',
+        ];
 
-        return back()->with('success', 'Election action completed.');
+        return back()->with('success', $messages[$action] ?? 'Election action completed.');
     }
 
     public function passkeyAction(PasskeyActionRequest $request, Passkey $passkey): RedirectResponse

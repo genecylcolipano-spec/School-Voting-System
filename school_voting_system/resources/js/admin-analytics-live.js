@@ -112,7 +112,7 @@ function applyCampaignPerformance(campaigns) {
                 <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
                         ${color}
-                        <p class="text-sm font-medium text-white">${escapeHtml(campaign.name)}</p>
+                        <p class="min-w-0 text-sm font-medium text-white">${escapeHtml(campaign.name)}</p>
                         ${acronym}
                     </div>
                     <span class="shrink-0 text-sm font-semibold text-violet-300">${share}%</span>
@@ -137,7 +137,8 @@ function applyTalentCompetitions(events) {
     }
 
     if (!events?.length) {
-        container.innerHTML = '<tr><td colspan="7" class="px-3 py-6 text-center text-slate-400">No talent competition data in your scope yet.</td></tr>';
+        const empty = container.dataset.emptyMessage || 'No talent competition data in your scope yet.';
+        container.innerHTML = `<tr><td colspan="7" class="px-3 py-6 text-center text-slate-400">${escapeHtml(empty)}</td></tr>`;
         return;
     }
 

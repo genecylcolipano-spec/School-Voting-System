@@ -9,7 +9,9 @@
 
         @include('admin.partials.page-header', [
             'title' => 'Reports & Analytics',
-            'description' => 'Voting turnout, campaign vote share, event counts, and fundraising performance.',
+            'description' => $user->isSuperAdmin()
+                ? 'Voting turnout, campaign vote share, event counts, and fundraising performance. Official exports are in Election, Talent, and Fundraising Reports.'
+                : 'Voting turnout, campaign vote share, event counts, and fundraising performance.',
         ])
 
         @include('admin.reports.partials.election-picker')
@@ -38,7 +40,7 @@
 
             <x-admin-chart-panel
                 title="Donation/Fundraising History"
-                subtitle="Paid donation totals for campaigns in your scope — Jan to Dec"
+                subtitle="{{ $user->isSuperAdmin() ? 'Paid donation totals for every campaign — Jan to Dec' : 'Paid donation totals for campaigns in your scope — Jan to Dec' }}"
                 type="bar"
                 live-key="fundraising"
                 :labels="$report['fundraising']['labels']"
@@ -126,7 +128,7 @@
                                 @if (! empty($campaign['color']))
                                     <span class="inline-block h-3 w-3 rounded-full" style="background: {{ $campaign['color'] }}"></span>
                                 @endif
-                                <p class="text-sm font-medium text-white">{{ $campaign['name'] }}</p>
+                                <p class="min-w-0 text-sm font-medium text-white">{{ $campaign['name'] }}</p>
                                 @if (! empty($campaign['acronym']))
                                     <span class="text-xs text-violet-300">{{ $campaign['acronym'] }}</span>
                                 @endif
@@ -166,7 +168,11 @@
                             <th class="px-3 py-2">Status</th>
                         </tr>
                     </thead>
-                    <tbody id="analytics-talent-competitions" class="divide-y divide-slate-800">
+                    <tbody
+                        id="analytics-talent-competitions"
+                        data-empty-message="{{ $user->isSuperAdmin() ? 'No talent competition data yet.' : 'No talent competition data in your scope yet.' }}"
+                        class="divide-y divide-slate-800"
+                    >
                         @forelse ($report['talentCompetitions'] ?? [] as $event)
                             <tr class="text-slate-300">
                                 <td class="px-3 py-3 font-medium text-white">{{ $event['name'] }}</td>
@@ -179,7 +185,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-3 py-6 text-center text-slate-400">No talent competition data in your scope yet.</td>
+                                <td colspan="7" class="px-3 py-6 text-center text-slate-400">{{ $user->isSuperAdmin() ? 'No talent competition data yet.' : 'No talent competition data in your scope yet.' }}</td>
                             </tr>
                         @endforelse
                     </tbody>

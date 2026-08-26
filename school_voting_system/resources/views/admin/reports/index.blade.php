@@ -2,7 +2,7 @@
     <x-admin-portal title="Reports" :user="$user" :notifications-count="$notificationsCount">
         @include('admin.partials.page-header', [
             'title' => 'Election Reports',
-            'description' => 'Election summary, turnout, winners, party performance, and exports.',
+            'description' => 'Election summary, turnout, winners, party performance, and exports. Live charts are in Dashboard Analytics.',
         ])
 
         @include('admin.reports.partials.report-tabs', ['active' => 'election'])

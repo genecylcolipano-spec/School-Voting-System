@@ -2,7 +2,9 @@
     <x-admin-portal title="Results" :user="$user" :notifications-count="$notificationsCount">
         @include('admin.partials.page-header', [
             'title' => 'Results',
-            'description' => 'View official results for all elections and voting-based events.',
+            'description' => ($isSuperAdmin ?? false)
+                ? 'View official results for every election and voting-based event.'
+                : 'View official results for elections and voting-based events you created or manage.',
             'showAction' => false,
         ])
 
@@ -10,11 +12,11 @@
             <div class="rs-empty flex flex-col items-center justify-center rounded-2xl border border-dashed border-violet-500/20 bg-slate-900/50 px-6 py-16 text-center">
                 <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10 text-3xl">🏆</div>
                 <h2 class="text-xl font-bold text-white">No Results Available</h2>
-                <p class="mt-2 max-w-md text-sm text-slate-400">Results will appear here once elections or talent competitions are set up in your scope.</p>
+                <p class="mt-2 max-w-md text-sm text-slate-400">Results will appear here once elections or talent competitions are set up{{ ($isSuperAdmin ?? false) ? '.' : ' in your scope.' }}</p>
             </div>
         @else
             <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-                <p class="text-sm text-slate-400">{{ $events->count() }} voting event{{ $events->count() === 1 ? '' : 's' }} in your scope</p>
+                <p class="text-sm text-slate-400">{{ $events->count() }} voting event{{ $events->count() === 1 ? '' : 's' }}{{ ($isSuperAdmin ?? false) ? '' : ' in your scope' }}</p>
                 @if ($filterOptions->isNotEmpty())
                     <form method="GET" action="{{ route('admin.results.index') }}" class="flex items-center gap-2">
                         <label for="event-filter" class="sr-only">Filter events</label>

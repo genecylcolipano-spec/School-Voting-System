@@ -27,7 +27,9 @@
 
         <?php echo $__env->make('admin.partials.page-header', [
             'title' => 'Reports & Analytics',
-            'description' => 'Voting turnout, campaign vote share, event counts, and fundraising performance.',
+            'description' => $user->isSuperAdmin()
+                ? 'Voting turnout, campaign vote share, event counts, and fundraising performance. Official exports are in Election, Talent, and Fundraising Reports.'
+                : 'Voting turnout, campaign vote share, event counts, and fundraising performance.',
         ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
         <?php echo $__env->make('admin.reports.partials.election-picker', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
@@ -64,14 +66,14 @@
 
             <?php if (isset($component)) { $__componentOriginal3f4023e8ae0200a7792ee5dfef809633 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal3f4023e8ae0200a7792ee5dfef809633 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin-chart-panel','data' => ['title' => 'Donation/Fundraising History','subtitle' => 'Paid donation totals for campaigns in your scope — Jan to Dec','type' => 'bar','liveKey' => 'fundraising','labels' => $report['fundraising']['labels'],'values' => $report['fundraising']['values'],'yMax' => $report['fundraising']['yMax'],'yTicks' => $report['fundraising']['yTicks'],'valuePrefix' => $report['fundraising']['valuePrefix'],'accent' => '#818cf8']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin-chart-panel','data' => ['title' => 'Donation/Fundraising History','subtitle' => ''.e($user->isSuperAdmin() ? 'Paid donation totals for every campaign — Jan to Dec' : 'Paid donation totals for campaigns in your scope — Jan to Dec').'','type' => 'bar','liveKey' => 'fundraising','labels' => $report['fundraising']['labels'],'values' => $report['fundraising']['values'],'yMax' => $report['fundraising']['yMax'],'yTicks' => $report['fundraising']['yTicks'],'valuePrefix' => $report['fundraising']['valuePrefix'],'accent' => '#818cf8']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('admin-chart-panel'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['title' => 'Donation/Fundraising History','subtitle' => 'Paid donation totals for campaigns in your scope — Jan to Dec','type' => 'bar','live-key' => 'fundraising','labels' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['labels']),'values' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['values']),'y-max' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['yMax']),'y-ticks' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['yTicks']),'value-prefix' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['valuePrefix']),'accent' => '#818cf8']); ?>
+<?php $component->withAttributes(['title' => 'Donation/Fundraising History','subtitle' => ''.e($user->isSuperAdmin() ? 'Paid donation totals for every campaign — Jan to Dec' : 'Paid donation totals for campaigns in your scope — Jan to Dec').'','type' => 'bar','live-key' => 'fundraising','labels' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['labels']),'values' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['values']),'y-max' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['yMax']),'y-ticks' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['yTicks']),'value-prefix' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($report['fundraising']['valuePrefix']),'accent' => '#818cf8']); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal3f4023e8ae0200a7792ee5dfef809633)): ?>
@@ -185,7 +187,7 @@
                                 <?php if(! empty($campaign['color'])): ?>
                                     <span class="inline-block h-3 w-3 rounded-full" style="background: <?php echo e($campaign['color']); ?>"></span>
                                 <?php endif; ?>
-                                <p class="text-sm font-medium text-white"><?php echo e($campaign['name']); ?></p>
+                                <p class="min-w-0 text-sm font-medium text-white"><?php echo e($campaign['name']); ?></p>
                                 <?php if(! empty($campaign['acronym'])): ?>
                                     <span class="text-xs text-violet-300"><?php echo e($campaign['acronym']); ?></span>
                                 <?php endif; ?>
@@ -225,7 +227,11 @@
                             <th class="px-3 py-2">Status</th>
                         </tr>
                     </thead>
-                    <tbody id="analytics-talent-competitions" class="divide-y divide-slate-800">
+                    <tbody
+                        id="analytics-talent-competitions"
+                        data-empty-message="<?php echo e($user->isSuperAdmin() ? 'No talent competition data yet.' : 'No talent competition data in your scope yet.'); ?>"
+                        class="divide-y divide-slate-800"
+                    >
                         <?php $__empty_1 = true; $__currentLoopData = $report['talentCompetitions'] ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $event): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                             <tr class="text-slate-300">
                                 <td class="px-3 py-3 font-medium text-white"><?php echo e($event['name']); ?></td>
@@ -238,7 +244,7 @@
                             </tr>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <tr>
-                                <td colspan="7" class="px-3 py-6 text-center text-slate-400">No talent competition data in your scope yet.</td>
+                                <td colspan="7" class="px-3 py-6 text-center text-slate-400"><?php echo e($user->isSuperAdmin() ? 'No talent competition data yet.' : 'No talent competition data in your scope yet.'); ?></td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

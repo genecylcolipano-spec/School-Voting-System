@@ -38,10 +38,10 @@
             <div class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-violet-500/20 bg-slate-900/50 px-6 py-16 text-center">
                 <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10 text-3xl">🏆</div>
                 <h2 class="text-xl font-bold text-white">No <?php echo e($mode === 'talent' ? 'Talent Competition' : 'Election'); ?> Results</h2>
-                <p class="mt-2 max-w-md text-sm text-slate-400">Results will appear here once <?php echo e($mode === 'talent' ? 'competitions' : 'elections'); ?> in your scope have voting activity.</p>
+                <p class="mt-2 max-w-md text-sm text-slate-400">Results will appear here once <?php echo e($mode === 'talent' ? 'competitions' : 'elections'); ?><?php echo e(($isSuperAdmin ?? false) ? ' are created.' : ' in your scope have voting activity.'); ?></p>
             </div>
         <?php else: ?>
-            <p class="mb-4 text-sm text-slate-400"><?php echo e($events->count()); ?> <?php echo e(\Illuminate\Support\Str::plural($mode === 'talent' ? 'competition' : 'election', $events->count())); ?> in your scope</p>
+            <p class="mb-4 text-sm text-slate-400"><?php echo e($events->count()); ?> <?php echo e(\Illuminate\Support\Str::plural($mode === 'talent' ? 'competition' : 'election', $events->count())); ?><?php echo e(($isSuperAdmin ?? false) ? '' : ' in your scope'); ?></p>
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <?php $__currentLoopData = $events; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $event): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <?php echo $__env->make('admin.results._event-card', ['event' => $event], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>

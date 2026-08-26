@@ -3,10 +3,13 @@
 namespace Tests\Feature\Admin;
 
 use App\Enums\ElectionStatus;
+use App\Enums\EventStatus;
 use App\Enums\TalentEventStatus;
 use App\Enums\TalentVotingMethod;
 use App\Models\AdminAssignment;
 use App\Models\Election;
+use App\Models\Event;
+use App\Models\PortalNotification;
 use App\Models\TalentEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,6 +18,12 @@ use Tests\TestCase;
 class EventsTalentDashboardTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutVite();
+    }
 
     public function test_regular_admin_sees_own_talent_competitions_even_when_election_id_differs(): void
     {
@@ -69,6 +78,73 @@ class EventsTalentDashboardTest extends TestCase
             ->get(route('admin.events-talent.index'))
             ->assertOk()
             ->assertSee('Hidden From Regular Filter');
+    }
+
+    public function test_events_dashboard_uses_unread_notification_count_and_manage_opens_workspace(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $election = Election::factory()->create(['created_by' => $super->id]);
+        $competition = $this->makeCompetition($election, $super, 'Workspace Showcase');
+
+        PortalNotification::query()->create([
+            'title' => 'Event ping',
+            'message' => 'Unread for events',
+            'type' => 'info',
+            'user_id' => $super->id,
+            'recipient_role' => 'super_admin',
+        ]);
+
+        $this->actingAs($super)
+            ->get(route('admin.events-talent.index'))
+            ->assertOk()
+            ->assertSee('data-initial-count="1"', false)
+            ->assertSee('Open competitions')
+            ->assertSee(route('admin.talent-competition.show', $competition), false)
+            ->assertSee('>Manage<', false);
+    }
+
+    public function test_regular_admin_does_not_see_another_admins_school_events(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $other = User::factory()->admin()->create();
+
+        $this->makeSchoolEvent($admin, 'My Orientation');
+        $this->makeSchoolEvent($other, 'Other Campus Fair');
+
+        $this->actingAs($admin)
+            ->get(route('admin.events-talent.index'))
+            ->assertOk()
+            ->assertSee('My Orientation')
+            ->assertDontSee('Other Campus Fair');
+
+        $this->actingAs($admin)
+            ->get(route('admin.events.index'))
+            ->assertOk()
+            ->assertSee('My Orientation')
+            ->assertDontSee('Other Campus Fair');
+    }
+
+    public function test_super_admin_sees_every_school_event_on_events_dashboard(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $this->makeSchoolEvent(User::factory()->admin()->create(), 'Campus-Wide Assembly');
+
+        $this->actingAs($super)
+            ->get(route('admin.events-talent.index'))
+            ->assertOk()
+            ->assertSee('Campus-Wide Assembly');
+    }
+
+    protected function makeSchoolEvent(User $creator, string $title): Event
+    {
+        return Event::query()->create([
+            'title' => $title,
+            'slug' => str($title)->slug().'-'.uniqid(),
+            'event_date' => now()->addDays(3),
+            'venue' => 'Auditorium',
+            'status' => EventStatus::Scheduled,
+            'created_by' => $creator->id,
+        ]);
     }
 
     protected function makeCompetition(Election $election, User $creator, string $title): TalentEvent

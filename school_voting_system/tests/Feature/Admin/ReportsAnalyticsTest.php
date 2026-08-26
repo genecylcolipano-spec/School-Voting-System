@@ -66,6 +66,81 @@ class ReportsAnalyticsTest extends TestCase
         $this->assertSame($active->id, $resolved?->id);
     }
 
+    public function test_super_admin_analytics_uses_institution_copy_and_shows_long_campaign_names(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $election = Election::factory()->active()->create(['title' => 'Label Council']);
+        $category = ElectionCategory::factory()->create(['election_id' => $election->id]);
+        $campaign = Partylist::factory()->create([
+            'name' => 'Progressive Democratic Party of the Campus',
+            'acronym' => null,
+        ]);
+        $election->partylists()->sync([$campaign->id]);
+        $candidate = Candidate::factory()->create([
+            'election_id' => $election->id,
+            'election_category_id' => $category->id,
+            'partylist_id' => $campaign->id,
+        ]);
+        Vote::castBallot(User::factory()->create(), $candidate);
+
+        $this->actingAs($admin)
+            ->get(route('admin.analytics.index'))
+            ->assertOk()
+            ->assertSee('Paid donation totals for every campaign')
+            ->assertSee('Official exports are in Election, Talent, and Fundraising Reports')
+            ->assertSee('Progressive Democratic Party of the Campus')
+            ->assertSee('rotate(-38', false)
+            ->assertDontSee('in your scope');
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.fundraising'))
+            ->assertOk()
+            ->assertSee('across the institution')
+            ->assertDontSee('in your scope');
+    }
+
+    public function test_regular_admin_analytics_keeps_scoped_copy(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Election::factory()->closed()->create([
+            'title' => 'Created By Admin',
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.analytics.index'))
+            ->assertOk()
+            ->assertSee('Paid donation totals for campaigns in your scope');
+    }
+
+    public function test_campaign_chart_prefers_acronym_when_present(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $election = Election::factory()->active()->create();
+        $category = ElectionCategory::factory()->create(['election_id' => $election->id]);
+        $campaign = Partylist::factory()->create([
+            'name' => 'Progressive Democratic Party of the Campus',
+            'acronym' => 'PDPC',
+        ]);
+        $election->partylists()->sync([$campaign->id]);
+        $candidate = Candidate::factory()->create([
+            'election_id' => $election->id,
+            'election_category_id' => $category->id,
+            'partylist_id' => $campaign->id,
+        ]);
+        Vote::castBallot(User::factory()->create(), $candidate);
+
+        $labels = app(AdminAnalyticsService::class)->campaignEngagement($admin, $election)['labels'];
+
+        $this->assertSame(['PDPC'], $labels);
+
+        $this->actingAs($admin)
+            ->get(route('admin.analytics.index'))
+            ->assertOk()
+            ->assertSee('PDPC')
+            ->assertSee('Progressive Democratic Party of the Campus');
+    }
+
     public function test_super_admin_can_open_a_closed_election_report_by_picker(): void
     {
         $admin = User::factory()->superAdmin()->create();

@@ -75,6 +75,7 @@ class PasskeyRecoveryTokenService
             $recovery->forceFill([
                 'status' => PasskeyRecoveryRequest::STATUS_RESOLVED,
                 'resolved_at' => now(),
+                'last_sent_at' => now(),
             ])->save();
 
             Log::info('Passkey recovery email dispatched.', [

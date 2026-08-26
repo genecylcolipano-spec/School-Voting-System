@@ -26,10 +26,6 @@
             'action' => route('admin.talent-competition.create'),
         ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
-        <?php if(session('success')): ?>
-            <div class="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200"><?php echo e(session('success')); ?></div>
-        <?php endif; ?>
-
         <form method="GET" action="<?php echo e(route('admin.talent-competition.index')); ?>" class="mb-4 flex flex-wrap items-end gap-3">
             <div class="min-w-[12rem] flex-1">
                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Search</label>

@@ -35,28 +35,44 @@ class AdminResultsController extends Controller
 
         return view('admin.results.index', [
             'user' => $user,
-            'notificationsCount' => $user->isSuperAdmin() ? AdminPortal::recoveryCount() : 0,
+            'notificationsCount' => AdminPortal::notificationCount($user),
             'filterOptions' => $this->results->filterOptions($user),
             'events' => $events,
             'selectedEvent' => $filter,
             'hasEvents' => $this->results->filterOptions($user)->isNotEmpty(),
             'canExport' => $this->scope->canExportPreliminaryResults($user),
+            'isSuperAdmin' => $user->isSuperAdmin(),
         ]);
     }
 
     public function electionsIndex(Request $request): View
     {
-        return $this->scopedIndex($request, 'election', 'Election Results', 'Official results for all student elections in your scope.');
+        return $this->scopedIndex($request, 'election');
     }
 
     public function talentIndex(Request $request): View
     {
-        return $this->scopedIndex($request, 'talent', 'Talent Competition Results', 'Official results for all talent competitions in your scope.');
+        return $this->scopedIndex($request, 'talent');
     }
 
-    protected function scopedIndex(Request $request, string $type, string $title, string $description): View
+    protected function scopedIndex(Request $request, string $type): View
     {
         $user = $request->user()->loadCount('passkeys');
+        $isSuper = $user->isSuperAdmin();
+
+        [$title, $description] = $type === 'talent'
+            ? [
+                'Talent Competition Results',
+                $isSuper
+                    ? 'Official results for every talent competition.'
+                    : 'Official results for talent competitions you created or manage.',
+            ]
+            : [
+                'Election Results',
+                $isSuper
+                    ? 'Official results for every student election.'
+                    : 'Official results for student elections you created or manage.',
+            ];
 
         $events = $this->results->listEvents($user)
             ->filter(fn (array $event) => ($event['type'] ?? null) === $type)
@@ -64,12 +80,13 @@ class AdminResultsController extends Controller
 
         return view('admin.results.scoped', [
             'user' => $user,
-            'notificationsCount' => $user->isSuperAdmin() ? AdminPortal::recoveryCount() : 0,
+            'notificationsCount' => AdminPortal::notificationCount($user),
             'mode' => $type,
             'title' => $title,
             'description' => $description,
             'events' => $events,
             'canExport' => $this->scope->canExportPreliminaryResults($user),
+            'isSuperAdmin' => $isSuper,
         ]);
     }
 
@@ -79,7 +96,7 @@ class AdminResultsController extends Controller
 
         return view('admin.results.show', [
             'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $request->user()->isSuperAdmin() ? AdminPortal::recoveryCount() : 0,
+            'notificationsCount' => AdminPortal::notificationCount($request->user()),
             'detail' => $detail,
             'liveUrl' => route('admin.results.election.live', $election),
             'exportUrls' => $this->exportUrls('election', $election),
@@ -94,7 +111,7 @@ class AdminResultsController extends Controller
 
         return view('admin.results.show', [
             'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $request->user()->isSuperAdmin() ? AdminPortal::recoveryCount() : 0,
+            'notificationsCount' => AdminPortal::notificationCount($request->user()),
             'detail' => $detail,
             'liveUrl' => route('admin.results.talent.live', $talentEvent),
             'exportUrls' => $this->exportUrls('talent', $talentEvent),

@@ -28,6 +28,9 @@
         <?php if($events->isEmpty()): ?>
             <div class="rounded-2xl border border-violet-500/15 bg-slate-900/70 px-4 py-8 text-center text-sm text-slate-400">
                 No events yet.
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('create', App\Models\Event::class)): ?>
+                    <a href="<?php echo e(route('admin.events.create')); ?>" class="mt-2 inline-block font-semibold text-violet-300 hover:text-violet-200">Create a school event</a>
+                <?php endif; ?>
             </div>
         <?php else: ?>
             <div class="space-y-3 md:hidden">

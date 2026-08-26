@@ -10,6 +10,9 @@
         @if ($events->isEmpty())
             <div class="rounded-2xl border border-violet-500/15 bg-slate-900/70 px-4 py-8 text-center text-sm text-slate-400">
                 No events yet.
+                @can('create', App\Models\Event::class)
+                    <a href="{{ route('admin.events.create') }}" class="mt-2 inline-block font-semibold text-violet-300 hover:text-violet-200">Create a school event</a>
+                @endcan
             </div>
         @else
             <div class="space-y-3 md:hidden">

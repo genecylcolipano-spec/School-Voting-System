@@ -10,9 +10,11 @@ use App\Http\Requests\Admin\SchoolEvent\DeleteSchoolEventRequest;
 use App\Http\Requests\Admin\SchoolEvent\StoreSchoolEventRequest;
 use App\Http\Requests\Admin\SchoolEvent\UpdateSchoolEventRequest;
 use App\Models\Event;
+use App\Services\Admin\AdminScopeService;
 use App\Services\Media\ImageCompressionService;
 use App\Services\Portal\AnnouncementService;
 use App\Services\Portal\PortalNotificationService;
+use App\Support\AdminPortal;
 use App\Support\SlugGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,6 +30,7 @@ class AdminEventController extends Controller
         protected ImageCompressionService $images,
         protected AnnouncementService $announcements,
         protected PortalNotificationService $notifications,
+        protected AdminScopeService $scope,
     ) {}
 
     public function index(Request $request): View
@@ -35,13 +38,14 @@ class AdminEventController extends Controller
         $this->authorize('viewAny', Event::class);
         Event::markOverdueAsCompleted();
 
-        $events = Event::query()
+        $user = $request->user();
+        $events = $this->scope->schoolEventsQuery($user)
             ->orderByDesc('event_date')
             ->paginate(15);
 
         return view('admin.events.index', [
-            'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'user' => $user->loadCount('passkeys'),
+            'notificationsCount' => AdminPortal::notificationCount($user),
             'events' => $events,
         ]);
     }
@@ -52,7 +56,7 @@ class AdminEventController extends Controller
 
         return view('admin.events.create', [
             'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'notificationsCount' => AdminPortal::notificationCount($request->user()),
             'statuses' => EventStatus::cases(),
         ]);
     }
@@ -89,7 +93,7 @@ class AdminEventController extends Controller
 
         return view('admin.events.edit', [
             'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'notificationsCount' => AdminPortal::notificationCount($request->user()),
             'event' => $event,
             'statuses' => EventStatus::cases(),
         ]);

@@ -13,6 +13,7 @@ use App\Models\Partylist;
 use App\Models\PartylistPoster;
 use App\Services\Admin\AdminScopeService;
 use App\Services\Media\ImageCompressionService;
+use App\Support\AdminPortal;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -39,7 +40,7 @@ class AdminCampaignController extends Controller
 
         return view('admin.campaigns.index', [
             'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'notificationsCount' => AdminPortal::notificationCount($request->user()),
             'partylists' => $partylists,
             'canManage' => $request->user()->can('create', Partylist::class),
         ]);
@@ -51,7 +52,7 @@ class AdminCampaignController extends Controller
 
         return view('admin.campaigns.create', [
             'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'notificationsCount' => AdminPortal::notificationCount($request->user()),
         ]);
     }
 
@@ -105,7 +106,7 @@ class AdminCampaignController extends Controller
 
         return view('admin.campaigns.edit', [
             'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'notificationsCount' => AdminPortal::notificationCount($request->user()),
             'partylist' => $partylist,
         ]);
     }

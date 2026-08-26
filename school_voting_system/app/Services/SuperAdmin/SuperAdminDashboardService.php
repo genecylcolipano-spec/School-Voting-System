@@ -3,17 +3,20 @@
 namespace App\Services\SuperAdmin;
 
 use App\Enums\ElectionStatus;
+use App\Enums\FundraiserStatus;
 use App\Enums\PasskeyStatus;
 use App\Enums\StudentStatus;
+use App\Enums\TalentEventStatus;
 use App\Enums\UserRole;
-use App\Models\AuditLog;
 use App\Models\Election;
+use App\Models\Fundraiser;
 use App\Models\Passkey;
 use App\Models\PasskeyRecoveryRequest;
 use App\Models\Permission;
 use App\Models\StaffRole;
 use App\Models\SystemBackup;
 use App\Models\SystemSetting;
+use App\Models\TalentEvent;
 use App\Models\User;
 use App\Models\Vote;
 use Illuminate\Support\Facades\DB;
@@ -31,10 +34,21 @@ class SuperAdminDashboardService
             ->where('student_status', StudentStatus::Enrolled)
             ->count();
 
-        $votedStudents = Vote::query()->distinct('user_id')->count('user_id');
+        $liveElection = $this->liveElection();
+
+        $voteQuery = Vote::query();
+        if ($liveElection) {
+            $voteQuery->where('election_id', $liveElection->id);
+        } else {
+            $voteQuery->whereRaw('0 = 1');
+        }
+
+        $votedStudents = (clone $voteQuery)->distinct('user_id')->count('user_id');
+        $totalVotes = (clone $voteQuery)->count();
 
         return [
             'students' => User::query()->where('role', UserRole::Student)->count(),
+            'faculty' => User::query()->where('role', UserRole::Faculty)->count(),
             'admins' => User::query()->where('role', UserRole::Admin)->count(),
             'super_admins' => User::query()->where('role', UserRole::SuperAdmin)->count(),
             'passkeys' => Passkey::query()->where('status', PasskeyStatus::Active)->count(),
@@ -46,12 +60,53 @@ class SuperAdminDashboardService
                 ->where('is_paused', false)
                 ->whereNull('annulled_at')
                 ->count(),
-            'total_votes' => Vote::query()->count(),
+            'total_votes' => $totalVotes,
             'voter_turnout' => $eligibleStudents > 0
                 ? round(($votedStudents / $eligibleStudents) * 100, 1)
                 : 0.0,
             'eligible_students' => $eligibleStudents,
             'voted_students' => $votedStudents,
+            'election_scope' => $liveElection?->title ?? 'No live election',
+            'has_live_election' => $liveElection !== null,
+        ];
+    }
+
+    public function liveElection(): ?Election
+    {
+        return Election::query()
+            ->where('status', ElectionStatus::Active)
+            ->where('is_paused', false)
+            ->whereNull('annulled_at')
+            ->latest('id')
+            ->first();
+    }
+
+    public function activitySnapshot(): array
+    {
+        $openCompetitionStatuses = [
+            TalentEventStatus::Scheduled,
+            TalentEventStatus::EntriesOpen,
+            TalentEventStatus::VotingOpen,
+        ];
+
+        return [
+            'competitions' => TalentEvent::query()
+                ->withCount('votes')
+                ->whereIn('status', $openCompetitionStatuses)
+                ->latest('id')
+                ->limit(3)
+                ->get(),
+            'competitions_open' => TalentEvent::query()
+                ->whereIn('status', $openCompetitionStatuses)
+                ->count(),
+            'fundraisers' => Fundraiser::query()
+                ->where('status', FundraiserStatus::Active)
+                ->latest('id')
+                ->limit(3)
+                ->get(),
+            'fundraisers_active' => Fundraiser::query()
+                ->where('status', FundraiserStatus::Active)
+                ->count(),
         ];
     }
 
@@ -72,7 +127,12 @@ class SuperAdminDashboardService
         $lastBackup = SystemBackup::query()->latest('completed_at')->first();
         $lastError = $this->lastLogError();
 
-        $overall = ($dbOk && $passkeyCount >= 0) ? 'Healthy' : 'Degraded';
+        $overall = 'Healthy';
+        if (! $dbOk) {
+            $overall = 'Degraded';
+        } elseif (! $lastBackup || $lastError) {
+            $overall = 'Attention';
+        }
 
         return [
             'database' => ['status' => $dbOk ? 'ok' : 'error', 'message' => $dbMessage],
@@ -83,7 +143,10 @@ class SuperAdminDashboardService
                     ? 'Last backup '.$lastBackup->completed_at?->diffForHumans()
                     : 'No backups yet',
             ],
-            'last_error' => $lastError,
+            'last_error' => [
+                'status' => $lastError ? 'error' : 'ok',
+                'message' => $lastError ?? 'No recent errors',
+            ],
             'overall' => $overall,
         ];
     }
@@ -103,6 +166,10 @@ class SuperAdminDashboardService
 
     protected function lastLogError(): ?string
     {
+        if (app()->environment('testing')) {
+            return null;
+        }
+
         $logPath = storage_path('logs/laravel.log');
 
         if (! File::exists($logPath)) {

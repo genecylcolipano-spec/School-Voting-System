@@ -11,6 +11,8 @@ class PasskeyRecoveryRequest extends Model
 
     public const STATUS_RESOLVED = 'resolved';
 
+    public const STATUS_DISMISSED = 'dismissed';
+
     protected $fillable = [
         'user_id',
         'account_id',
@@ -22,6 +24,7 @@ class PasskeyRecoveryRequest extends Model
         'status',
         'resolved_by',
         'resolved_at',
+        'last_sent_at',
         'requested_ip',
         'requested_user_agent',
     ];
@@ -33,6 +36,7 @@ class PasskeyRecoveryRequest extends Model
             'used_at' => 'datetime',
             'invalidated_at' => 'datetime',
             'resolved_at' => 'datetime',
+            'last_sent_at' => 'datetime',
         ];
     }
 

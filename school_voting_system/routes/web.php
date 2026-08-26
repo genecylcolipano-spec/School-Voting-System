@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\AdminAnnouncementController;
 use App\Http\Controllers\Admin\AdminCampaignController;
 use App\Http\Controllers\Admin\AdminCandidateController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminPasskeyRecoveryController;
 use App\Http\Controllers\Admin\AdminElectionController;
 use App\Http\Controllers\Admin\AdminEventController;
 use App\Http\Controllers\Admin\AdminEventsTalentController;
@@ -303,9 +304,14 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
     });
 
     Route::middleware(['role:admin,super_admin', 'throttle:60,1'])->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/recovery', [AdminDashboardController::class, 'recovery'])
+        Route::get('/recovery', [AdminPasskeyRecoveryController::class, 'index'])
             ->middleware('role:super_admin')
             ->name('recovery.index');
+        Route::post('/recovery/{recoveryRequest}/enroll', [AdminPasskeyRecoveryController::class, 'enroll'])
+            ->name('recovery.enroll');
+        Route::post('/recovery/{recoveryRequest}/dismiss', [AdminPasskeyRecoveryController::class, 'dismiss'])
+            ->middleware('role:super_admin')
+            ->name('recovery.dismiss');
 
         Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
         Route::get('/students/{student}', [AdminStudentController::class, 'show'])->name('students.show');

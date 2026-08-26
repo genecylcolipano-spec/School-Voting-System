@@ -429,18 +429,6 @@
                         <?php endif; ?>
                     </div>
 
-                    <?php if(session('success') || session('error') || session('warning')): ?>
-                        <div class="<?php echo \Illuminate\Support\Arr::toCssClasses([
-                            'mt-4 rounded-xl border px-4 py-3 text-sm',
-                            'border-emerald-500/20 bg-emerald-500/10 text-emerald-200' => session('success'),
-                            'border-rose-500/20 bg-rose-500/10 text-rose-200' => session('error'),
-                            'border-amber-500/20 bg-amber-500/10 text-amber-200' => session('warning'),
-                        ]); ?>">
-                            <?php echo e(session('success') ?? session('error') ?? session('warning')); ?>
-
-                        </div>
-                    <?php endif; ?>
-
                     <div class="mt-5 flex flex-wrap items-center gap-3">
                         <?php if($integrityHasHash && $integrityValid): ?>
                             <span class="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">Verified</span>

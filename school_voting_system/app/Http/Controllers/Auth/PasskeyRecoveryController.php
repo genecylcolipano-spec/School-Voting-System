@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\IssuePasskeyResetRequest;
 use App\Models\PasskeyRecoveryRequest;
 use App\Models\User;
 use App\Services\Auth\PasskeyEnrollmentLinkService;
+use App\Services\Auth\PasskeyRecoveryQueueService;
 use App\Services\Auth\PasskeyRecoveryTokenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +27,7 @@ class PasskeyRecoveryController extends Controller
     public function __construct(
         protected PasskeyEnrollmentLinkService $enrollmentLinks,
         protected PasskeyRecoveryTokenService $recoveryTokens,
+        protected PasskeyRecoveryQueueService $recoveryQueue,
     ) {}
 
     public function show(): View
@@ -77,15 +79,13 @@ class PasskeyRecoveryController extends Controller
             ->first();
 
         if (! $user) {
-            // Enumeration-safe audit row (no token).
-            PasskeyRecoveryRequest::query()->create([
-                'user_id' => null,
-                'account_id' => $accountId,
-                'email' => $email,
-                'status' => PasskeyRecoveryRequest::STATUS_PENDING,
-                'requested_ip' => $ip,
-                'requested_user_agent' => (string) $request->userAgent(),
-            ]);
+            // Enumeration-safe audit row (no token). One pending row per Account ID + email.
+            $this->recoveryQueue->recordUnmatchedAttempt(
+                $accountId,
+                $email,
+                $ip,
+                (string) $request->userAgent(),
+            );
 
             Log::info('Passkey recovery request rejected.', [
                 'account_id' => $accountId,
@@ -228,18 +228,20 @@ class PasskeyRecoveryController extends Controller
                 ->find($recoveryRequestId);
         }
 
-        $recipientEmail = $recoveryRequest?->email ?: $user->email;
+        $recipientEmail = $user->email;
         $expiresInMinutes = max(60, (int) config('enrollment.link_expiration_hours', 24) * 60);
+
+        $result = $this->enrollmentLinks->sendToUser($user, $recipientEmail, $expiresInMinutes);
 
         if ($recoveryRequest) {
             $recoveryRequest->forceFill([
+                'user_id' => $user->id,
                 'status' => PasskeyRecoveryRequest::STATUS_RESOLVED,
                 'resolved_by' => $request->user()?->id,
                 'resolved_at' => now(),
+                'last_sent_at' => $result['email_sent'] ? now() : $recoveryRequest->last_sent_at,
             ])->save();
         }
-
-        $result = $this->enrollmentLinks->sendToUser($user, $recipientEmail, $expiresInMinutes);
         $emailSent = $result['email_sent'];
         $emailError = $result['email_error']
             ? 'Enrollment link created, but email delivery failed. Share the copied link manually.'

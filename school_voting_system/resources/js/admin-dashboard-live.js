@@ -783,8 +783,9 @@ function renderChartSvg(container, config) {
 
     const plotW = 280;
     const plotH = 120;
-    const padL = 44;
-    const padB = 30;
+    const needsAngledLabels = type === 'bar' && labels.some((label) => String(label).length > 8);
+    const padL = needsAngledLabels ? 52 : 44;
+    const padB = needsAngledLabels ? 58 : 30;
     const padT = 10;
     const padR = 10;
     const width = padL + plotW + padR;
@@ -831,14 +832,19 @@ function renderChartSvg(container, config) {
             const y = padT + index * rowH + rowH * 0.22;
             const barHeight = rowH * 0.56;
             const shortLabel = label.length > 14 ? `${label.slice(0, 14)}…` : label;
-            body += `<text x="${padL - 4}" y="${(y + barHeight / 2 + 3).toFixed(1)}" text-anchor="end" fill="#94a3b8" font-size="8" font-family="ui-sans-serif, system-ui, sans-serif">${escapeHtml(shortLabel)}</text>`;
+            body += `<text x="${padL - 4}" y="${(y + barHeight / 2 + 3).toFixed(1)}" text-anchor="end" fill="#94a3b8" font-size="8" font-family="ui-sans-serif, system-ui, sans-serif"><title>${escapeHtml(label)}</title>${escapeHtml(shortLabel)}</text>`;
             body += `<rect x="${padL}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barHeight.toFixed(1)}" rx="2" fill="${accent}" opacity="0.85" />`;
         });
     }
 
     if (type !== 'horizontal-bar') {
         labels.forEach((label, index) => {
-            body += `<text x="${toX(index).toFixed(1)}" y="${padT + plotH + 18}" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="ui-sans-serif, system-ui, sans-serif">${escapeHtml(label)}</text>`;
+            const x = toX(index).toFixed(1);
+            const y = needsAngledLabels ? padT + plotH + 12 : padT + plotH + 18;
+            const anchor = needsAngledLabels ? 'end' : 'middle';
+            const size = needsAngledLabels ? 8 : 9;
+            const transform = needsAngledLabels ? ` transform="rotate(-38 ${x} ${y})"` : '';
+            body += `<text x="${x}" y="${y}" text-anchor="${anchor}" fill="#94a3b8" font-size="${size}" font-family="ui-sans-serif, system-ui, sans-serif"${transform}><title>${escapeHtml(label)}</title>${escapeHtml(label)}</text>`;
         });
     }
 

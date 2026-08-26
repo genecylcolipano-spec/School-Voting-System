@@ -625,7 +625,7 @@
                         <th>Contestant / Candidate</th>
                         <th>Position</th>
                         <th>Party</th>
-                        <th>Votes</th>
+                        <th><?php echo e($detail['ranking_metric_label'] ?? 'Votes'); ?></th>
                         <th>Percentage</th>
                         <th>Status</th>
                     </tr>
@@ -637,7 +637,7 @@
                             <td><?php echo e($row['name']); ?></td>
                             <td><?php echo e($row['position']); ?></td>
                             <td><?php echo e($row['party']); ?></td>
-                            <td><?php echo e(number_format($row['votes'])); ?></td>
+                            <td><?php echo e(number_format($row['votes'], (floor((float) ($row['votes'] ?? 0)) == (float) ($row['votes'] ?? 0)) ? 0 : 2)); ?></td>
                             <td><?php echo e(number_format($row['percent'], 1)); ?>%</td>
                             <td>
                                 <?php if(($row['status'] ?? '') === 'Winner'): ?>

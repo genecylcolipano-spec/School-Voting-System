@@ -8,6 +8,7 @@ use App\Models\Election;
 use App\Models\User;
 use App\Services\Portal\PortalNotificationService;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class ElectionLifecycleService
 {
@@ -23,9 +24,17 @@ class ElectionLifecycleService
             return $this->resume($election, $actor);
         }
 
-        // Already accepting votes — idempotent (no duplicate student fan-out).
+        if ($election->annulled_at) {
+            throw new HttpException(422, 'An annulled election cannot be opened.');
+        }
+
+        if ($election->status === ElectionStatus::Archived) {
+            throw new HttpException(422, 'An archived election cannot be opened.');
+        }
+
+        // Already accepting votes — do not report success for a no-op.
         if ($election->status === ElectionStatus::Active && ! $election->is_paused) {
-            return $election;
+            throw new HttpException(422, 'This election is already open.');
         }
 
         // Re-opening voting must retract any previously published official
@@ -50,6 +59,10 @@ class ElectionLifecycleService
 
     public function pause(Election $election, User $actor): Election
     {
+        if ($election->status !== ElectionStatus::Active || $election->is_paused || $election->annulled_at) {
+            throw new HttpException(422, 'Only an open election can be paused.');
+        }
+
         $election->forceFill(['is_paused' => true])->save();
         $this->audit->record($actor, "Paused election: {$election->title}", AuditActionType::Election, targetType: 'election', targetId: $election->id);
 
@@ -60,6 +73,10 @@ class ElectionLifecycleService
 
     public function resume(Election $election, User $actor): Election
     {
+        if ($election->status !== ElectionStatus::Active || ! $election->is_paused || $election->annulled_at) {
+            throw new HttpException(422, 'Only a paused election can be resumed.');
+        }
+
         $election->forceFill([
             'status' => ElectionStatus::Active,
             'is_paused' => false,
@@ -74,6 +91,10 @@ class ElectionLifecycleService
 
     public function close(Election $election, User $actor): Election
     {
+        if ($election->status !== ElectionStatus::Active || $election->annulled_at) {
+            throw new HttpException(422, 'Only an open or paused election can be closed.');
+        }
+
         $election->forceFill([
             'status' => ElectionStatus::Closed,
             'is_paused' => false,
@@ -91,6 +112,14 @@ class ElectionLifecycleService
 
     public function annul(Election $election, User $actor): Election
     {
+        if ($election->annulled_at) {
+            throw new HttpException(422, 'This election is already annulled.');
+        }
+
+        if ($election->status === ElectionStatus::Draft) {
+            throw new HttpException(422, 'A draft election cannot be annulled. Delete it from Elections instead.');
+        }
+
         $election->forceFill([
             'status' => ElectionStatus::Closed,
             'annulled_at' => now(),
@@ -104,6 +133,10 @@ class ElectionLifecycleService
 
     public function rerun(Election $election, User $actor): Election
     {
+        if (! in_array($election->status, [ElectionStatus::Closed, ElectionStatus::Archived], true) && ! $election->annulled_at) {
+            throw new HttpException(422, 'Re-run is available after an election is closed or annulled.');
+        }
+
         $rerun = Election::query()->create([
             'title' => $election->title.' (Re-run)',
             'slug' => Str::slug($election->title.'-rerun-'.now()->format('YmdHis')),
@@ -120,6 +153,18 @@ class ElectionLifecycleService
 
     public function lockResults(Election $election, User $actor, bool $locked = true): Election
     {
+        if ($locked && $election->results_locked) {
+            throw new HttpException(422, 'Results are already locked.');
+        }
+
+        if (! $locked && ! $election->results_locked) {
+            throw new HttpException(422, 'Results are not locked.');
+        }
+
+        if ($locked && $election->status === ElectionStatus::Draft) {
+            throw new HttpException(422, 'Results can only be locked after voting has started or closed.');
+        }
+
         $election->forceFill(['results_locked' => $locked])->save();
 
         if ($locked) {
@@ -139,6 +184,14 @@ class ElectionLifecycleService
 
     public function schedule(Election $election, User $actor, ?string $openAt, ?string $closeAt): Election
     {
+        if (! $this->canSchedule($election)) {
+            throw new HttpException(422, 'This election cannot be scheduled.');
+        }
+
+        if (! $openAt && ! $closeAt) {
+            throw new HttpException(422, 'Choose an open or close time to schedule.');
+        }
+
         $election->forceFill([
             'scheduled_open_at' => $openAt,
             'scheduled_close_at' => $closeAt,
@@ -152,5 +205,63 @@ class ElectionLifecycleService
         ]);
 
         return $election->fresh();
+    }
+
+    public function canSchedule(Election $election): bool
+    {
+        return $election->annulled_at === null
+            && $election->status !== ElectionStatus::Archived;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function availableActions(Election $election): array
+    {
+        if ($election->annulled_at) {
+            return ['rerun' => 'Re-run'];
+        }
+
+        $actions = [];
+        $votingEnded = in_array($election->status, [ElectionStatus::Closed, ElectionStatus::Archived], true)
+            || ($election->voting_ends_at && now()->gt($election->voting_ends_at));
+
+        if ($election->status === ElectionStatus::Draft) {
+            $actions['open'] = 'Open';
+        }
+
+        if ($election->status === ElectionStatus::Active && $election->is_paused) {
+            $actions['resume'] = 'Resume';
+            $actions['close'] = 'Close';
+            $actions['annul'] = 'Annul';
+        } elseif ($election->status === ElectionStatus::Active) {
+            $actions['pause'] = 'Pause';
+            $actions['close'] = 'Close';
+            $actions['annul'] = 'Annul';
+        }
+
+        if ($election->status === ElectionStatus::Closed) {
+            $actions['open'] = 'Re-open';
+            $actions['rerun'] = 'Re-run';
+            $actions['annul'] = 'Annul';
+        }
+
+        if ($election->status === ElectionStatus::Archived) {
+            $actions['rerun'] = 'Re-run';
+        }
+
+        if (! $election->results_locked && $election->status !== ElectionStatus::Draft) {
+            $actions['lock'] = 'Lock Results';
+        }
+
+        if ($votingEnded && ! $election->public_results_published && $election->status !== ElectionStatus::Draft) {
+            $actions['publish_results'] = 'Publish Results';
+        }
+
+        if ($election->public_results_published) {
+            $actions['unpublish_results'] = 'Unpublish';
+        }
+
+        return $actions;
     }
 }

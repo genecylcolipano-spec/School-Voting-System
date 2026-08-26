@@ -785,8 +785,17 @@ class AdminScopeService
 
     public function canExportPreliminaryResults(User $admin): bool
     {
-        return $admin->hasPermission('export_reports')
-            && $this->assignedElection($admin) !== null;
+        if (! $admin->hasPermission('export_reports')) {
+            return false;
+        }
+
+        // Super Admin is not assigned to a single election. Export is allowed
+        // for any result they can view, including closed elections.
+        if ($admin->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->assignedElection($admin) !== null;
     }
 
     public function canPauseElection(User $admin): bool
@@ -973,11 +982,26 @@ class AdminScopeService
         return $query->get();
     }
 
+    /**
+     * School events an administrator may manage.
+     * Super Admins see every event. Regular admins see events they created.
+     */
+    public function schoolEventsQuery(User $admin): Builder
+    {
+        $query = Event::query();
+
+        if ($admin->isSuperAdmin()) {
+            return $query;
+        }
+
+        return $query->where('created_by', $admin->id);
+    }
+
     public function schoolEvents(User $admin): Collection
     {
         Event::markOverdueAsCompleted();
 
-        return Event::query()
+        return $this->schoolEventsQuery($admin)
             ->latest('event_date')
             ->get();
     }

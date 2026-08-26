@@ -2,7 +2,9 @@
     <x-admin-portal title="Fundraising Reports" :user="$user" :notifications-count="$notificationsCount">
         @include('admin.partials.page-header', [
             'title' => 'Fundraising Reports',
-            'description' => 'Paid donations, goal progress, and campaign totals in your scope.',
+            'description' => $user->isSuperAdmin()
+                ? 'Paid donations, goal progress, and campaign totals across the institution.'
+                : 'Paid donations, goal progress, and campaign totals in your scope.',
             'showAction' => false,
         ])
 
@@ -63,7 +65,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="px-4 py-10 text-center text-slate-400">No fundraising campaigns in your scope yet.</td></tr>
+                        <tr><td colspan="6" class="px-4 py-10 text-center text-slate-400">{{ $user->isSuperAdmin() ? 'No fundraising campaigns yet.' : 'No fundraising campaigns in your scope yet.' }}</td></tr>
                     @endforelse
                 </tbody>
             </table>

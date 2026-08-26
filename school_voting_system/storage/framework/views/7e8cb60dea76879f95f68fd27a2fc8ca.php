@@ -20,7 +20,7 @@
 <?php $component->withAttributes(['title' => 'Reports','user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount)]); ?>
         <?php echo $__env->make('admin.partials.page-header', [
             'title' => 'Election Reports',
-            'description' => 'Election summary, turnout, winners, party performance, and exports.',
+            'description' => 'Election summary, turnout, winners, party performance, and exports. Live charts are in Dashboard Analytics.',
         ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
         <?php echo $__env->make('admin.reports.partials.report-tabs', ['active' => 'election'], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>

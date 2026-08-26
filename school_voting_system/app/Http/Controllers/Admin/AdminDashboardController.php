@@ -3,19 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Candidate;
 use App\Models\Election;
 use App\Models\Event;
-use App\Models\Candidate;
 use App\Models\Fundraiser;
-use App\Models\PasskeyRecoveryRequest;
+use App\Models\User;
 use App\Services\Admin\AdminActivityTimelineService;
 use App\Services\Admin\AdminAnalyticsService;
 use App\Services\Admin\AdminDashboardLiveService;
 use App\Services\Admin\AdminLiveVotingService;
 use App\Services\Admin\AdminScopeService;
 use App\Support\AdminPortal;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AdminDashboardController extends Controller
@@ -30,7 +30,7 @@ class AdminDashboardController extends Controller
 
     public function __invoke(Request $request): View
     {
-        $user = $request->user()->load(['staffRole', 'passkeys']);
+        $user = $this->actor($request)->load(['staffRole', 'passkeys']);
 
         $election = $this->scope->assignedElection($user);
         $statistics = $this->scope->statistics($user);
@@ -94,29 +94,19 @@ class AdminDashboardController extends Controller
 
     public function liveVoting(Request $request): JsonResponse
     {
-        return response()->json($this->liveVoting->progress($request->user()));
+        return response()->json($this->liveVoting->progress($this->actor($request)));
     }
 
     public function live(Request $request): JsonResponse
     {
-        return response()->json($this->dashboardLive->snapshot($request->user()));
+        return response()->json($this->dashboardLive->snapshot($this->actor($request)));
     }
 
-    public function recovery(Request $request): View
+    protected function actor(Request $request): User
     {
-        abort_unless($request->user()->isSuperAdmin(), 403);
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
 
-        $recoveryRequests = PasskeyRecoveryRequest::query()
-            ->with('user')
-            ->where('status', PasskeyRecoveryRequest::STATUS_PENDING)
-            ->latest()
-            ->limit(50)
-            ->get();
-
-        return view('admin.recovery.index', [
-            'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $recoveryRequests->count(),
-            'recoveryRequests' => $recoveryRequests,
-        ]);
+        return $user;
     }
 }

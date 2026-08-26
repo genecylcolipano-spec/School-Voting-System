@@ -22,6 +22,7 @@ use App\Services\Portal\AnnouncementService;
 use App\Services\Portal\PortalNotificationService;
 use App\Services\SuperAdmin\AuditLogService;
 use App\Services\Talent\TalentEventPublishingService;
+use App\Support\AdminPortal;
 use App\Support\SlugGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -99,7 +100,7 @@ class AdminTalentCompetitionController extends Controller
 
         return view('admin.talent-competition.index', [
             'user' => $user,
-            'notificationsCount' => 0,
+            'notificationsCount' => AdminPortal::notificationCount(auth()->user()),
             'assignedRole' => $user->staffRole?->name ?? 'Operations Admin',
             'talentEvents' => $paginator,
             'filters' => [
@@ -122,7 +123,7 @@ class AdminTalentCompetitionController extends Controller
 
         return view('admin.talent-competition.create', [
             'user' => $user,
-            'notificationsCount' => 0,
+            'notificationsCount' => AdminPortal::notificationCount(auth()->user()),
             'assignedRole' => $user->staffRole?->name ?? 'Operations Admin',
             'types' => TalentEventType::cases(),
             'categories' => TalentCategory::cases(),
@@ -200,7 +201,7 @@ class AdminTalentCompetitionController extends Controller
 
         return view('admin.talent-competition.show', [
             'user' => $user,
-            'notificationsCount' => 0,
+            'notificationsCount' => AdminPortal::notificationCount(auth()->user()),
             'assignedRole' => $user->staffRole?->name ?? 'Operations Admin',
             'talentEvent' => $talentEvent,
             'canManageTalentEvents' => $this->scope->canCreateTalentEvents($user),
@@ -217,7 +218,7 @@ class AdminTalentCompetitionController extends Controller
 
         return view('admin.talent-competition.edit', [
             'user' => $user,
-            'notificationsCount' => 0,
+            'notificationsCount' => AdminPortal::notificationCount(auth()->user()),
             'assignedRole' => $user->staffRole?->name ?? 'Operations Admin',
             'types' => TalentEventType::cases(),
             'categories' => TalentCategory::cases(),
@@ -239,7 +240,7 @@ class AdminTalentCompetitionController extends Controller
 
         return view('admin.talent-competition.settings', [
             'user' => $user,
-            'notificationsCount' => 0,
+            'notificationsCount' => AdminPortal::notificationCount(auth()->user()),
             'assignedRole' => $user->staffRole?->name ?? 'Operations Admin',
             'talentEvent' => $talentEvent,
             'registrationMethods' => TalentRegistrationMethod::cases(),

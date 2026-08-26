@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class PortalNotificationDeliveryTest extends TestCase
@@ -393,18 +394,21 @@ class PortalNotificationDeliveryTest extends TestCase
         );
     }
 
-    public function test_open_on_already_active_election_is_idempotent(): void
+    public function test_open_on_already_active_election_is_rejected(): void
     {
         $super = User::factory()->superAdmin()->create();
-        $student = User::factory()->create();
         $election = Election::factory()->active()->create(['is_paused' => false]);
 
-        app(ElectionLifecycleService::class)->open($election, $super);
+        try {
+            app(ElectionLifecycleService::class)->open($election, $super);
+            $this->fail('Expected an HttpException for an already-open election.');
+        } catch (HttpException $exception) {
+            $this->assertSame('This election is already open.', $exception->getMessage());
+        }
 
         $this->assertSame(
             0,
             PortalNotification::query()
-                ->where('user_id', $student->id)
                 ->where('type', 'student_voting_open')
                 ->count()
         );

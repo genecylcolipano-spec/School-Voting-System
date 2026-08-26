@@ -66,7 +66,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="10" class="px-4 py-10 text-center text-slate-400">No talent competitions in your scope yet.</td></tr>
+                        <tr><td colspan="10" class="px-4 py-10 text-center text-slate-400">{{ $user->isSuperAdmin() ? 'No talent competitions yet.' : 'No talent competitions in your scope yet.' }}</td></tr>
                     @endforelse
                 </tbody>
             </table>

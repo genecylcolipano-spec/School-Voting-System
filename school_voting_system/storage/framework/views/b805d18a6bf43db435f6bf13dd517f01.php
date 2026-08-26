@@ -114,7 +114,7 @@ unset($__defined_vars, $__key, $__value); ?>
         :class="collapsed ? 'lg:pl-20' : 'lg:pl-72'"
     >
         <header class="sticky top-0 z-30 border-b border-violet-500/10 bg-slate-950/90 backdrop-blur-md">
-            <div class="flex flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
                 <div class="flex min-w-0 items-center gap-3">
                     <button
                         type="button"
@@ -130,17 +130,13 @@ unset($__defined_vars, $__key, $__value); ?>
                     </div>
                 </div>
 
-                <div class="relative flex max-w-xl flex-1 items-center gap-2">
-                    <?php if($isSuperAdmin): ?>
-                        <div class="relative hidden w-full sm:block">
-                            <input id="super-admin-search" type="search" placeholder="Search accounts, students, elections…"
-                                class="w-full rounded-xl border border-violet-500/20 bg-slate-900/80 px-4 py-2 text-sm text-white placeholder:text-slate-500 focus:border-violet-400/50 focus:outline-none">
-                            <div id="super-admin-search-results" class="absolute left-0 right-0 top-full z-50 mt-2 hidden max-h-64 overflow-y-auto rounded-xl border border-violet-500/20 bg-slate-900 shadow-xl"></div>
-                        </div>
-                    <?php endif; ?>
-                </div>
+                <?php if($isSuperAdmin): ?>
+                    <div class="relative mx-2 hidden min-w-0 max-w-xl flex-1 lg:block">
+                        <?php echo $__env->make('admin.partials.super-admin-search', ['inputId' => 'super-admin-search'], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                    </div>
+                <?php endif; ?>
 
-                <div class="relative flex items-center gap-2">
+                <div class="relative flex shrink-0 items-center gap-2">
                     <?php if (isset($component)) { $__componentOriginal7169a5b356633be5dafc74bf7a8eb300 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal7169a5b356633be5dafc74bf7a8eb300 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.notification-center','data' => ['feedUrl' => route('admin.notifications.feed'),'indexUrl' => route('admin.notifications.index'),'markAllUrl' => route('admin.notifications.read'),'markOneUrlTemplate' => ''.e(route('admin.notifications.read-one', ['notification' => '__ID__'])).'','initialCount' => $notificationsCount,'theme' => 'admin']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
@@ -294,12 +290,25 @@ unset($__defined_vars, $__key, $__value); ?>
 <?php endif; ?>
                 </div>
             </div>
+
+            <?php if($isSuperAdmin): ?>
+                <div class="border-t border-violet-500/10 px-4 py-3 lg:hidden">
+                    <?php echo $__env->make('admin.partials.super-admin-search', ['inputId' => 'super-admin-search-mobile'], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                </div>
+            <?php endif; ?>
         </header>
 
         <main class="space-y-6 bg-slate-950 px-4 py-6 pb-8 sm:px-6 lg:px-8">
             <?php if(session('success')): ?>
                 <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
                     <?php echo e(session('success')); ?>
+
+                </div>
+            <?php endif; ?>
+
+            <?php if(session('warning')): ?>
+                <div class="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                    <?php echo e(session('warning')); ?>
 
                 </div>
             <?php endif; ?>
@@ -317,6 +326,11 @@ unset($__defined_vars, $__key, $__value); ?>
     </div>
 
     <?php echo $__env->make('admin.partials.confirm-modal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
-    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/notification-center.js', 'resources/js/admin-confirm.js']); ?>
+    <?php if($isSuperAdmin): ?>
+        <script>
+            window.superAdminPortal = { searchUrl: <?php echo json_encode(route('super-admin.search'), 15, 512) ?> };
+        </script>
+        <?php echo app('Illuminate\Foundation\Vite')(['resources/js/super-admin-dashboard.js']); ?>
+    <?php endif; ?>
 </div>
 <?php /**PATH C:\xampp\htdocs\voting system\school_voting_system\resources\views/components/admin-portal.blade.php ENDPATH**/ ?>

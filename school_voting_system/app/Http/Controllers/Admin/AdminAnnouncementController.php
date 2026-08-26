@@ -13,6 +13,7 @@ use App\Models\AnnouncementAttachment;
 use App\Services\Media\ImageCompressionService;
 use App\Services\Portal\AnnouncementService;
 use App\Services\Portal\PortalNotificationService;
+use App\Support\AdminPortal;
 use App\Support\SlugGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,7 +47,7 @@ class AdminAnnouncementController extends Controller
 
         return view('admin.announcements.index', [
             'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'notificationsCount' => AdminPortal::notificationCount($request->user()),
             'announcements' => $announcements,
         ]);
     }
@@ -201,7 +202,7 @@ class AdminAnnouncementController extends Controller
     {
         return [
             'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'notificationsCount' => AdminPortal::notificationCount($request->user()),
             ...$this->announcements->formOptions(),
         ];
     }

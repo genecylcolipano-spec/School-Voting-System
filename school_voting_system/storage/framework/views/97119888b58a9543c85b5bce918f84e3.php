@@ -20,7 +20,9 @@
 <?php $component->withAttributes(['title' => 'Fundraising Reports','user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount)]); ?>
         <?php echo $__env->make('admin.partials.page-header', [
             'title' => 'Fundraising Reports',
-            'description' => 'Paid donations, goal progress, and campaign totals in your scope.',
+            'description' => $user->isSuperAdmin()
+                ? 'Paid donations, goal progress, and campaign totals across the institution.'
+                : 'Paid donations, goal progress, and campaign totals in your scope.',
             'showAction' => false,
         ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
@@ -81,7 +83,7 @@
                             </td>
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                        <tr><td colspan="6" class="px-4 py-10 text-center text-slate-400">No fundraising campaigns in your scope yet.</td></tr>
+                        <tr><td colspan="6" class="px-4 py-10 text-center text-slate-400"><?php echo e($user->isSuperAdmin() ? 'No fundraising campaigns yet.' : 'No fundraising campaigns in your scope yet.'); ?></td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

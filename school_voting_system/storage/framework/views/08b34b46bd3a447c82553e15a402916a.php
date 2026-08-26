@@ -23,10 +23,6 @@
             'description' => 'Election events, voting updates, and platform alerts.',
         ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
-        <?php if(session('success')): ?>
-            <div class="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200"><?php echo e(session('success')); ?></div>
-        <?php endif; ?>
-
         <?php if (isset($component)) { $__componentOriginalcc9306485bb73c373e2e899f5b588d7b = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginalcc9306485bb73c373e2e899f5b588d7b = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.notifications-index','data' => ['notifications' => $notifications,'filters' => $filters,'indexRoute' => route('admin.notifications.index'),'markAllRoute' => $markAllRoute,'markOneRouteName' => $markOneRouteName,'deleteRouteName' => $deleteRouteName,'theme' => 'admin']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
