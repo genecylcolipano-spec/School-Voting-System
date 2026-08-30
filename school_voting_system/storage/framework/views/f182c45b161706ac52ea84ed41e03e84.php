@@ -73,7 +73,7 @@
                 name="q"
                 type="search"
                 value="<?php echo e(request('q')); ?>"
-                placeholder="<?php echo e($role->value === 'faculty' ? 'Search by Faculty ID, Name, or Email...' : 'Search by Administrator ID, Name, or Email...'); ?>"
+                placeholder="<?php echo e($role->value === 'faculty' ? 'Search by Faculty ID, name, email, or phone' : 'Search by Administrator ID, name, email, or phone'); ?>"
                 class="min-w-[16rem] flex-1 rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100"
             />
             <select name="status" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-100">

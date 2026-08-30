@@ -70,6 +70,7 @@ class PortalNotificationDeliveryTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
         $student = User::factory()->create();
+        $faculty = User::factory()->faculty()->create();
 
         $this->notifications->fundraiserCreated('Draft Drive', $admin, 1, false);
 
@@ -86,12 +87,19 @@ class PortalNotificationDeliveryTest extends TestCase
                 ->where('type', 'student_fundraiser_published')
                 ->exists()
         );
+        $this->assertFalse(
+            PortalNotification::query()
+                ->where('user_id', $faculty->id)
+                ->where('type', 'faculty_fundraiser_published')
+                ->exists()
+        );
     }
 
     public function test_fundraiser_created_notifies_students_when_accepting(): void
     {
         $admin = User::factory()->admin()->create();
         $student = User::factory()->create();
+        $faculty = User::factory()->faculty()->create();
 
         $this->notifications->fundraiserCreated('Live Drive', $admin, 2, true);
 
@@ -99,6 +107,12 @@ class PortalNotificationDeliveryTest extends TestCase
             PortalNotification::query()
                 ->where('user_id', $student->id)
                 ->where('type', 'student_fundraiser_published')
+                ->exists()
+        );
+        $this->assertTrue(
+            PortalNotification::query()
+                ->where('user_id', $faculty->id)
+                ->where('type', 'faculty_fundraiser_published')
                 ->exists()
         );
     }

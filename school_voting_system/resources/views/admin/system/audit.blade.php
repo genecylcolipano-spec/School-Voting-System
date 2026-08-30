@@ -8,7 +8,7 @@
 
         <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
             <p class="text-sm text-slate-400">Newest events first. Export supports up to 5,000 rows.</p>
-            <a href="{{ route('super-admin.audit.export', request()->only(['from', 'to', 'module'])) }}"
+            <a href="{{ route('super-admin.audit.export', request()->only(['search', 'from', 'to', 'module', 'role', 'user_id'])) }}"
                 class="rounded-xl border border-violet-500/30 px-4 py-2 text-sm font-semibold text-violet-300 hover:bg-violet-500/10">
                 Export CSV
             </a>

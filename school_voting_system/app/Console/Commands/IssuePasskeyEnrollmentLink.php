@@ -3,16 +3,16 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Services\Auth\PasskeyEnrollmentLinkService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\URL;
 
 class IssuePasskeyEnrollmentLink extends Command
 {
     protected $signature = 'portal:enrollment-link {account_id : The portal account ID (e.g. ADMIN-001)}';
 
-    protected $description = 'Generate a signed passkey enrollment link for a portal account';
+    protected $description = 'Generate a passkey enrollment link for a portal account';
 
-    public function handle(): int
+    public function handle(PasskeyEnrollmentLinkService $enrollmentLinks): int
     {
         $accountId = $this->argument('account_id');
 
@@ -24,14 +24,10 @@ class IssuePasskeyEnrollmentLink extends Command
             return self::FAILURE;
         }
 
-        $url = URL::temporarySignedRoute(
-            'register.passkey.bootstrap',
-            now()->addHours(2),
-            ['user' => $user->id]
-        );
+        $issued = $enrollmentLinks->issueForUser($user);
 
         $this->info("Enrollment link for {$user->name} ({$user->account_id}, role: {$user->role?->value}):");
-        $this->line($url);
+        $this->line($issued['url']);
 
         return self::SUCCESS;
     }

@@ -1,8 +1,15 @@
 <?php if(session('enrollment_url')): ?>
+    <?php
+        $appHost = strtolower((string) (parse_url((string) config('app.url'), PHP_URL_HOST) ?: ''));
+        $publicAppUrl = $appHost !== '' && ! in_array($appHost, ['localhost', '127.0.0.1', '::1'], true);
+    ?>
     <div class="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4" x-data="{ copied: false }">
-        <p class="text-sm font-medium text-amber-100">Passkey enrollment link (valid 2 hours)</p>
+        <p class="text-sm font-medium text-amber-100">Passkey enrollment link</p>
         <p class="mt-1 text-xs text-amber-100/70">
-            Open this on <span class="font-mono">localhost</span> (not 127.0.0.1). Opening it will sign you out of Super Admin so the faculty/admin can register their own passkey.
+            Opening this will sign you out of Super Admin so they can register their own passkey.
+            <?php if (! ($publicAppUrl)): ?>
+                Local URLs cannot be opened on another device — copy the link only if they can reach this computer.
+            <?php endif; ?>
         </p>
         <a href="<?php echo e(session('enrollment_url')); ?>" class="mt-2 block break-all text-sm text-violet-300 hover:text-violet-200">
             <?php echo e(session('enrollment_url')); ?>

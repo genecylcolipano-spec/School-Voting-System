@@ -10,6 +10,7 @@ use App\Models\TalentEvent;
 use App\Models\User;
 use App\Services\Talent\TalentResultsRankingService;
 use App\Support\EventImageUrl;
+use App\Support\PlatformModules;
 use App\Support\WinnerSpotlightBuilder;
 use Illuminate\Support\Collection;
 
@@ -26,12 +27,16 @@ class StudentResultsService
     {
         $events = collect();
 
-        foreach ($this->visibleElections() as $election) {
-            $events->push($this->summarizeElection($election, $student));
+        if (PlatformModules::elections()) {
+            foreach ($this->visibleElections() as $election) {
+                $events->push($this->summarizeElection($election, $student));
+            }
         }
 
-        foreach ($this->visibleTalentEvents() as $talentEvent) {
-            $events->push($this->summarizeTalentEvent($talentEvent));
+        if (PlatformModules::talent()) {
+            foreach ($this->visibleTalentEvents() as $talentEvent) {
+                $events->push($this->summarizeTalentEvent($talentEvent));
+            }
         }
 
         return $events
@@ -44,10 +49,12 @@ class StudentResultsService
      */
     public function dashboardPreview(): array
     {
-        $ongoingElection = Election::query()
-            ->acceptingVotes()
-            ->orderBy('voting_ends_at')
-            ->first();
+        $ongoingElection = PlatformModules::elections()
+            ? Election::query()
+                ->acceptingVotes()
+                ->orderBy('voting_ends_at')
+                ->first()
+            : null;
 
         if ($ongoingElection) {
             return [
@@ -61,15 +68,17 @@ class StudentResultsService
             ];
         }
 
-        $ongoingTalent = TalentEvent::query()
-            ->publishedToStudents()
-            ->where('status', TalentEventStatus::VotingOpen)
-            ->where(function ($query) {
-                $query->whereNull('voting_ends_at')
-                    ->orWhere('voting_ends_at', '>=', now());
-            })
-            ->orderBy('voting_ends_at')
-            ->first();
+        $ongoingTalent = PlatformModules::talent()
+            ? TalentEvent::query()
+                ->publishedToStudents()
+                ->where('status', TalentEventStatus::VotingOpen)
+                ->where(function ($query) {
+                    $query->whereNull('voting_ends_at')
+                        ->orWhere('voting_ends_at', '>=', now());
+                })
+                ->orderBy('voting_ends_at')
+                ->first()
+            : null;
 
         if ($ongoingTalent) {
             return [
@@ -83,11 +92,13 @@ class StudentResultsService
             ];
         }
 
-        $latestPublishedElection = Election::query()
-            ->visibleToCampus()
-            ->where('public_results_published', true)
-            ->orderByDesc('results_published_at')
-            ->first();
+        $latestPublishedElection = PlatformModules::elections()
+            ? Election::query()
+                ->visibleToCampus()
+                ->where('public_results_published', true)
+                ->orderByDesc('results_published_at')
+                ->first()
+            : null;
 
         if ($latestPublishedElection) {
             return [
@@ -101,14 +112,16 @@ class StudentResultsService
             ];
         }
 
-        $latestPublishedTalent = TalentEvent::query()
-            ->publishedToStudents()
-            ->where(function ($query) {
-                $query->where('status', TalentEventStatus::ResultsPublished)
-                    ->orWhereNotNull('results_published_at');
-            })
-            ->orderByDesc('results_published_at')
-            ->first();
+        $latestPublishedTalent = PlatformModules::talent()
+            ? TalentEvent::query()
+                ->publishedToStudents()
+                ->where(function ($query) {
+                    $query->where('status', TalentEventStatus::ResultsPublished)
+                        ->orWhereNotNull('results_published_at');
+                })
+                ->orderByDesc('results_published_at')
+                ->first()
+            : null;
 
         if ($latestPublishedTalent) {
             return [

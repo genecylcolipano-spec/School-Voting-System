@@ -49,9 +49,10 @@ class AdminScopeService
     public function assignedElection(User $admin): ?Election
     {
         $assignment = $this->assignment($admin);
+        $election = $assignment?->election;
 
-        if ($assignment?->election) {
-            return $assignment->election;
+        if ($election && ! $election->trashed()) {
+            return $election;
         }
 
         if ($admin->isSuperAdmin()) {

@@ -279,6 +279,9 @@ class Announcement extends Model
             AnnouncementRelatedModule::SchoolEvent => $this->relatedEvent()?->slug
                 ? route('faculty.events.show', $this->relatedEvent())
                 : null,
+            AnnouncementRelatedModule::Fundraising => $this->relatedFundraiser()?->slug
+                ? route('faculty.fundraising.show', $this->relatedFundraiser())
+                : null,
             default => null,
         };
     }

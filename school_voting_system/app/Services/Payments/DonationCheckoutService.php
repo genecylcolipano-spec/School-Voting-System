@@ -40,7 +40,7 @@ class DonationCheckoutService
         ?string $message = null,
         bool $anonymous = false,
     ): array {
-        if (! $method->isAcceptedBy($fundraiser)) {
+        if (! $method->isOfferedForCheckout() || ! $method->isAcceptedBy($fundraiser)) {
             throw new DonationIntegrityException('This campaign does not accept '.$method->label().' payments.');
         }
 
@@ -228,11 +228,12 @@ class DonationCheckoutService
     ): array {
         $amount = $this->amountInCentavos((float) $donation->amount);
         $title = $fundraiser->title;
-        $successUrl = route('student.fundraising.donate.return', [
+        $prefix = $donor->isFaculty() ? 'faculty' : 'student';
+        $successUrl = route($prefix.'.fundraising.donate.return', [
             'fundraiser' => $fundraiser,
             'donation' => $donation->id,
         ]);
-        $cancelUrl = route('student.fundraising.donate.cancel', [
+        $cancelUrl = route($prefix.'.fundraising.donate.cancel', [
             'fundraiser' => $fundraiser,
             'donation' => $donation->id,
         ]);

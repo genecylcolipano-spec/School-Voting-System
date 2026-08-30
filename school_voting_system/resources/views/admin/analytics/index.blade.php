@@ -27,7 +27,7 @@
         <div class="grid gap-4 xl:grid-cols-2">
             <x-admin-chart-panel
                 title="Participation Growth (Events/Voting)"
-                subtitle="Share of enrolled students who voted in the selected election or its talent events — Jan to Dec"
+                subtitle="Unique voters plus school events and talent competitions scheduled each month"
                 type="line"
                 live-key="participation"
                 :labels="$report['participation']['labels']"

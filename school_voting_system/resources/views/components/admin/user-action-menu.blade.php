@@ -95,7 +95,7 @@
         @endif
 
         @if (($isStudent && auth()->user()?->can('issuePasskeyReset', $account)) || ! $isStudent)
-            <form method="POST" action="{{ $resetRoute }}" onsubmit="return confirm('Generate a passkey reset / enrollment link for {{ addslashes($account->name) }}?');">
+            <form method="POST" action="{{ $resetRoute }}" onsubmit="return confirm('Generate a passkey reset / enrollment link for {{ addslashes($account->name) }}? This emails the address on file.');">
                 @csrf
                 <button type="submit" data-popover-close role="menuitem" class="{{ $itemClass }}">
                     <span class="w-5 shrink-0 text-center" aria-hidden="true">🔑</span>

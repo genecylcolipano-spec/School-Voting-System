@@ -2,7 +2,7 @@
     <section id="fundraisers" class="scroll-mt-28 rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5">
         <x-admin-section-header
             title="Fundraisers"
-            description="School fundraising campaigns — visible to students when active."
+            description="School fundraising campaigns — visible to students and faculty when active."
             :badge="$statistics['active_fundraisers'] > 0 ? $statistics['active_fundraisers'].' active' : null"
             badge-tone="emerald"
         >

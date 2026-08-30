@@ -129,7 +129,7 @@ unset($__defined_vars, $__key, $__value); ?>
         <?php endif; ?>
 
         <?php if(($isStudent && auth()->user()?->can('issuePasskeyReset', $account)) || ! $isStudent): ?>
-            <form method="POST" action="<?php echo e($resetRoute); ?>" onsubmit="return confirm('Generate a passkey reset / enrollment link for <?php echo e(addslashes($account->name)); ?>?');">
+            <form method="POST" action="<?php echo e($resetRoute); ?>" onsubmit="return confirm('Generate a passkey reset / enrollment link for <?php echo e(addslashes($account->name)); ?>? This emails the address on file.');">
                 <?php echo csrf_field(); ?>
                 <button type="submit" data-popover-close role="menuitem" class="<?php echo e($itemClass); ?>">
                     <span class="w-5 shrink-0 text-center" aria-hidden="true">🔑</span>

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\SuperAdmin;
 
 use App\Http\Requests\Admin\SuperAdminFormRequest;
+use App\Support\ContactPhone;
 use Illuminate\Validation\Rule;
 
 class StoreStaffUserRequest extends SuperAdminFormRequest
@@ -18,6 +19,7 @@ class StoreStaffUserRequest extends SuperAdminFormRequest
                 'integer',
                 Rule::exists('staff_roles', 'id')->where(fn ($query) => $query->where('slug', '!=', 'chief_super_admin')),
             ],
+            'phone' => ContactPhone::rules(),
             'send_enrollment_email' => ['sometimes', 'boolean'],
         ];
     }
@@ -37,6 +39,7 @@ class StoreStaffUserRequest extends SuperAdminFormRequest
             'name' => trim((string) $this->input('name')),
             'email' => strtolower(trim((string) $this->input('email'))),
             'send_enrollment_email' => $this->boolean('send_enrollment_email'),
+            'phone' => ContactPhone::normalize($this->input('phone')),
         ]);
     }
 }

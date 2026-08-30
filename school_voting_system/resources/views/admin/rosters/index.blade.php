@@ -7,6 +7,7 @@
         ])
 
         <div class="mb-6 flex flex-wrap justify-end gap-3">
+            <a href="{{ route($routePrefix.'.create') }}" class="rounded-xl border border-violet-500/30 px-4 py-2 text-sm font-semibold text-violet-300 hover:bg-violet-500/10">Add record</a>
             <a href="{{ route($routePrefix.'.export') }}" class="rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800">Export CSV</a>
             <a href="{{ route($routePrefix.'.import') }}" class="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Import CSV</a>
         </div>
@@ -66,17 +67,20 @@
             @endforeach
         </div>
 
-        <form method="GET" class="mb-6 flex flex-wrap gap-3">
-            <input name="q" type="search" value="{{ request('q') }}" placeholder="Search {{ strtolower($rosterIdLabel) }} or name"
-                class="min-w-[16rem] flex-1 rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" />
-            <select name="status" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-100">
+        <form method="GET" class="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <input name="q" type="search" value="{{ request('q') }}" placeholder="{{ $searchPlaceholder }}"
+                class="w-full min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 sm:min-w-[16rem]" />
+            <select name="status" class="w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-100 sm:w-auto">
                 <option value="">Active roster</option>
                 <option value="registered" @selected($statusFilter === 'registered')>Registered</option>
                 <option value="enrollment_pending" @selected($statusFilter === 'enrollment_pending')>Enrollment Pending</option>
                 <option value="not_registered" @selected(in_array($statusFilter, ['pending', 'not_registered'], true))>Not Registered</option>
                 <option value="archived" @selected($statusFilter === 'archived')>Archived</option>
             </select>
-            <button type="submit" class="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white">Search</button>
+            <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white sm:w-auto">Search</button>
+            @if ($hasFilters ?? false)
+                <a href="{{ route($routePrefix.'.index') }}" class="w-full rounded-xl border border-slate-700 px-4 py-2 text-center text-sm font-semibold text-slate-300 hover:bg-slate-800 sm:w-auto">Clear</a>
+            @endif
         </form>
 
         <div class="overflow-x-auto rounded-2xl border border-violet-500/15 bg-slate-900/70">
@@ -94,6 +98,7 @@
                 </thead>
                 <tbody>
                     @forelse ($records as $record)
+                        @php($portalAccountUrl = $record->registeredUser?->adminAccountUrl())
                         <tr class="border-b border-slate-800/80 text-slate-200">
                             <td class="px-4 py-3 font-mono text-xs">{{ $record->account_id }}</td>
                             <td class="px-4 py-3">{{ $record->first_name }} {{ $record->last_name }}</td>
@@ -114,6 +119,9 @@
                             <td class="px-4 py-3">
                                 <div class="flex flex-wrap gap-2">
                                     <a href="{{ route($routePrefix.'.show', $record) }}" class="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800">View</a>
+                                    @if ($portalAccountUrl)
+                                        <a href="{{ $portalAccountUrl }}" class="rounded-lg border border-sky-500/30 px-3 py-1.5 text-xs font-semibold text-sky-200 hover:bg-sky-500/10">Portal account</a>
+                                    @endif
                                     <a href="{{ route($routePrefix.'.edit', $record) }}" class="rounded-lg border border-violet-500/30 px-3 py-1.5 text-xs font-semibold text-violet-300 hover:bg-violet-500/10">Edit</a>
                                     @if ($record->archived_at)
                                         <form method="POST" action="{{ route($routePrefix.'.restore', $record) }}">
@@ -131,7 +139,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ 4 + count($extraFields) }}" class="px-4 py-6 text-slate-400">No roster records yet. Import a CSV to begin.</td>
+                            <td colspan="{{ 4 + count($extraFields) }}" class="px-4 py-6 text-slate-400">No roster records yet. Add a record or import a CSV to begin.</td>
                         </tr>
                     @endforelse
                 </tbody>

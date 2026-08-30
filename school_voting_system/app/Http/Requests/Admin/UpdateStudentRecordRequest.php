@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\StudentStatus;
 use App\Models\User;
+use App\Support\ContactPhone;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -36,6 +37,7 @@ class UpdateStudentRecordRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($student->id),
             ],
+            'phone' => ContactPhone::rules(),
             'grade_level' => ['required', 'string', 'max:50'],
             'section' => ['required', 'string', 'max:50'],
             'student_status' => ['required', Rule::enum(StudentStatus::class)],
@@ -45,6 +47,7 @@ class UpdateStudentRecordRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
+            'phone' => ContactPhone::normalize($this->input('phone')),
             'grade_level' => trim((string) $this->input('grade_level')),
             'section' => trim((string) $this->input('section')),
         ]);

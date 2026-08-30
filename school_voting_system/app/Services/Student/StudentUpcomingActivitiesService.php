@@ -13,6 +13,7 @@ use App\Models\TalentEvent;
 use App\Models\User;
 use App\Services\Election\StudentElectionService;
 use App\Support\EventImageUrl;
+use App\Support\PlatformModules;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -83,10 +84,16 @@ class StudentUpcomingActivitiesService
     {
         $items = collect();
 
-        $this->pushElections($items, $student);
+        if (PlatformModules::elections()) {
+            $this->pushElections($items, $student);
+        }
         $this->pushSchoolEvents($items);
-        $this->pushTalentCompetitions($items);
-        $this->pushFundraisers($items);
+        if (PlatformModules::talent()) {
+            $this->pushTalentCompetitions($items);
+        }
+        if (PlatformModules::fundraising()) {
+            $this->pushFundraisers($items);
+        }
 
         return $items;
     }

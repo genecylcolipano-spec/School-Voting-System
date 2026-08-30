@@ -17,6 +17,9 @@
     ) || $studentsActive;
     $rosterManagementActive = request()->routeIs('super-admin.roster.*', 'super-admin.allowed-students.*');
     $systemManagementActive = request()->routeIs('super-admin.system.*');
+    $showElections = $isSuperAdmin || \App\Support\PlatformModules::elections();
+    $showTalent = $isSuperAdmin || \App\Support\PlatformModules::talent();
+    $showFundraising = $isSuperAdmin || \App\Support\PlatformModules::fundraising();
 
     $subLink = fn (bool $active) => 'flex items-center gap-2 rounded-lg px-3 py-2 text-sm '.($active
         ? 'bg-violet-500/15 text-violet-200'
@@ -66,6 +69,7 @@
             <a href="{{ route('admin.events-talent.index') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.events-talent.*')) }}">Events Dashboard</a>
             <a href="{{ route('admin.events.index') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.events.*')) }}">School Events</a>
 
+            @if ($showTalent)
             {{-- Talent Competitions (nested) --}}
             <div>
                 <button type="button" @click="openTalent = !openTalent" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm {{ $talentActive ? 'text-violet-200' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
@@ -80,9 +84,11 @@
                     <a href="{{ route('admin.live.talent') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.live.talent')) }}">Talent Live Monitoring</a>
                 </div>
             </div>
+            @endif
         </div>
     </div>
 
+    @if ($showElections)
     {{-- Voting Management --}}
     <div>
         <button type="button" @click="openVoting = !openVoting" class="{{ $groupBtn($votingActive) }}">
@@ -100,7 +106,9 @@
             <a href="{{ route('admin.live.election') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.live.election')) }}">Election Live Monitoring</a>
         </div>
     </div>
+    @endif
 
+    @if ($showElections || $showTalent)
     {{-- Results --}}
     <div>
         <button type="button" @click="openResults = !openResults" class="{{ $groupBtn($resultsActive) }}">
@@ -113,11 +121,17 @@
             </svg>
         </button>
         <div x-show="openResults && !collapsed" x-transition class="mt-1 space-y-0.5 pl-4">
-            <a href="{{ route('admin.results.elections') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.results.elections') || request()->routeIs('admin.results.election.*')) }}">Election Results</a>
-            <a href="{{ route('admin.results.competitions') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.results.competitions') || request()->routeIs('admin.results.talent.*')) }}">Talent Competition Results</a>
+            @if ($showElections)
+                <a href="{{ route('admin.results.elections') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.results.elections') || request()->routeIs('admin.results.election.*')) }}">Election Results</a>
+            @endif
+            @if ($showTalent)
+                <a href="{{ route('admin.results.competitions') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.results.competitions') || request()->routeIs('admin.results.talent.*')) }}">Talent Competition Results</a>
+            @endif
         </div>
     </div>
+    @endif
 
+    @if ($showFundraising)
     {{-- Fundraising --}}
     <div>
         <button type="button" @click="openFundraising = !openFundraising" class="{{ $groupBtn($fundraisingActive) }}">
@@ -135,6 +149,7 @@
             <a href="{{ route('admin.fundraisers.transactions') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.fundraisers.transactions')) }}">Transactions</a>
         </div>
     </div>
+    @endif
 
     {{-- Communication --}}
     <div>
@@ -166,9 +181,15 @@
         </button>
         <div x-show="openReports && !collapsed" x-transition class="mt-1 space-y-0.5 pl-4">
             <a href="{{ route('admin.analytics.index') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.analytics.*')) }}">Dashboard Analytics</a>
-            <a href="{{ route('admin.reports.index') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.reports.index')) }}">Election Reports</a>
-            <a href="{{ route('admin.reports.talent') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.reports.talent')) }}">Talent Competition Reports</a>
-            <a href="{{ route('admin.reports.fundraising') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.reports.fundraising')) }}">Fundraising Reports</a>
+            @if ($showElections)
+                <a href="{{ route('admin.reports.index') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.reports.index')) }}">Election Reports</a>
+            @endif
+            @if ($showTalent)
+                <a href="{{ route('admin.reports.talent') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.reports.talent')) }}">Talent Competition Reports</a>
+            @endif
+            @if ($showFundraising)
+                <a href="{{ route('admin.reports.fundraising') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.reports.fundraising')) }}">Fundraising Reports</a>
+            @endif
             @unless ($isSuperAdmin)
                 <a href="{{ route('admin.audit-logs.index') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('admin.audit-logs.*')) }}">Audit Log</a>
             @endunless
@@ -228,7 +249,7 @@
             <div x-show="openSystem && !collapsed" x-transition class="mt-1 space-y-0.5 pl-4">
                 <a href="{{ route('super-admin.system.settings.edit') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('super-admin.system.settings.*')) }}">System Settings</a>
                 <a href="{{ route('super-admin.system.maintenance.edit') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('super-admin.system.maintenance.*')) }}">Maintenance Mode</a>
-                <a href="{{ route('super-admin.system.backups.index') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('super-admin.system.backups.*')) }}">Backup & Restore</a>
+                <a href="{{ route('super-admin.system.backups.index') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('super-admin.system.backups.*')) }}">Backups</a>
                 <a href="{{ route('super-admin.system.audit.index') }}" @click="sidebarOpen = false" class="{{ $subLink(request()->routeIs('super-admin.system.audit.*')) }}">Audit Logs</a>
             </div>
         </div>

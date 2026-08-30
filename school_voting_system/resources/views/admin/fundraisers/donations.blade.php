@@ -2,7 +2,9 @@
     <x-admin-portal title="Donations" :user="$user" :notifications-count="$notificationsCount">
         @include('admin.partials.page-header', [
             'title' => 'Donations',
-            'description' => 'All contributions received across your fundraising campaigns.',
+            'description' => $user->isSuperAdmin()
+                ? 'Paid gifts across every campaign. Pending cash still appears below until confirmed.'
+                : 'Paid gifts for campaigns you created. Pending cash still appears below until confirmed.',
             'showAction' => false,
         ])
 
@@ -45,6 +47,7 @@
                 <thead class="border-b border-slate-800 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                     <tr>
                         <th class="px-4 py-3">Donor</th>
+                        <th class="px-4 py-3">Role</th>
                         <th class="px-4 py-3">Campaign</th>
                         <th class="px-4 py-3">Method</th>
                         <th class="px-4 py-3">Status</th>
@@ -60,6 +63,7 @@
                             <td class="px-4 py-3 font-semibold text-white">
                                 {{ $donation->is_anonymous ? 'Anonymous' : ($donation->donor?->name ?? '—') }}
                             </td>
+                            <td class="px-4 py-3 text-xs text-slate-400">{{ $donation->is_anonymous ? '—' : ($donation->donor?->roleLabel() ?? '—') }}</td>
                             <td class="px-4 py-3">{{ $donation->fundraiser?->title ?? '—' }}</td>
                             <td class="px-4 py-3 text-xs text-slate-400">{{ $donation->payment_method?->label() ?? '—' }}</td>
                             <td class="px-4 py-3">
@@ -83,7 +87,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="px-4 py-10 text-center text-slate-400">No donations recorded yet.</td></tr>
+                        <tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">No donations recorded yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>

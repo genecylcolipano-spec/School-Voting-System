@@ -73,4 +73,25 @@ class LiveMonitoringTest extends TestCase
             ->assertJsonPath('cards.0.position_leaders.0.display', '—')
             ->assertJsonPath('cards.0.countdown.label', 'Voting Ends In');
     }
+
+    public function test_regular_admin_does_not_see_soft_deleted_election_in_live_monitoring(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $election = Election::factory()->active()->create([
+            'title' => 'Removed Council Race',
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson(route('admin.live.election.poll'))
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Removed Council Race']);
+
+        $election->delete();
+
+        $this->actingAs($admin)
+            ->getJson(route('admin.live.election.poll'))
+            ->assertOk()
+            ->assertJsonMissing(['name' => 'Removed Council Race']);
+    }
 }

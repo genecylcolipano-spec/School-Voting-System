@@ -12,7 +12,11 @@
     $onEvents = request()->routeIs('faculty.events.*');
     $onAnnouncements = request()->routeIs('faculty.announcements.*');
     $onResults = request()->routeIs('faculty.results.*');
+    $onFundraising = request()->routeIs('faculty.fundraising.*');
     $onSettings = request()->routeIs('profile.edit') && auth()->user()?->isFaculty();
+    $showElections = \App\Support\PlatformModules::elections();
+    $showTalent = \App\Support\PlatformModules::talent();
+    $showFundraising = \App\Support\PlatformModules::fundraising();
 @endphp
 
 <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
@@ -28,6 +32,7 @@
         </x-slot:icon>
     </x-portal-sidebar-link>
 
+    @if ($showTalent)
     <div class="px-3 py-2">
         <p x-show="!collapsed" class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">My Judging</p>
     </div>
@@ -67,6 +72,7 @@
             </svg>
         </x-slot:icon>
     </x-portal-sidebar-link>
+    @endif
 
     <div class="my-3 border-t border-teal-500/10"></div>
 
@@ -74,6 +80,7 @@
         <p x-show="!collapsed" class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">View only</p>
     </div>
 
+    @if ($showElections)
     <x-portal-sidebar-link
         :href="route('faculty.elections.index')"
         label="Elections"
@@ -85,6 +92,7 @@
             </svg>
         </x-slot:icon>
     </x-portal-sidebar-link>
+    @endif
 
     <x-portal-sidebar-link
         :href="route('faculty.events.index')"
@@ -110,6 +118,7 @@
         </x-slot:icon>
     </x-portal-sidebar-link>
 
+    @if ($showElections || $showTalent)
     <x-portal-sidebar-link
         :href="route('faculty.results.index')"
         label="Results"
@@ -121,6 +130,23 @@
             </svg>
         </x-slot:icon>
     </x-portal-sidebar-link>
+    @endif
+
+    @if ($showFundraising)
+    <div class="my-3 border-t border-teal-500/10"></div>
+
+    <x-portal-sidebar-link
+        :href="route('faculty.fundraising.index')"
+        label="Fundraising"
+        :active="$onFundraising"
+    >
+        <x-slot:icon>
+            <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </x-slot:icon>
+    </x-portal-sidebar-link>
+    @endif
 
     <div class="my-3 border-t border-teal-500/10"></div>
 

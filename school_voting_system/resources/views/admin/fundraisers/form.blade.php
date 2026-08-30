@@ -20,10 +20,6 @@
 @endphp
 <x-app-layout>
     <x-admin-portal :title="$isEdit ? 'Edit Fundraising Campaign' : 'Create Fundraising Campaign'" :user="$user" :notifications-count="$notificationsCount">
-        @if (session('success'))
-            <div class="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">{{ session('success') }}</div>
-        @endif
-
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h1 class="text-xl font-bold text-white">{{ $isEdit ? 'Edit Campaign' : 'Create Campaign' }}</h1>
@@ -209,7 +205,7 @@
                         <label class="block text-sm font-medium text-slate-300">Minimum Donation (₱)</label>
                         <input type="number" name="min_donation" min="{{ $defaultMinDonation }}" step="0.01" value="{{ old('min_donation', $fundraiser?->min_donation) }}" placeholder="Default {{ number_format($defaultMinDonation, 2) }}"
                             class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
-                        <p class="mt-1 text-xs text-slate-500">PayMongo GCash, Maya, and QR Ph require at least ₱{{ number_format($defaultMinDonation, 2) }}.</p>
+                        <p class="mt-1 text-xs text-slate-500">PayMongo QR Ph requires at least ₱{{ number_format($defaultMinDonation, 2) }}.</p>
                         @error('min_donation')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
                     </div>
                     <div>
@@ -224,10 +220,7 @@
                         ['allow_anonymous', 'Allow Anonymous Donations', $fundraiser?->allow_anonymous ?? true],
                         ['generate_receipt', 'Generate Donation Receipt', $fundraiser?->generate_receipt ?? true],
                         ['accept_cash', 'Accept Cash', $fundraiser?->accept_cash ?? true],
-                        ['accept_gcash', 'Accept GCash', $fundraiser?->accept_gcash ?? true],
-                        ['accept_maya', 'Accept Maya', $fundraiser?->accept_maya ?? true],
                         ['accept_qrph', 'Accept QR Ph', $fundraiser?->accept_qrph ?? true],
-                        ['accept_bank_transfer', 'Accept Bank Transfer', $fundraiser?->accept_bank_transfer ?? true],
                     ] as [$name, $label, $default])
                         <label class="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2 text-sm text-slate-300">
                             <input type="checkbox" name="{{ $name }}" value="1" @checked(old($name, $default))

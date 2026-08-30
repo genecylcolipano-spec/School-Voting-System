@@ -21,6 +21,8 @@ class ImageCompressionService
 
     public const AVATAR_SIZE = 400;
 
+    public const LOGO_MAX_DIMENSION = 800;
+
     /**
      * Store a single optimized image (existing API — backward compatible).
      */
@@ -76,6 +78,52 @@ class ImageCompressionService
         imagedestroy($image);
 
         return $square;
+    }
+
+    /**
+     * Store a school seal without banner variants or aggressive JPEG recompression.
+     */
+    public function storeSchoolLogo(UploadedFile $file, string $directory = 'school-logos'): string
+    {
+        $directory = trim($directory, '/');
+
+        if (! extension_loaded('gd')) {
+            return $file->store($directory, 'public');
+        }
+
+        $mime = strtolower((string) $file->getMimeType());
+        $image = $this->loadImage($file->getRealPath(), $mime);
+
+        if ($image === false) {
+            return $file->store($directory, 'public');
+        }
+
+        $image = $this->resizeToMaxDimension($image, self::LOGO_MAX_DIMENSION);
+        $keepPng = $mime === 'image/png' || $mime === 'image/webp' || $this->imageHasTransparency($image);
+
+        if ($keepPng) {
+            $binary = $this->encodePng($image, 6);
+            $extension = 'png';
+
+            if (strlen($binary) > self::MAX_STORED_BYTES) {
+                $image = $this->scaleDown($image, 0.85);
+                $binary = $this->encodePng($image, 8);
+            }
+        } else {
+            $binary = $this->encodeJpeg($image, 90);
+            $extension = 'jpg';
+
+            if (strlen($binary) > self::MAX_STORED_BYTES) {
+                $binary = $this->encodeJpeg($image, 82);
+            }
+        }
+
+        imagedestroy($image);
+
+        $path = $directory.'/'.Str::uuid().'-logo.'.$extension;
+        Storage::disk('public')->put($path, $binary);
+
+        return $path;
     }
 
     /**

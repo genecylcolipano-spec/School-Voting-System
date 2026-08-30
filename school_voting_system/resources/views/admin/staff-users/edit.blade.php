@@ -30,6 +30,8 @@
                     @error('email')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
                 </div>
 
+                @include('admin.partials.phone-field', ['phoneValue' => old('phone', $account->phone)])
+
                 @if ($staffRoles->isNotEmpty())
                     <div>
                         <label for="staff_role_id" class="block text-sm font-medium text-slate-300">Staff Role (optional)</label>

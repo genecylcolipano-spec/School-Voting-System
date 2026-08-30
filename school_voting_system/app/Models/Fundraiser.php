@@ -103,7 +103,7 @@ class Fundraiser extends Model
     public function acceptedPaymentMethods(): array
     {
         return array_values(array_filter(
-            DonationPaymentMethod::cases(),
+            DonationPaymentMethod::offeredForCheckout(),
             fn (DonationPaymentMethod $method) => $method->isAcceptedBy($this),
         ));
     }

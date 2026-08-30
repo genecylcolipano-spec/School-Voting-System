@@ -7,25 +7,20 @@ use App\Enums\PasskeyStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SuperAdmin\BulkUsersRequest;
-use App\Http\Requests\Admin\SuperAdmin\CreateBackupRequest;
 use App\Http\Requests\Admin\SuperAdmin\ElectionActionRequest;
 use App\Http\Requests\Admin\SuperAdmin\GenerateReportRequest;
 use App\Http\Requests\Admin\SuperAdmin\PasskeyActionRequest;
-use App\Http\Requests\Admin\SuperAdmin\UpdateSystemSettingsRequest;
-use App\Models\AuditLog;
 use App\Models\Election;
 use App\Models\Passkey;
 use App\Models\PasskeyRecoveryRequest;
-use App\Models\SystemBackup;
 use App\Models\User;
 use App\Services\Admin\AdminScopeService;
 use App\Services\Admin\ElectionResultsPublishingService;
 use App\Services\Auth\PasskeyEnrollmentLinkService;
 use App\Services\Portal\PortalNotificationService;
 use App\Services\SuperAdmin\AuditLogService;
-use App\Services\SuperAdmin\BackupService;
+use App\Services\SuperAdmin\ComplianceReportService;
 use App\Services\SuperAdmin\ElectionLifecycleService;
-use App\Services\SuperAdmin\SuperAdminDashboardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,11 +35,10 @@ class SuperAdminActionController extends Controller
         protected AuditLogService $audit,
         protected ElectionLifecycleService $elections,
         protected ElectionResultsPublishingService $electionPublishing,
-        protected BackupService $backups,
-        protected SuperAdminDashboardService $dashboard,
         protected PortalNotificationService $notifications,
         protected PasskeyEnrollmentLinkService $enrollmentLinks,
         protected AdminScopeService $scope,
+        protected ComplianceReportService $complianceReports,
     ) {}
 
     public function search(Request $request): JsonResponse
@@ -365,108 +359,81 @@ class SuperAdminActionController extends Controller
     public function passkeyAction(PasskeyActionRequest $request, Passkey $passkey): RedirectResponse
     {
         $validated = $request->validated();
-
+        $action = $validated['action'];
         $actor = $request->user();
+        $passkey->loadMissing('user');
+        $owner = $passkey->user;
 
-        match ($validated['action']) {
-            'revoke' => $passkey->forceFill([
+        if (! $passkey->isUsable()) {
+            return back()->with('error', 'This passkey is already disabled.');
+        }
+
+        if (
+            $owner
+            && (int) $passkey->user_id === (int) $actor->id
+            && Passkey::remainingUsableCountFor($actor, (int) $passkey->id) === 0
+        ) {
+            return back()->with('error', 'You cannot disable your only remaining passkey. Register another device in Settings first.');
+        }
+
+        if ($action === 'revoke') {
+            $passkey->forceFill([
                 'status' => PasskeyStatus::Revoked,
                 'revoked_at' => now(),
                 'revoked_by' => $actor->id,
-            ])->save(),
-            'reassign' => $passkey->forceFill([
-                'reassigned_to_user_id' => $validated['reassigned_to_user_id'],
-            ])->save(),
-            'expiry' => $passkey->forceFill([
-                'expires_at' => $validated['expires_at'],
-            ])->save(),
-            'lost' => $passkey->forceFill([
+            ])->save();
+        } else {
+            $passkey->forceFill([
                 'status' => PasskeyStatus::Lost,
                 'marked_lost_at' => now(),
-            ])->save(),
-            default => null,
-        };
+            ])->save();
+        }
+
+        $accountId = $owner?->account_id ?? '#'.$passkey->id;
+        $verb = $action === 'lost' ? 'Marked lost' : 'Revoked';
 
         $this->audit->record(
             $actor,
-            "Passkey {$validated['action']}: #{$passkey->id}",
+            "{$verb} passkey for {$accountId}",
             AuditActionType::Passkey,
             targetType: 'passkey',
             targetId: $passkey->id,
         );
 
-        return back()->with('success', 'Passkey updated.');
-    }
+        $pendingRecovery = $owner && PasskeyRecoveryRequest::query()
+            ->where('status', PasskeyRecoveryRequest::STATUS_PENDING)
+            ->where(function ($query) use ($owner) {
+                $query->where('user_id', $owner->id)
+                    ->orWhere('account_id', $owner->account_id);
+            })
+            ->exists();
 
-    public function updateSettings(UpdateSystemSettingsRequest $request): RedirectResponse
-    {
-        $validated = $request->validated();
-        $validated['ip_whitelist_enabled'] = $request->boolean('ip_whitelist_enabled');
-        $validated['two_factor_recovery_enabled'] = $request->boolean('two_factor_recovery_enabled');
-        $validated['public_results_published'] = $request->boolean('public_results_published');
+        $redirect = back()->with('success', $verb.' passkey for '.$accountId.'. This device can no longer sign in.');
 
-        app(\App\Services\SuperAdmin\SystemSettingsService::class)->update($validated);
+        if ($owner) {
+            $redirect->with('disabled_passkey', [
+                'user_id' => $owner->id,
+                'name' => $owner->name,
+                'account_id' => $owner->account_id,
+                'action' => $action,
+                'has_pending_recovery' => $pendingRecovery,
+                'devices_url' => $owner->adminDevicesUrl($actor),
+            ]);
+        }
 
-        $this->audit->record($request->user(), 'Updated system security settings', AuditActionType::Security);
-        $this->notifications->systemSettingsUpdated($request->user());
-
-        return back()->with('success', 'Security settings saved.');
-    }
-
-    public function createBackup(CreateBackupRequest $request): RedirectResponse
-    {
-        $type = $request->validated('type') ?: \App\Services\SuperAdmin\BackupService::TYPE_FULL;
-
-        $this->backups->create($request->user(), $type);
-
-        return back()->with('success', 'Backup created successfully.');
-    }
-
-    public function downloadBackup(Request $request, SystemBackup $backup): StreamedResponse
-    {
-        $this->audit->record(
-            $request->user(),
-            'Downloaded Backup',
-            AuditActionType::Backup,
-            targetType: 'backup',
-            targetId: $backup->id,
-            metadata: ['label' => $backup->label],
-        );
-
-        return $this->backups->download($backup);
+        return $redirect;
     }
 
     public function exportAuditLogs(Request $request): Response
     {
-        $query = AuditLog::query()->latest();
-
-        if ($request->filled('action_type')) {
-            $query->where('action_type', $request->string('action_type'));
-        }
-
-        if ($request->filled('from')) {
-            $query->whereDate('created_at', '>=', $request->date('from'));
-        }
-
-        if ($request->filled('to')) {
-            $query->whereDate('created_at', '<=', $request->date('to'));
-        }
-
-        $logs = $query->limit(5000)->get();
-
-        $csv = "Timestamp,Admin,Role,Action,Type,IP,Device,Status\n";
-        foreach ($logs as $log) {
-            $csv .= implode(',', [
-                '"'.$log->created_at?->toDateTimeString().'"',
-                '"'.str_replace('"', '""', $log->admin_name).'"',
-                '"'.str_replace('"', '""', $log->admin_role ?? '').'"',
-                '"'.str_replace('"', '""', $log->action).'"',
-                '"'.$log->action_type?->value.'"',
-                '"'.($log->ip_address ?? '').'"',
-                '"'.str_replace('"', '""', $log->device_name ?? '').'"',
-                '"'.$log->status.'"',
-            ])."\n";
-        }
+        $csv = $this->audit->exportCsv([
+            'search' => $request->string('search')->toString() ?: null,
+            'from' => $request->string('from')->toString() ?: null,
+            'to' => $request->string('to')->toString() ?: null,
+            'module' => $request->string('module')->toString() ?: $request->string('action_type')->toString() ?: null,
+            'role' => $request->string('role')->toString() ?: null,
+            'user_id' => $request->integer('user_id') ?: null,
+        ]);
 
         $this->audit->record($request->user(), 'Exported audit logs (CSV)', AuditActionType::Report);
 
@@ -478,80 +445,26 @@ class SuperAdminActionController extends Controller
 
     public function generateReport(GenerateReportRequest $request): Response
     {
-        $validated = $request->validated();
+        $type = $request->validated('report');
+        $electionId = $request->integer('election_id') ?: null;
+        $format = $request->validated('format') ?: 'html';
 
-        $content = match ($validated['report']) {
-            'election_summary' => $this->electionSummaryReport(),
-            'voter_turnout' => $this->voterTurnoutReport(),
-            'audit_trail' => $this->auditTrailReport(),
-            'passkey_inventory' => $this->passkeyInventoryReport(),
-        };
+        $this->audit->record(
+            $request->user(),
+            'Generated report: '.$type.($format === 'pdf' ? ' (pdf)' : ''),
+            AuditActionType::Report,
+        );
 
-        $this->audit->record($request->user(), 'Generated report: '.$validated['report'], AuditActionType::Report);
-
-        return response($content, 200, [
-            'Content-Type' => 'text/html',
-            'Content-Disposition' => 'attachment; filename="'.$validated['report'].'-'.now()->format('Y-m-d').'.html"',
-        ]);
-    }
-
-    protected function electionSummaryReport(): string
-    {
-        $elections = Election::query()->withCount('votes')->get();
-        $rows = $elections->map(fn ($e) => "<tr><td>{$e->title}</td><td>{$e->status?->value}</td><td>{$e->votes_count}</td><td>{$e->integrity_hash}</td></tr>")->join('');
-
-        return $this->reportShell('Election Summary Report', "<table border='1' cellpadding='8'><tr><th>Election</th><th>Status</th><th>Votes</th><th>Integrity Hash</th></tr>{$rows}</table>");
-    }
-
-    protected function voterTurnoutReport(): string
-    {
-        $election = $this->scope->resolveReportElection(auth()->user(), null);
-
-        if (! $election) {
-            return $this->reportShell('Voter Turnout Report', '<p>No election is available to report on.</p>');
+        if ($format === 'pdf') {
+            return $this->complianceReports->pdf($type, $request->user(), $electionId);
         }
 
-        $eligible = $election->eligibleVoterCount();
-        $voted = (int) $election->votes()->distinct('user_id')->count('user_id');
-        $turnout = $eligible > 0 ? round(($voted / $eligible) * 100, 1) : 0.0;
-        $status = $election->status?->label() ?? '—';
+        $content = $this->complianceReports->html($type, $request->user(), $electionId);
+        $filename = $type.'-'.now()->format('Y-m-d').'.html';
 
-        return $this->reportShell('Voter Turnout Report', "
-            <p>Election: {$election->title} ({$status})</p>
-            <p>Eligible Students: {$eligible}</p>
-            <p>Students Voted: {$voted}</p>
-            <p>Turnout: {$turnout}%</p>
-        ");
-    }
-
-    protected function auditTrailReport(): string
-    {
-        $logs = AuditLog::query()->latest()->limit(100)->get();
-        $rows = $logs->map(fn ($l) => "<tr><td>{$l->created_at}</td><td>{$l->admin_name}</td><td>{$l->action}</td><td>{$l->status}</td></tr>")->join('');
-
-        return $this->reportShell('Audit Trail Report', "<table border='1' cellpadding='8'><tr><th>Time</th><th>Admin</th><th>Action</th><th>Status</th></tr>{$rows}</table>");
-    }
-
-    protected function passkeyInventoryReport(): string
-    {
-        $passkeys = Passkey::query()->with('user')->get();
-        $rows = $passkeys->map(fn ($p) => "<tr><td>{$p->user?->name}</td><td>{$p->credential_id}</td><td>{$p->device_name}</td><td>{$p->status?->value}</td><td>{$p->last_used_at}</td></tr>")->join('');
-
-        return $this->reportShell('Passkey Inventory', "<table border='1' cellpadding='8'><tr><th>Account</th><th>Credential ID</th><th>Device</th><th>Status</th><th>Last Used</th></tr>{$rows}</table>");
-    }
-
-    protected function reportShell(string $title, string $body): string
-    {
-        $school = config('app.name');
-        $timestamp = now()->toDayDateTimeString();
-        $signatory = auth()->user()?->name ?? 'Chief Super Admin';
-
-        return "<!DOCTYPE html><html><head><meta charset='utf-8'><title>{$title}</title>
-            <style>body{font-family:Georgia,serif;margin:40px;color:#111}header{border-bottom:3px solid #4c1d95;padding-bottom:16px}footer{margin-top:40px;font-size:12px;color:#555}</style>
-            </head><body>
-            <header><h1>{$school}</h1><h2>{$title}</h2><p>Generated: {$timestamp}</p></header>
-            {$body}
-            <footer><p>Digitally signed by: <strong>{$signatory}</strong></p><p>This document is system-generated and verifiable against audit logs.</p></footer>
-            </body></html>";
+        return response($content, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
+        ]);
     }
 }

@@ -1,8 +1,8 @@
 <x-app-layout>
-    <x-admin-portal title="Backup & Restore" :user="$user" :notifications-count="$notificationsCount">
+    <x-admin-portal title="Backups" :user="$user" :notifications-count="$notificationsCount">
         @include('admin.partials.page-header', [
-            'title' => 'Backup & Restore',
-            'description' => 'Create disaster-recovery points before major operations. Restore is a future enhancement.',
+            'title' => 'Backups',
+            'description' => 'Create and download disaster-recovery points. Restore from this screen is not available yet.',
             'showAction' => false,
         ])
 

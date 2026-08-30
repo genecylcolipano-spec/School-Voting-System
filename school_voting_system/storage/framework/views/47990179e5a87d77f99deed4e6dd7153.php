@@ -6,7 +6,7 @@
 
 <div class="<?php echo e($wrapperClass); ?>">
     <?php if($isTalent): ?>
-        <a href="<?php echo e(route('admin.talent-competition.edit', $event)); ?>" class="inline-flex min-h-10 items-center rounded-lg border border-violet-500/30 px-3 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10 md:min-h-8 md:py-1.5 md:text-xs">Manage</a>
+        <a href="<?php echo e(route('admin.talent-competition.show', $event)); ?>" class="inline-flex min-h-10 items-center rounded-lg border border-violet-500/30 px-3 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10 md:min-h-8 md:py-1.5 md:text-xs">Manage</a>
         <?php if($canCreateTalentEvents && (auth()->user()->isSuperAdmin() || (int) $event->created_by === (int) auth()->id())): ?>
             <?php if (isset($component)) { $__componentOriginal469a4ba3cbb96eb4bd9792641d671d57 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal469a4ba3cbb96eb4bd9792641d671d57 = $attributes; } ?>

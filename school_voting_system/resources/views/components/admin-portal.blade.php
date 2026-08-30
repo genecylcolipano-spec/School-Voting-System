@@ -10,6 +10,11 @@
     $dashboardRoute = AdminPortal::dashboardRouteName($user);
     $onDashboard = request()->routeIs('admin.dashboard', 'super-admin.dashboard');
     $isSuperAdmin = $user->isSuperAdmin();
+    $recoveryCount = $isSuperAdmin ? AdminPortal::recoveryCount() : 0;
+    $recoveryBadge = $recoveryCount > 99 ? '99+' : (string) $recoveryCount;
+    $recoveryLabel = $recoveryCount > 0
+        ? 'Passkey recovery queue, '.$recoveryCount.' pending'
+        : 'Passkey recovery queue';
     $portalLabel = $isSuperAdmin ? 'Super Admin Portal' : 'Admin Portal';
     $roleLabel = $user->roleLabel();
     $welcomeLabel = $user->name;
@@ -106,8 +111,18 @@
                     />
 
                     @if ($isSuperAdmin)
-                        <a href="{{ route('admin.recovery.index') }}" class="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-violet-500/20 bg-slate-900 text-violet-300 hover:bg-slate-800" title="Passkey recovery queue">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                        <a
+                            href="{{ route('admin.recovery.index') }}"
+                            class="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-violet-500/20 bg-slate-900 text-violet-300 hover:bg-slate-800"
+                            title="{{ $recoveryLabel }}"
+                            aria-label="{{ $recoveryLabel }}"
+                            data-recovery-header
+                        >
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                            <span
+                                data-recovery-header-badge
+                                class="absolute -right-1.5 -top-1.5 flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-amber-500 px-0.5 text-[10px] font-bold leading-none text-slate-950 ring-2 ring-slate-950 {{ $recoveryCount > 0 ? '' : 'hidden' }}"
+                            >{{ $recoveryCount > 0 ? $recoveryBadge : '' }}</span>
                         </a>
                     @endif
 

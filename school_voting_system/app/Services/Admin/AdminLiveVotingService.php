@@ -29,6 +29,14 @@ class AdminLiveVotingService
             ];
         }
 
+        if ($election->trashed()) {
+            return [
+                'is_live' => false,
+                'reason' => 'no_election',
+                'message' => 'No election is assigned to your admin account.',
+            ];
+        }
+
         if ($election->annulled_at) {
             return [
                 'is_live' => false,

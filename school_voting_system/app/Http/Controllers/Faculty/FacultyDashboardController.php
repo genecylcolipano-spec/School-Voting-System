@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\Election;
 use App\Models\Event;
+use App\Models\Fundraiser;
 use App\Models\TalentEventEntry;
 use App\Models\TalentEventJudge;
 use App\Services\Talent\TalentJudgingService;
 use App\Support\AdminPortal;
+use App\Support\PlatformModules;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -51,6 +53,10 @@ class FacultyDashboardController extends Controller
             'notificationsCount' => AdminPortal::notificationCount($user),
             'openElectionsCount' => Election::query()->visibleToCampus()->acceptingVotes()->count(),
             'upcomingEventsCount' => Event::query()->upcoming()->count(),
+            'activeFundraisersCount' => PlatformModules::fundraising()
+                ? Fundraiser::query()->visibleToStudents()->acceptingDonations()->count()
+                : 0,
+            'showFundraising' => PlatformModules::fundraising(),
             'assignedCompetitionsCount' => $assignedCompetitionsCount,
             'pastAssignedCount' => $this->judging->assignedCompetitionsQuery($user, 'past')->count(),
             'assignedCompetitions' => $assignedCompetitions,

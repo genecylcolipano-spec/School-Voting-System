@@ -2,7 +2,9 @@
     <x-admin-portal title="Transactions" :user="$user" :notifications-count="$notificationsCount">
         @include('admin.partials.page-header', [
             'title' => 'Transactions',
-            'description' => 'Chronological ledger of all fundraising transactions.',
+            'description' => $user->isSuperAdmin()
+                ? 'Chronological ledger of every fundraising transaction.'
+                : 'Chronological ledger of transactions for campaigns you created.',
             'showAction' => false,
         ])
 
@@ -30,6 +32,7 @@
                         <th class="px-4 py-3">Status</th>
                         <th class="px-4 py-3">Method</th>
                         <th class="px-4 py-3">Donor</th>
+                        <th class="px-4 py-3">Role</th>
                         <th class="px-4 py-3">Campaign</th>
                         <th class="px-4 py-3">Currency</th>
                         <th class="px-4 py-3 text-right">Amount</th>
@@ -48,12 +51,13 @@
                             </td>
                             <td class="px-4 py-3 text-xs text-slate-400">{{ $txn->payment_method?->label() ?? '—' }}</td>
                             <td class="px-4 py-3">{{ $txn->is_anonymous ? 'Anonymous' : ($txn->donor?->name ?? '—') }}</td>
+                            <td class="px-4 py-3 text-xs text-slate-400">{{ $txn->is_anonymous ? '—' : ($txn->donor?->roleLabel() ?? '—') }}</td>
                             <td class="px-4 py-3">{{ $txn->fundraiser?->title ?? '—' }}</td>
                             <td class="px-4 py-3 text-xs uppercase text-slate-400">{{ $txn->currency ?: 'PHP' }}</td>
                             <td class="px-4 py-3 text-right font-bold text-emerald-300">₱{{ number_format((float) $txn->amount, 2) }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">No transactions recorded yet.</td></tr>
+                        <tr><td colspan="10" class="px-4 py-10 text-center text-slate-400">No transactions recorded yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>

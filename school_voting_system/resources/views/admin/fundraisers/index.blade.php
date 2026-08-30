@@ -2,6 +2,9 @@
     <x-admin-portal title="Fundraisers" :user="$user" :notifications-count="$notificationsCount">
         @include('admin.partials.page-header', [
             'title' => 'Fundraisers',
+            'description' => $user->isSuperAdmin()
+                ? 'Every fundraising campaign across the institution.'
+                : 'Fundraising campaigns you created.',
             'action' => route('admin.fundraisers.create'),
             'actionLabel' => 'Create fundraiser',
             'showAction' => auth()->user()->can('create', App\Models\Fundraiser::class),
@@ -44,7 +47,14 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="px-4 py-6 text-slate-400">No fundraisers yet.</td></tr>
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-sm text-slate-400">
+                                No fundraisers yet.
+                                @can('create', App\Models\Fundraiser::class)
+                                    <a href="{{ route('admin.fundraisers.create') }}" class="ml-2 text-violet-300 hover:text-violet-200">Create your first campaign</a>
+                                @endcan
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>

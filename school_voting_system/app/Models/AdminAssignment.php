@@ -34,8 +34,8 @@ class AdminAssignment extends Model
 
     public function election(): BelongsTo
     {
-        // Keep resolving soft-deleted elections so admin scope/assignment
-        // does not silently become empty after an election is archived/deleted.
+        // Keep the assignment row even if Super Admin deleted the election.
+        // assignedElection() ignores trashed records so live views stay empty.
         return $this->belongsTo(Election::class)->withTrashed();
     }
 

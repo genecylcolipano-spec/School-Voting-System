@@ -47,6 +47,7 @@ class AdminStudentController extends Controller
                 $query->where(function ($query) use ($term) {
                     $query->where('name', 'like', $term)
                         ->orWhere('email', 'like', $term)
+                        ->orWhere('phone', 'like', $term)
                         ->orWhere('account_id', 'like', $term);
                 });
             })
@@ -115,6 +116,7 @@ class AdminStudentController extends Controller
         $student->fill([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
             'grade_level' => $validated['grade_level'],
             'section' => $validated['section'],
             'student_status' => $validated['student_status'],
@@ -134,6 +136,7 @@ class AdminStudentController extends Controller
             [
                 'name' => $student->name,
                 'email' => $student->email,
+                'phone' => $student->phone,
                 'grade_level' => $student->grade_level,
                 'section' => $student->section,
                 'student_status' => $student->student_status?->value,

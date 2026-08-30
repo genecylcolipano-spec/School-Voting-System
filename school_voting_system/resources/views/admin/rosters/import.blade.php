@@ -54,6 +54,7 @@
 
                 <div class="mt-4 space-y-3 text-sm text-slate-300">
                     <p><span class="font-medium text-white">Columns:</span> {{ implode(', ', $columns) }}</p>
+                    <p class="text-slate-400">Download the template, keep it as a .csv file, then import it. The sample row is valid and will add one roster record (it does not create a login).</p>
                     <p class="text-slate-400">Registration matches account ID plus first and last name (case-insensitive).</p>
                 </div>
 

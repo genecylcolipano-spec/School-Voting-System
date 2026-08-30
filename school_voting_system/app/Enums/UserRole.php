@@ -16,7 +16,7 @@ enum UserRole: string
 
     public function canDonate(): bool
     {
-        return $this === self::Student;
+        return $this === self::Student || $this === self::Faculty;
     }
 
     public function dashboardPath(): string

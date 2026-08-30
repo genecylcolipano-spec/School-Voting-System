@@ -14,6 +14,7 @@ use App\Services\Media\ImageCompressionService;
 use App\Services\Portal\AnnouncementService;
 use App\Services\Portal\PortalNotificationService;
 use App\Support\AdminPortal;
+use App\Support\PlatformModules;
 use App\Support\SlugGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -203,6 +204,8 @@ class AdminAnnouncementController extends Controller
         return [
             'user' => $request->user()->loadCount('passkeys'),
             'notificationsCount' => AdminPortal::notificationCount($request->user()),
+            'defaultAudiences' => PlatformModules::announcementDefaultAudiences(),
+            'defaultExpiresAt' => PlatformModules::announcementDefaultExpiresAt(),
             ...$this->announcements->formOptions(),
         ];
     }

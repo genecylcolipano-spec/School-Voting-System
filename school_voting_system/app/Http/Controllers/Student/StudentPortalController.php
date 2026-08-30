@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Student;
 
 use App\Enums\AuditActionType;
-use App\Enums\DonationPaymentMethod;
 use App\Exceptions\DonationIntegrityException;
 use App\Exceptions\PayMongoException;
 use App\Exceptions\VoteIntegrityException;
 use App\Http\Controllers\Concerns\ManagesPortalNotifications;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Student\DonateToFundraiserRequest;
 use App\Http\Requests\Student\SubmitBallotRequest;
 use App\Models\Announcement;
 use App\Models\AnnouncementAttachment;
@@ -440,41 +440,19 @@ class StudentPortalController extends Controller
             'fundraiser' => $fundraiser,
             'paymentMethods' => $fundraiser->acceptedPaymentMethods(),
             'paymongoConfigured' => $this->donationCheckout->isOnlinePaymentsConfigured(),
-            'onlineMinAmount' => $this->donationCheckout->onlineMinimumAmount(),
         ]);
     }
 
-    public function donate(Request $request, Fundraiser $fundraiser): RedirectResponse
+    public function donate(DonateToFundraiserRequest $request, Fundraiser $fundraiser): RedirectResponse
     {
-        $min = $fundraiser->minimumDonationAmount();
-        $max = $fundraiser->maximumDonationAmount();
-        $accepted = array_map(
-            fn (DonationPaymentMethod $method) => $method->value,
-            $fundraiser->acceptedPaymentMethods(),
-        );
-
-        $amountRules = ['required', 'numeric', 'min:'.$min];
-        if ($max !== null) {
-            $amountRules[] = 'max:'.$max;
-        }
-
-        $validated = $request->validate([
-            'amount' => $amountRules,
-            'message' => ['nullable', 'string', 'max:255'],
-            'is_anonymous' => ['nullable', 'boolean'],
-            'payment_method' => ['required', 'in:'.implode(',', $accepted)],
-        ]);
-
-        $method = DonationPaymentMethod::from($validated['payment_method']);
-
         try {
             $result = $this->donationCheckout->start(
                 donor: $request->user(),
                 fundraiser: $fundraiser,
-                amount: $validated['amount'],
-                method: $method,
-                message: $validated['message'] ?? null,
-                anonymous: (bool) ($validated['is_anonymous'] ?? false),
+                amount: $request->donationAmount(),
+                method: $request->paymentMethod(),
+                message: $request->donationMessage(),
+                anonymous: $request->isAnonymous(),
             );
         } catch (DonationIntegrityException|PayMongoException $exception) {
             return back()->withInput()->with('error', $exception->getMessage());

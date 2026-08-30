@@ -45,6 +45,7 @@ class ProfileTest extends TestCase
             ->assertSee('Staff role')
             ->assertDontSee('>Department</label>', false)
             ->assertSee('Manage your administrator profile, devices, and account security.')
+            ->assertSee('Phone Number')
             ->assertDontSee('<h1 class="text-xl font-bold text-white">Settings</h1>', false);
     }
 
@@ -68,6 +69,71 @@ class ProfileTest extends TestCase
         $this->assertSame('Test User', $user->name);
         $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
+    }
+
+    public function test_student_can_save_phone_number_on_settings(): void
+    {
+        $user = User::factory()->create([
+            'role' => UserRole::Student,
+            'email' => 'student@example.com',
+        ]);
+
+        $this->actingAs($user)
+            ->patch('/profile', [
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => '+63 917 123 4567',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit', ['section' => 'profile']));
+
+        $this->assertSame('+63 917 123 4567', $user->refresh()->phone);
+    }
+
+    public function test_faculty_can_save_phone_number_on_settings(): void
+    {
+        $user = User::factory()->faculty()->create();
+
+        $this->actingAs($user)
+            ->patch('/profile', [
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => '09171234567',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('09171234567', $user->refresh()->phone);
+    }
+
+    public function test_administrator_can_save_phone_number_on_settings(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->patch('/profile', [
+                'name' => $admin->name,
+                'email' => $admin->email,
+                'phone' => '09170000000',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit', ['section' => 'profile']));
+
+        $this->assertSame('09170000000', $admin->refresh()->phone);
+    }
+
+    public function test_super_admin_can_save_phone_number_on_settings(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+
+        $this->actingAs($admin)
+            ->patch('/profile', [
+                'name' => $admin->name,
+                'email' => $admin->email,
+                'phone' => '+63 917 000 1111',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('+63 917 000 1111', $admin->refresh()->phone);
     }
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void

@@ -35,10 +35,12 @@
                         <label for="email" class="block text-sm font-medium text-slate-300">Email Address</label>
                         <input id="email" name="email" type="email" value="{{ old('email', $student->email) }}" required
                             class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2.5 text-white focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20">
-                        @error('email')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
-                    </div>
+                    @error('email')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
+                </div>
 
-                    <div class="grid gap-4 sm:grid-cols-2">
+                @include('admin.partials.phone-field', ['phoneValue' => old('phone', $student->phone)])
+
+                <div class="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label for="grade_level" class="block text-sm font-medium text-slate-300">Grade</label>
                             @if (count($gradeLevels) > 0)
@@ -114,6 +116,14 @@
                     <div class="flex justify-between gap-3 border-b border-slate-800 pb-2">
                         <dt class="text-slate-500">Role</dt>
                         <dd class="text-slate-200">{{ $student->roleLabel() }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-3 border-b border-slate-800 pb-2">
+                        <dt class="text-slate-500">Email</dt>
+                        <dd class="break-all text-slate-200">{{ $student->email }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-3 border-b border-slate-800 pb-2">
+                        <dt class="text-slate-500">Phone</dt>
+                        <dd class="text-slate-200">{{ $student->phone ?: 'Not on file' }}</dd>
                     </div>
                     <div class="flex justify-between gap-3 border-b border-slate-800 pb-2">
                         <dt class="text-slate-500">Active</dt>

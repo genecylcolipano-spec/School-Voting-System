@@ -115,11 +115,8 @@ class ProfileController extends Controller
         $user->fill([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
         ]);
-
-        if ($request->has('phone') && ($user->isStudent() || $user->isFaculty())) {
-            $user->phone = $validated['phone'] ?? null;
-        }
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;

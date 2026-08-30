@@ -10,6 +10,11 @@
         $defaultPaymentMethod = collect($paymentMethods)
             ->first(fn ($method) => ! ($method->isOnline() && ! $paymongoConfigured))
             ?->value;
+        $selectedPaymentMethod = \App\Enums\DonationPaymentMethod::tryFrom((string) old('payment_method', $defaultPaymentMethod));
+        $submitLabel = $selectedPaymentMethod?->donateSubmitLabel() ?? 'Submit donation';
+        $submitLabels = collect($paymentMethods)
+            ->mapWithKeys(fn ($method) => [$method->value => $method->donateSubmitLabel()])
+            ->all();
     @endphp
     <div class="min-h-screen bg-slate-950 text-slate-100">
         <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -54,41 +59,40 @@
                     />
                 @endif
                 <div class="p-6">
-                    <div class="flex flex-wrap items-start justify-between gap-4">
-                        <div class="min-w-0">
-                            <h1 class="truncate text-2xl font-bold text-white">{{ $fundraiser->title }}</h1>
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0 flex-1">
+                            <h1 class="text-2xl font-bold text-white break-words">{{ $fundraiser->title }}</h1>
                             @if ($fundraiser->category)
                                 <p class="mt-1 text-xs font-semibold uppercase tracking-wide text-cyan-300">{{ $fundraiser->category->label() }}</p>
                             @endif
                             @if ($fundraiser->description)
-                                <p class="mt-2 text-sm text-slate-300">{{ $fundraiser->description }}</p>
+                                <p class="mt-2 text-sm leading-relaxed text-slate-300 text-justify whitespace-pre-line">{{ $fundraiser->description }}</p>
                             @endif
                             @if ($fundraiser->beneficiary || $fundraiser->purpose)
                                 <dl class="mt-3 space-y-1 text-sm text-slate-400">
                                     @if ($fundraiser->beneficiary)
-                                        <div><span class="text-slate-500">Beneficiary:</span> {{ $fundraiser->beneficiary }}</div>
+                                        <div><span class="text-slate-400">Beneficiary:</span> {{ $fundraiser->beneficiary }}</div>
                                     @endif
                                     @if ($fundraiser->purpose)
-                                        <div><span class="text-slate-500">Purpose:</span> {{ $fundraiser->purpose }}</div>
+                                        <div><span class="text-slate-400">Purpose:</span> {{ $fundraiser->purpose }}</div>
                                     @endif
                                 </dl>
                             @endif
                         </div>
-                        <div class="text-right">
-                            <p class="text-xs uppercase tracking-wide text-slate-500">{{ $fundraiser->displayStatusLabel() }}</p>
-                            <p class="mt-1 text-xs text-slate-400">
-                                Raised ₱{{ number_format((float) $fundraiser->amount_raised, 2) }}
-                            </p>
-                            <p class="text-xs text-slate-400">
-                                Goal ₱{{ number_format((float) $fundraiser->goal_amount, 2) }}
-                            </p>
+                        <div class="shrink-0 sm:text-right">
+                            <span class="inline-flex rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-300">
+                                {{ $fundraiser->displayStatusLabel() }}
+                            </span>
+                            <p class="mt-2 text-lg font-semibold tabular-nums text-white">₱{{ number_format((float) $fundraiser->amount_raised, 2) }}</p>
+                            <p class="text-xs text-slate-400">Raised</p>
+                            <p class="mt-1 text-sm text-slate-300">Goal ₱{{ number_format((float) $fundraiser->goal_amount, 2) }}</p>
                         </div>
                     </div>
 
-                    <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-800">
+                    <div class="mt-4 h-3 overflow-hidden rounded-full bg-slate-800">
                         <div class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-sky-400" style="width: {{ $fundraiser->progressPercent() }}%"></div>
                     </div>
-                    <p class="mt-2 text-xs text-slate-500">{{ number_format($fundraiser->progressPercent(), 1) }}% of goal · Remaining ₱{{ number_format($fundraiser->remainingAmount(), 2) }}</p>
+                    <p class="mt-2 text-xs text-slate-400">{{ number_format($fundraiser->progressPercent(), 1) }}% of goal · Remaining ₱{{ number_format($fundraiser->remainingAmount(), 2) }}</p>
                 </div>
             </article>
 
@@ -97,102 +101,16 @@
                 @if ($preview)
                     <p class="mt-3 text-sm text-slate-400">
                         @if ($fundraiser->isAcceptingDonations())
-                            Students can donate here when this campaign is published and visible.
+                            Students and faculty can donate here when this campaign is published and visible.
                         @else
                             This campaign is not currently accepting donations.
                         @endif
                     </p>
                 @elseif ($accepting)
-                    @if ($paymentMethods === [])
-                        <p class="mt-3 text-sm text-slate-400">This campaign has no payment methods enabled.</p>
-                    @elseif ($hasOnlineMethod && ! $paymongoConfigured)
-                        <p class="mt-3 text-sm text-amber-200">Online payments are not configured yet. Cash and bank transfer can still be submitted for confirmation if this campaign accepts them.</p>
-                    @endif
-                    <form method="POST" action="{{ route('student.fundraising.donate', $fundraiser) }}" class="mt-4 space-y-4">
-                        @csrf
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-300">Amount (PHP)</label>
-                            <input
-                                name="amount"
-                                type="number"
-                                step="0.01"
-                                min="{{ $minDonation }}"
-                                @if ($maxDonation) max="{{ $maxDonation }}" @endif
-                                required
-                                value="{{ old('amount') }}"
-                                class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
-                            />
-                            <p class="mt-1 text-xs text-slate-500">
-                                Minimum ₱{{ number_format($minDonation, 2) }}
-                                @if ($maxDonation)
-                                    · Maximum ₱{{ number_format($maxDonation, 2) }}
-                                @endif
-                            </p>
-                            @error('amount')
-                                <p class="mt-1 text-sm text-rose-300">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <fieldset>
-                            <legend class="block text-sm font-medium text-slate-300">Payment method</legend>
-                            <div class="mt-2 grid gap-2 sm:grid-cols-2">
-                                @foreach ($paymentMethods as $method)
-                                    @php
-                                        $disabled = $method->isOnline() && ! $paymongoConfigured;
-                                    @endphp
-                                    <label class="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2 text-sm {{ $disabled ? 'cursor-not-allowed text-slate-500' : 'text-slate-300' }}">
-                                        <input
-                                            type="radio"
-                                            name="payment_method"
-                                            value="{{ $method->value }}"
-                                            @checked(old('payment_method', $defaultPaymentMethod) === $method->value)
-                                            @disabled($disabled)
-                                            required
-                                            class="border-slate-700 bg-slate-950/50 text-cyan-500 focus:ring-cyan-500/30"
-                                        />
-                                        <span>
-                                            {{ $method->label() }}
-                                            @if ($method->isOnline())
-                                                <span class="text-xs text-slate-500">via PayMongo</span>
-                                            @else
-                                                <span class="text-xs text-slate-500">pending confirmation</span>
-                                            @endif
-                                        </span>
-                                    </label>
-                                @endforeach
-                            </div>
-                            @error('payment_method')
-                                <p class="mt-1 text-sm text-rose-300">{{ $message }}</p>
-                            @enderror
-                            <p class="mt-2 text-xs text-slate-500">GCash, Maya, and QR Ph open a PayMongo checkout page. Your donation is counted only after payment succeeds.</p>
-                        </fieldset>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-300">Message (optional)</label>
-                            <input
-                                name="message"
-                                type="text"
-                                maxlength="255"
-                                value="{{ old('message') }}"
-                                class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
-                            />
-                            @error('message')
-                                <p class="mt-1 text-sm text-rose-300">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        @if ($fundraiser->allow_anonymous !== false)
-                            <label class="flex items-center gap-2 text-sm text-slate-300">
-                                <input type="checkbox" name="is_anonymous" value="1" @checked(old('is_anonymous')) class="rounded border-slate-700 bg-slate-950/50 text-cyan-500 focus:ring-cyan-500/30" />
-                                Donate anonymously
-                            </label>
-                        @endif
-
-                        <button type="submit" class="inline-flex rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-5 py-2.5 text-sm font-semibold text-slate-950">
-                            Continue to payment
-                        </button>
-                    </form>
+                    @include('fundraising._donate-form', [
+                        'donateAction' => route('student.fundraising.donate', $fundraiser),
+                        'accent' => 'cyan',
+                    ])
                 @else
                     <p class="mt-3 text-sm text-slate-400">This campaign is not currently accepting donations.</p>
                 @endif

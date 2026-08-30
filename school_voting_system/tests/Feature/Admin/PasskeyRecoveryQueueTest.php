@@ -69,7 +69,9 @@ class PasskeyRecoveryQueueTest extends TestCase
             ->assertSee('On file: faculty.onfile@example.com')
             ->assertSee('Generate enrollment link')
             ->assertSee('Dismiss')
-            ->assertSee(route('super-admin.faculty.show', $faculty), false);
+            ->assertSee(route('super-admin.faculty.show', $faculty), false)
+            ->assertSee('data-recovery-header', false)
+            ->assertSee('Passkey recovery queue, 1 pending', false);
     }
 
     public function test_existing_duplicate_pending_rows_are_collapsed_on_the_queue(): void

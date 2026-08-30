@@ -38,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.ip' => \App\Http\Middleware\CheckAdminIpWhitelist::class,
             'permission' => \App\Http\Middleware\EnsureStaffPermission::class,
             'app.maintenance' => \App\Http\Middleware\EnsureNotInAppMaintenance::class,
+            'platform.module' => \App\Http\Middleware\EnsurePlatformModule::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

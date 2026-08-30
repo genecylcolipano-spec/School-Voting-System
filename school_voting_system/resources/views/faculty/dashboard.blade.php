@@ -4,7 +4,7 @@
             <span class="inline-block rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-teal-200">Faculty Portal</span>
             <h2 class="mt-4 text-2xl font-bold text-white sm:text-3xl">{{ $user->name }}</h2>
             <p class="mt-3 max-w-2xl text-slate-300">
-                Review assigned competitions, evaluate participant performances, submit scores, and stay informed with school announcements and school events.
+                Review assigned competitions, evaluate participant performances, submit scores, and stay informed with school announcements and school events{{ $showFundraising ? ', and support fundraising campaigns' : '' }}.
             </p>
 
             <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -29,10 +29,23 @@
                     </svg>
                     View School Events
                 </a>
+
+                @if ($showFundraising)
+                <a
+                    href="{{ route('faculty.fundraising.index') }}"
+                    class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-amber-400/40 bg-transparent px-5 py-2.5 text-sm font-semibold text-amber-100 transition hover:border-amber-300/60 hover:bg-amber-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 sm:w-auto"
+                    aria-label="Support fundraising campaigns"
+                >
+                    <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Support a Campaign
+                </a>
+                @endif
             </div>
         </section>
 
-        <div class="grid gap-4 sm:grid-cols-3">
+        <div class="grid gap-4 sm:grid-cols-2 {{ $showFundraising ? 'xl:grid-cols-4' : 'xl:grid-cols-3' }}">
             <a href="{{ route('faculty.elections.index', ['filter' => 'open']) }}" class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 transition hover:border-teal-400/40 hover:bg-slate-900">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Open elections</p>
                 <p class="mt-2 text-3xl font-bold text-white">{{ $openElectionsCount }}</p>
@@ -48,6 +61,9 @@
                 <p class="mt-2 text-3xl font-bold text-white">{{ $assignedCompetitionsCount }}</p>
                 <p class="mt-1 text-sm text-teal-300">Open judging →</p>
             </a>
+            @includeWhen($showFundraising, 'faculty.partials.fundraising-overview-card', [
+                'activeFundraisersCount' => $activeFundraisersCount,
+            ])
         </div>
 
         <section class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 sm:p-6">

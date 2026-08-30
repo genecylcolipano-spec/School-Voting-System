@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\SuperAdmin\UpdateSystemSettingsRequest;
 use App\Services\SuperAdmin\AuditLogService;
 use App\Services\SuperAdmin\SystemSettingsService;
 use App\Support\AdminPortal;
+use App\Support\SchoolBranding;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -28,6 +29,7 @@ class SystemSettingsController extends Controller
         return view('admin.system.settings', array_merge(AdminPortal::layoutData($request), [
             'settings' => $settings,
             'logoUrl' => $this->settings->schoolLogoUrl(),
+            'logoIssue' => SchoolBranding::logoIssue(),
             'ipWhitelistText' => is_array($settings['ip_whitelist'] ?? null)
                 ? implode(', ', $settings['ip_whitelist'])
                 : (string) ($settings['ip_whitelist'] ?? ''),
@@ -38,13 +40,11 @@ class SystemSettingsController extends Controller
     {
         $validated = $request->validated();
         $validated['enable_student_registration'] = $request->boolean('enable_student_registration');
-        $validated['enable_faculty_registration'] = $request->boolean('enable_faculty_registration');
         $validated['enable_elections'] = $request->boolean('enable_elections');
         $validated['enable_talent_voting'] = $request->boolean('enable_talent_voting');
         $validated['enable_fundraising'] = $request->boolean('enable_fundraising');
         $validated['ip_whitelist_enabled'] = $request->boolean('ip_whitelist_enabled');
         $validated['two_factor_recovery_enabled'] = $request->boolean('two_factor_recovery_enabled');
-        $validated['public_results_published'] = $request->boolean('public_results_published');
 
         $this->settings->update(
             $validated,

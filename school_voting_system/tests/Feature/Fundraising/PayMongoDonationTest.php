@@ -22,6 +22,8 @@ class PayMongoDonationTest extends TestCase
     {
         parent::setUp();
 
+        $this->withoutVite();
+
         config([
             'services.paymongo.secret_key' => 'sk_test_testkey',
             'services.paymongo.webhook_secret' => 'whsk_test_secret',
@@ -30,40 +32,7 @@ class PayMongoDonationTest extends TestCase
         ]);
     }
 
-    public function test_gcash_donation_stays_pending_and_redirects_to_paymongo(): void
-    {
-        Http::fake([
-            'https://api.paymongo.com/v1/checkout_sessions' => Http::response($this->checkoutSessionPayload('cs_test_1', 'https://checkout.paymongo.com/cs_test_1'), 200),
-        ]);
-
-        $student = User::factory()->create();
-        $fundraiser = $this->createFundraiser();
-
-        $this->actingAs($student)
-            ->post(route('student.fundraising.donate', $fundraiser), [
-                'amount' => 50,
-                'payment_method' => DonationPaymentMethod::Gcash->value,
-                'message' => 'Go team',
-            ])
-            ->assertRedirect('https://checkout.paymongo.com/cs_test_1');
-
-        $donation = Donation::query()->first();
-        $this->assertNotNull($donation);
-        $this->assertSame(DonationStatus::Pending, $donation->status);
-        $this->assertSame(DonationPaymentMethod::Gcash, $donation->payment_method);
-        $this->assertSame('cs_test_1', $donation->paymongo_checkout_session_id);
-        $this->assertSame(0.0, (float) $fundraiser->fresh()->amount_raised);
-
-        Http::assertSent(function ($request) {
-            $payload = $request->data();
-
-            return $request->method() === 'POST'
-                && ($payload['data']['attributes']['payment_method_types'] ?? []) === ['gcash']
-                && ($payload['data']['attributes']['line_items'][0]['amount'] ?? null) === 5000;
-        });
-    }
-
-    public function test_qrph_donation_redirects_to_paymongo(): void
+    public function test_qrph_donation_stays_pending_and_redirects_to_paymongo(): void
     {
         Http::fake([
             'https://api.paymongo.com/v1/checkout_sessions' => Http::response($this->checkoutSessionPayload('cs_test_qrph', 'https://checkout.paymongo.com/cs_test_qrph'), 200),
@@ -76,20 +45,50 @@ class PayMongoDonationTest extends TestCase
             ->post(route('student.fundraising.donate', $fundraiser), [
                 'amount' => 50,
                 'payment_method' => DonationPaymentMethod::Qrph->value,
+                'message' => 'Go team',
             ])
             ->assertRedirect('https://checkout.paymongo.com/cs_test_qrph');
 
         $donation = Donation::query()->first();
-        $this->assertSame(DonationPaymentMethod::Qrph, $donation->payment_method);
+        $this->assertNotNull($donation);
         $this->assertSame(DonationStatus::Pending, $donation->status);
+        $this->assertSame(DonationPaymentMethod::Qrph, $donation->payment_method);
+        $this->assertSame('cs_test_qrph', $donation->paymongo_checkout_session_id);
         $this->assertSame(0.0, (float) $fundraiser->fresh()->amount_raised);
 
         Http::assertSent(function ($request) {
             $payload = $request->data();
 
             return $request->method() === 'POST'
-                && ($payload['data']['attributes']['payment_method_types'] ?? []) === ['qrph'];
+                && ($payload['data']['attributes']['payment_method_types'] ?? []) === ['qrph']
+                && ($payload['data']['attributes']['line_items'][0]['amount'] ?? null) === 5000;
         });
+    }
+
+    public function test_retired_payment_methods_cannot_be_submitted(): void
+    {
+        Http::fake();
+
+        $student = User::factory()->create();
+        $fundraiser = $this->createFundraiser();
+
+        foreach ([
+            DonationPaymentMethod::Gcash,
+            DonationPaymentMethod::Maya,
+            DonationPaymentMethod::BankTransfer,
+        ] as $method) {
+            $this->actingAs($student)
+                ->from(route('student.fundraising.show', $fundraiser))
+                ->post(route('student.fundraising.donate', $fundraiser), [
+                    'amount' => 50,
+                    'payment_method' => $method->value,
+                ])
+                ->assertRedirect(route('student.fundraising.show', $fundraiser))
+                ->assertSessionHasErrors('payment_method');
+        }
+
+        Http::assertNothingSent();
+        $this->assertSame(0, Donation::query()->count());
     }
 
     public function test_unpaid_donation_is_not_counted_in_student_totals(): void
@@ -243,6 +242,92 @@ class PayMongoDonationTest extends TestCase
 
         $fundraiser->forceFill(['min_donation' => 50])->save();
         $this->assertSame(50.0, $fundraiser->fresh()->minimumDonationAmount());
+    }
+
+    public function test_donate_form_prefills_minimum_and_labels_paymongo_submit(): void
+    {
+        $student = User::factory()->create();
+        $fundraiser = $this->createFundraiser();
+        $fundraiser->forceFill(['min_donation' => 50])->save();
+
+        $html = $this->actingAs($student)
+            ->get(route('student.fundraising.show', $fundraiser))
+            ->assertOk()
+            ->assertSee('Continue to payment', false)
+            ->assertDontSee('>Submit donation<', false)
+            ->assertSee('QR Ph')
+            ->assertSee('Cash')
+            ->assertDontSee('GCash')
+            ->assertDontSee('Maya')
+            ->assertDontSee('Bank transfer')
+            ->assertSee('Campus Drive')
+            ->assertSee('Raised')
+            ->assertSee('Goal ₱5,000.00')
+            ->assertSee('border-cyan-500/50', false)
+            ->getContent();
+
+        $this->assertStringContainsString('break-words', $html);
+        $this->assertStringNotContainsString('truncate text-2xl', $html);
+        $this->assertStringContainsString('h-3 overflow-hidden rounded-full bg-slate-800', $html);
+
+        $this->assertMatchesRegularExpression(
+            '/name="amount"[^>]*value="50(\.0+)?"/',
+            $html,
+        );
+    }
+
+    public function test_cash_only_campaign_uses_submit_donation_label(): void
+    {
+        $student = User::factory()->create();
+        $fundraiser = $this->createFundraiser();
+        $fundraiser->forceFill([
+            'accept_gcash' => false,
+            'accept_maya' => false,
+            'accept_qrph' => false,
+            'accept_bank_transfer' => false,
+            'accept_cash' => true,
+        ])->save();
+
+        $this->actingAs($student)
+            ->get(route('student.fundraising.show', $fundraiser))
+            ->assertOk()
+            ->assertSee('Submit donation', false)
+            ->assertDontSee('>Continue to payment<', false);
+    }
+
+    public function test_donation_below_minimum_is_rejected(): void
+    {
+        $student = User::factory()->create();
+        $fundraiser = $this->createFundraiser();
+
+        $this->actingAs($student)
+            ->from(route('student.fundraising.show', $fundraiser))
+            ->post(route('student.fundraising.donate', $fundraiser), [
+                'amount' => 10,
+                'payment_method' => DonationPaymentMethod::Cash->value,
+            ])
+            ->assertRedirect(route('student.fundraising.show', $fundraiser))
+            ->assertSessionHasErrors('amount');
+
+        $this->assertSame(0, Donation::query()->count());
+    }
+
+    public function test_unaccepted_payment_method_is_rejected(): void
+    {
+        $student = User::factory()->create();
+        $fundraiser = $this->createFundraiser();
+        $fundraiser->forceFill(['accept_cash' => false])->save();
+
+        $this->actingAs($student)
+            ->from(route('student.fundraising.show', $fundraiser))
+            ->post(route('student.fundraising.donate', $fundraiser), [
+                'amount' => 50,
+                'payment_method' => DonationPaymentMethod::Cash->value,
+            ])
+            ->assertRedirect(route('student.fundraising.show', $fundraiser))
+            ->assertSessionHasErrors('payment_method');
+
+        $this->assertSame(0, Donation::query()->count());
     }
 
     /**

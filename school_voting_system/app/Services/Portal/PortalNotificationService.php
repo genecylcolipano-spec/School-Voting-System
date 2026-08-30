@@ -71,6 +71,7 @@ class PortalNotificationService
         'admin_talent_voting_resumed' => '▶',
         'admin_talent_voting_closed' => '🔒',
         'student_fundraiser_published' => '💰',
+        'faculty_fundraiser_published' => '💰',
         'student_donation_confirmed' => '💰',
         'student_announcement' => '📢',
         'student_registered' => '👤',
@@ -838,6 +839,14 @@ class PortalNotificationService
                 NotificationModule::Fundraising,
                 $fundraiserId,
             );
+            $this->notifyFaculty(
+                'New Fundraising Campaign',
+                "\"{$title}\" is now available. Support your school community.",
+                'faculty_fundraiser_published',
+                $actor,
+                NotificationModule::Fundraising,
+                $fundraiserId,
+            );
         }
     }
 
@@ -857,6 +866,14 @@ class PortalNotificationService
                 'New Fundraising Campaign',
                 "\"{$title}\" is now available. Support your school community.",
                 'student_fundraiser_published',
+                $actor,
+                NotificationModule::Fundraising,
+                $fundraiserId,
+            );
+            $this->notifyFaculty(
+                'New Fundraising Campaign',
+                "\"{$title}\" is now available. Support your school community.",
+                'faculty_fundraiser_published',
                 $actor,
                 NotificationModule::Fundraising,
                 $fundraiserId,
@@ -1295,15 +1312,17 @@ class PortalNotificationService
                 };
             }
 
-            if (in_array($type, ['student_fundraiser_published', 'student_donation_confirmed', 'admin_fundraiser_created', 'admin_fundraiser_updated', 'admin_donation_received'], true) && $relatedId) {
+            if (in_array($type, ['student_fundraiser_published', 'faculty_fundraiser_published', 'student_donation_confirmed', 'admin_fundraiser_created', 'admin_fundraiser_updated', 'admin_donation_received'], true) && $relatedId) {
                 $fundraiser = \App\Models\Fundraiser::query()->find($relatedId);
                 if (! $fundraiser) {
                     return null;
                 }
 
-                return $role === UserRole::Student->value
-                    ? route('student.fundraising.show', $fundraiser)
-                    : route('admin.fundraisers.edit', $fundraiser);
+                return match ($role) {
+                    UserRole::Student->value => route('student.fundraising.show', $fundraiser),
+                    UserRole::Faculty->value => route('faculty.fundraising.show', $fundraiser),
+                    default => route('admin.fundraisers.edit', $fundraiser),
+                };
             }
 
             if (str_starts_with($type, 'admin_election') || in_array($type, ['admin_voting_started', 'admin_voting_paused', 'admin_voting_resumed', 'admin_voting_closed', 'admin_results_published', 'admin_results_unpublished'], true)) {

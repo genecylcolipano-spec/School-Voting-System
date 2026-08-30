@@ -154,7 +154,7 @@ class PasskeyRecoveryQueueService
         }
 
         $expiresInMinutes = max(60, (int) config('enrollment.link_expiration_hours', 24) * 60);
-        $result = $this->enrollmentLinks->sendToUser($user, $user->email, $expiresInMinutes);
+        $result = $this->enrollmentLinks->sendToUser($user, $user->email, $expiresInMinutes, $actor);
 
         $request->forceFill([
             'user_id' => $user->id,
@@ -181,6 +181,7 @@ class PasskeyRecoveryQueueService
         $this->notifications->passkeyResetCompleted($user, $actor);
 
         return [
+            'user' => $user,
             'url' => $result['url'],
             'email_sent' => $result['email_sent'],
             'email_error' => $result['email_error'],

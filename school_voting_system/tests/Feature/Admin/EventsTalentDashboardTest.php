@@ -68,6 +68,42 @@ class EventsTalentDashboardTest extends TestCase
         $this->assertNotNull($outOfScope->id);
     }
 
+    public function test_dashboard_live_monitoring_hides_soft_deleted_assigned_election(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $election = Election::factory()->active()->create([
+            'title' => 'Vanished Live Council',
+            'created_by' => $admin->id,
+        ]);
+
+        AdminAssignment::query()->create([
+            'user_id' => $admin->id,
+            'election_id' => $election->id,
+            'assigned_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('Vanished Live Council');
+
+        $election->delete();
+
+        $html = $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/id="live-voting-election-title"[^>]*>\s*No assigned election/',
+            $html,
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '/id="live-voting-election-title"[^>]*>\s*Vanished Live Council/',
+            $html,
+        );
+    }
+
     public function test_super_admin_sees_all_talent_competitions_on_events_dashboard(): void
     {
         $super = User::factory()->superAdmin()->create();

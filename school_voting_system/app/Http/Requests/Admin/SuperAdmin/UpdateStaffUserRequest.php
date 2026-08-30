@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin\SuperAdmin;
 
 use App\Http\Requests\Admin\SuperAdminFormRequest;
 use App\Models\User;
+use App\Support\ContactPhone;
 use Illuminate\Validation\Rule;
 
 class UpdateStaffUserRequest extends SuperAdminFormRequest
@@ -22,6 +23,7 @@ class UpdateStaffUserRequest extends SuperAdminFormRequest
                 'max:255',
                 Rule::unique('users', 'email')->ignore($account?->id),
             ],
+            'phone' => ContactPhone::rules(),
             'staff_role_id' => [
                 'nullable',
                 'integer',
@@ -35,6 +37,7 @@ class UpdateStaffUserRequest extends SuperAdminFormRequest
         $this->merge([
             'name' => trim((string) $this->input('name')),
             'email' => strtolower(trim((string) $this->input('email'))),
+            'phone' => ContactPhone::normalize($this->input('phone')),
         ]);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\StudentStatus;
 use App\Enums\UserRole;
+use App\Support\ContactPhone;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -113,6 +114,21 @@ class User extends Authenticatable implements PasskeyUser
         return $this->archived_at !== null;
     }
 
+    public function hasContactPhone(): bool
+    {
+        return filled($this->phone);
+    }
+
+    public function maskedPhone(): ?string
+    {
+        return ContactPhone::mask($this->phone);
+    }
+
+    public function phoneTelHref(): ?string
+    {
+        return ContactPhone::telHref($this->phone);
+    }
+
     public function avatarUrl(): ?string
     {
         if (! filled($this->avatar_path)) {
@@ -165,6 +181,50 @@ class User extends Authenticatable implements PasskeyUser
         }
 
         return 'Student';
+    }
+
+    /**
+     * Super Admin link to this account's User Management page.
+     */
+    public function adminAccountUrl(): ?string
+    {
+        if ($this->isStudent()) {
+            return route('admin.students.show', $this);
+        }
+
+        if ($this->isFaculty()) {
+            return route('super-admin.faculty.show', $this);
+        }
+
+        if ($this->isAdmin()) {
+            return route('super-admin.administrators.show', $this);
+        }
+
+        return null;
+    }
+
+    /**
+     * Super Admin link to this account's registered devices.
+     */
+    public function adminDevicesUrl(?self $actor = null): string
+    {
+        if ($this->isStudent()) {
+            return route('admin.students.show', $this).'#devices';
+        }
+
+        if ($this->isFaculty()) {
+            return route('super-admin.faculty.show', $this).'#devices';
+        }
+
+        if ($this->isAdmin()) {
+            return route('super-admin.administrators.show', $this).'#devices';
+        }
+
+        if ($actor && $this->is($actor)) {
+            return route('profile.edit', ['section' => 'devices']);
+        }
+
+        return route('super-admin.dashboard', ['portal_q' => $this->account_id]);
     }
 
     /**

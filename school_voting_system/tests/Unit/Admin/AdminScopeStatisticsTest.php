@@ -217,4 +217,26 @@ class AdminScopeStatisticsTest extends TestCase
         $this->assertSame(100.0, $voterRow['turnout_percent']);
         $this->assertSame(1, $voterRow['registered']);
     }
+
+    public function test_assigned_election_ignores_soft_deleted_elections(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $election = Election::factory()->active()->create([
+            'title' => 'Deleted Council',
+            'created_by' => $admin->id,
+        ]);
+
+        AdminAssignment::query()->create([
+            'user_id' => $admin->id,
+            'election_id' => $election->id,
+            'assigned_by' => $admin->id,
+        ]);
+
+        $this->assertSame($election->id, app(AdminScopeService::class)->assignedElection($admin)?->id);
+
+        $election->delete();
+
+        $this->assertNull(app(AdminScopeService::class)->assignedElection($admin));
+        $this->assertTrue($election->trashed());
+    }
 }

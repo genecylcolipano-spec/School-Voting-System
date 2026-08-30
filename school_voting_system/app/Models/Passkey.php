@@ -66,6 +66,20 @@ class Passkey extends BasePasskey
         return $this->revoked_at === null && $this->marked_lost_at === null;
     }
 
+    public static function remainingUsableCountFor(User $user, int $exceptPasskeyId): int
+    {
+        return (int) static::query()
+            ->where('user_id', $user->id)
+            ->where('id', '!=', $exceptPasskeyId)
+            ->where('status', PasskeyStatus::Active)
+            ->whereNull('revoked_at')
+            ->whereNull('marked_lost_at')
+            ->where(function ($query) {
+                $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->count();
+    }
+
     /**
      * Revoke every usable passkey for the user except the newly registered one.
      * Used after a successful passkey reset / bootstrap enrollment.

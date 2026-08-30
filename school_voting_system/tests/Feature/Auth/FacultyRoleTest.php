@@ -26,6 +26,7 @@ class FacultyRoleTest extends TestCase
 
         $this->assertTrue($faculty->isFaculty());
         $this->assertFalse($faculty->canVote());
+        $this->assertTrue($faculty->canDonate());
         $this->assertSame('Faculty', $faculty->roleLabel());
         $this->assertSame('/faculty/dashboard', app(RoleRedirectService::class)->dashboardPathFor($faculty));
         $this->assertSame(UserRole::Faculty, $faculty->role);

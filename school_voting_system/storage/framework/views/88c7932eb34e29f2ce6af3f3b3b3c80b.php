@@ -1,6 +1,9 @@
 <?php
     $onDashboard = request()->routeIs('student.dashboard');
     $onStatistics = request()->routeIs('student.statistics');
+    $showElections = \App\Support\PlatformModules::elections();
+    $showTalent = \App\Support\PlatformModules::talent();
+    $showFundraising = \App\Support\PlatformModules::fundraising();
 ?>
 
 <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
@@ -82,6 +85,7 @@
 <?php unset($__componentOriginal866f5e2d42640ffa335179aba2fdf6c7); ?>
 <?php endif; ?>
 
+    <?php if($showElections): ?>
     <?php if (isset($component)) { $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.portal-sidebar-link','data' => ['href' => route('student.voting.index'),'label' => 'My Voting','active' => request()->routeIs('student.voting.*')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
@@ -107,7 +111,9 @@
 <?php $component = $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7; ?>
 <?php unset($__componentOriginal866f5e2d42640ffa335179aba2fdf6c7); ?>
 <?php endif; ?>
+    <?php endif; ?>
 
+    <?php if($showElections || $showTalent): ?>
     <?php if (isset($component)) { $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.portal-sidebar-link','data' => ['href' => route('student.results.index'),'label' => 'Results','active' => request()->routeIs('student.results.*')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
@@ -133,7 +139,9 @@
 <?php $component = $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7; ?>
 <?php unset($__componentOriginal866f5e2d42640ffa335179aba2fdf6c7); ?>
 <?php endif; ?>
+    <?php endif; ?>
 
+    <?php if($showElections): ?>
     <?php if (isset($component)) { $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.portal-sidebar-link','data' => ['href' => route('student.campaigns.index'),'label' => 'Campaigns','active' => request()->routeIs('student.campaigns.*')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
@@ -159,7 +167,9 @@
 <?php $component = $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7; ?>
 <?php unset($__componentOriginal866f5e2d42640ffa335179aba2fdf6c7); ?>
 <?php endif; ?>
+    <?php endif; ?>
 
+    <?php if($showTalent): ?>
     <?php if (isset($component)) { $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.portal-sidebar-link','data' => ['href' => route('student.talent-voting.index'),'label' => 'Talent Competition','active' => request()->routeIs('student.talent-voting.*') || request()->routeIs('student.talent-registration.*')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
@@ -185,7 +195,9 @@
 <?php $component = $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7; ?>
 <?php unset($__componentOriginal866f5e2d42640ffa335179aba2fdf6c7); ?>
 <?php endif; ?>
+    <?php endif; ?>
 
+    <?php if($showFundraising): ?>
     <?php if (isset($component)) { $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.portal-sidebar-link','data' => ['href' => route('student.fundraising.index'),'label' => 'Fundraising','active' => request()->routeIs('student.fundraising.*')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
@@ -211,6 +223,7 @@
 <?php $component = $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7; ?>
 <?php unset($__componentOriginal866f5e2d42640ffa335179aba2fdf6c7); ?>
 <?php endif; ?>
+    <?php endif; ?>
 
     <?php if (isset($component)) { $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7 = $attributes; } ?>

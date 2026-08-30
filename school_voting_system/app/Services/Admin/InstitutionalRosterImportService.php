@@ -117,7 +117,7 @@ class InstitutionalRosterImportService
             return [];
         }
 
-        $header = array_map(fn ($value) => strtolower(trim((string) $value)), $header);
+        $header = array_map(fn ($value) => $this->normalizeHeader((string) $value), $header);
         $aliases = [
             'student_id' => 'account_id',
             'faculty_id' => 'account_id',
@@ -156,7 +156,7 @@ class InstitutionalRosterImportService
             $row = [];
             foreach ($columns as $column) {
                 $row[$column] = isset($map[$column], $data[$map[$column]])
-                    ? trim((string) $data[$map[$column]])
+                    ? $this->normalizeCell((string) $data[$map[$column]])
                     : null;
             }
             $rows[] = $row;
@@ -183,8 +183,28 @@ class InstitutionalRosterImportService
 
     public function nullableString(mixed $value): ?string
     {
-        $value = trim((string) ($value ?? ''));
+        $value = $this->normalizeCell((string) ($value ?? ''));
 
         return $value === '' ? null : $value;
+    }
+
+    protected function normalizeHeader(string $value): string
+    {
+        return strtolower($this->normalizeCell($value));
+    }
+
+    protected function normalizeCell(string $value): string
+    {
+        return trim($this->stripBom($value));
+    }
+
+    /**
+     * Templates and Excel "CSV UTF-8" files prepend a BOM on the first cell.
+     */
+    protected function stripBom(string $value): string
+    {
+        $value = preg_replace('/^\xEF\xBB\xBF/', '', $value) ?? $value;
+
+        return preg_replace('/^\x{FEFF}/u', '', $value) ?? $value;
     }
 }

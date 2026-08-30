@@ -56,14 +56,19 @@ class AdminPasskeyRecoveryController extends Controller
             ]);
         }
 
-        if ($result['email_sent']) {
-            return back()->with('success', 'Enrollment link emailed to '.$result['recipient'].'.');
+        $message = $result['email_sent']
+            ? 'Enrollment link emailed to '.$result['recipient'].'.'
+            : 'Enrollment link generated. Copy it below if email delivery failed.';
+
+        $redirect = back()
+            ->with('success', $message)
+            ->with('enrollment_url', $result['url']);
+
+        if ($result['email_error'] && ! $result['email_sent']) {
+            $redirect = $redirect->with('error', $result['email_error']);
         }
 
-        return back()
-            ->with('success', 'Enrollment link generated. Copy it below if email delivery failed.')
-            ->with('enrollment_url', $result['url'])
-            ->with('error', $result['email_error']);
+        return $redirect;
     }
 
     public function dismiss(DismissPasskeyRecoveryRequest $request, PasskeyRecoveryRequest $recoveryRequest): JsonResponse|RedirectResponse

@@ -37,7 +37,7 @@
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <h2 class="text-lg font-semibold text-white">Profile</h2>
-                            <p class="mt-1 text-sm text-slate-400">Update your name, email, and profile picture.</p>
+                            <p class="mt-1 text-sm text-slate-400">Update your name, email, phone, and profile picture.</p>
                         </div>
                         <span class="rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1 text-xs font-semibold text-slate-300">{{ $user->roleLabel() }}</span>
                     </div>
@@ -88,6 +88,14 @@
                             @error('email')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
                         </div>
 
+                        @include('admin.partials.phone-field', [
+                            'phoneValue' => old('phone', $user->phone),
+                            'inputClass' => 'mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100',
+                            'phoneHint' => $isSuperAdmin
+                                ? 'Optional. Stored on your Super Admin account if another Super Admin needs to reach you.'
+                                : 'Super Admin can see this if they need to reach you when email is unavailable (for example to share a passkey link).',
+                        ])
+
                         <div class="grid gap-4 sm:grid-cols-2">
                             @unless ($isSuperAdmin)
                                 <div>
@@ -115,6 +123,7 @@
                     if (! $isSuperAdmin) {
                         $adminSummaryRows[] = ['label' => 'Staff role', 'value' => $departmentLabel];
                     }
+                    $adminSummaryRows[] = ['label' => 'Phone', 'value' => $user->phone ?: 'Not on file'];
                     $adminSummaryRows = array_merge($adminSummaryRows, [
                         ['label' => 'Registered Devices', 'value' => (string) $user->passkeys_count],
                         ['label' => 'Authentication', 'value' => 'Passwordless (Passkeys)', 'valueClass' => 'text-emerald-300'],

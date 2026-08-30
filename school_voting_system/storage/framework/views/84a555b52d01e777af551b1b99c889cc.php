@@ -6,6 +6,7 @@ $__propNames = \Illuminate\View\ComponentAttributeBag::extractPropNames(([
     'registerVerifyUrl',
     'theme' => 'light',
     'accent' => 'cyan',
+    'compact' => false,
 ]));
 
 foreach ($attributes->all() as $__key => $__value) {
@@ -26,6 +27,7 @@ foreach (array_filter(([
     'registerVerifyUrl',
     'theme' => 'light',
     'accent' => 'cyan',
+    'compact' => false,
 ]), 'is_string', ARRAY_FILTER_USE_KEY) as $__key => $__value) {
     $$__key = $$__key ?? $__value;
 }
@@ -41,27 +43,32 @@ unset($__defined_vars, $__key, $__value); ?>
 <?php
     $isDark = $theme === 'dark';
     $isTeal = $isDark && $accent === 'teal';
+    $isCompact = filter_var($compact, FILTER_VALIDATE_BOOLEAN);
 ?>
 
 <div <?php echo e($attributes->merge(['class' => $isDark
-    ? ($isTeal ? 'rounded-xl border border-teal-500/20 bg-slate-950/50 p-5' : 'rounded-xl border border-cyan-500/20 bg-slate-950/50 p-5')
+    ? ($isTeal
+        ? ($isCompact ? 'rounded-xl border border-teal-500/20 bg-slate-950/50 p-3' : 'rounded-xl border border-teal-500/20 bg-slate-950/50 p-5')
+        : ($isCompact ? 'rounded-xl border border-cyan-500/20 bg-slate-950/50 p-3' : 'rounded-xl border border-cyan-500/20 bg-slate-950/50 p-5'))
     : 'rounded-xl border border-cyan-200 bg-cyan-50/80 p-5'])); ?>>
     <p class="<?php echo \Illuminate\Support\Arr::toCssClasses(['text-sm font-semibold', 'text-white' => $isDark, 'text-cyan-950' => ! $isDark]); ?>">
         Register a passkey on this device
     </p>
     <p class="<?php echo \Illuminate\Support\Arr::toCssClasses(['mt-1 text-sm', 'text-slate-400' => $isDark, 'text-cyan-900/80' => ! $isDark]); ?>">
-        This computer can only be enrolled once. Additional passkeys are for other devices, each with its own name.
+        Extra passkeys are for other computers or phones. Each one should have its own name.
     </p>
 
-    <div class="mt-4">
+    <div class="<?php echo \Illuminate\Support\Arr::toCssClasses(['mt-2.5' => $isCompact, 'mt-4' => ! $isCompact]); ?>">
         <label for="device_name" class="<?php echo \Illuminate\Support\Arr::toCssClasses(['mb-1 block text-xs font-medium', 'text-slate-300' => $isDark, 'text-cyan-900' => ! $isDark]); ?>">Device name</label>
         <input
             id="device_name"
             type="text"
-            value="Primary Device"
+            value=""
             autocapitalize="words"
             class="<?php echo \Illuminate\Support\Arr::toCssClasses([
-                'w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2',
+                'w-full rounded-lg px-3 text-sm focus:outline-none focus:ring-2',
+                'py-1.5' => $isCompact,
+                'py-2' => ! $isCompact,
                 'border border-slate-700 bg-slate-950 text-slate-100 focus:border-teal-400/50 focus:ring-teal-500/20' => $isTeal,
                 'border border-slate-700 bg-slate-950 text-slate-100 focus:border-cyan-400/50 focus:ring-cyan-500/20' => $isDark && ! $isTeal,
                 'border border-cyan-200 bg-white text-slate-900 focus:border-cyan-400 focus:ring-cyan-200' => ! $isDark,
@@ -76,9 +83,11 @@ unset($__defined_vars, $__key, $__value); ?>
         data-options-url="<?php echo e($registerOptionsUrl); ?>"
         data-verify-url="<?php echo e($registerVerifyUrl); ?>"
         class="<?php echo \Illuminate\Support\Arr::toCssClasses([
-            'mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition disabled:opacity-60',
+            'inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60',
+            'mt-2.5 py-2' => $isCompact,
+            'mt-4 py-3' => ! $isCompact,
             'bg-gradient-to-r from-teal-500 to-emerald-400 text-slate-950 hover:opacity-90' => $isTeal,
-            'bg-gradient-to-r from-cyan-500 to-sky-400 text-slate-950 hover:opacity-90' => $isDark && ! $isTeal,
+            'bg-cyan-500 text-slate-950 hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-300/60' => $isDark && ! $isTeal,
             'bg-cyan-600 text-white hover:bg-cyan-500' => ! $isDark,
         ]); ?>"
     >
@@ -92,7 +101,7 @@ unset($__defined_vars, $__key, $__value); ?>
     <p id="register-passkey-status" class="<?php echo \Illuminate\Support\Arr::toCssClasses(['mt-2 text-xs', 'text-slate-400' => $isDark, 'text-cyan-900' => ! $isDark]); ?>" aria-live="polite"></p>
 </div>
 
-<?php if (! $__env->hasRenderedOnce('dabb2789-0532-45c1-ac80-54bbe33b2f24')): $__env->markAsRenderedOnce('dabb2789-0532-45c1-ac80-54bbe33b2f24'); ?>
+<?php if (! $__env->hasRenderedOnce('4093ab1a-a37a-40b0-a0a6-5c9c73fc4c01')): $__env->markAsRenderedOnce('4093ab1a-a37a-40b0-a0a6-5c9c73fc4c01'); ?>
     <?php echo app('Illuminate\Foundation\Vite')(['resources/js/passkey-register.js']); ?>
 <?php endif; ?>
 <?php /**PATH C:\xampp\htdocs\voting system\school_voting_system\resources\views/components/passkey-register.blade.php ENDPATH**/ ?>

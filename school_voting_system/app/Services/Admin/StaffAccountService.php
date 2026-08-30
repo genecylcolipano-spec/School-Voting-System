@@ -26,6 +26,7 @@ class StaffAccountService
      *     account_id: string,
      *     name: string,
      *     email: string,
+     *     phone?: string|null,
      *     staff_role_id?: int|null,
      *     send_enrollment_email?: bool
      * }  $data
@@ -64,11 +65,12 @@ class StaffAccountService
                 ->value('id');
         }
 
-        $user = DB::transaction(function () use ($role, $accountId, $name, $email, $staffRoleId) {
+        $user = DB::transaction(function () use ($role, $accountId, $name, $email, $staffRoleId, $data) {
             $created = User::query()->create([
                 'account_id' => $accountId,
                 'name' => $name,
                 'email' => $email,
+                'phone' => $data['phone'] ?? null,
                 // Password unused for passkey auth; random hash keeps DB NOT NULL constraints happy.
                 'password' => Hash::make(Str::random(64)),
                 'role' => $role,
@@ -107,9 +109,9 @@ class StaffAccountService
 
         $sendEmail = (bool) ($data['send_enrollment_email'] ?? true);
         $delivery = $sendEmail
-            ? $this->enrollmentLinks->sendToUser($user)
+            ? $this->enrollmentLinks->sendToUser($user, actor: $actor)
             : [
-                'url' => $this->enrollmentLinks->createSignedUrl($user),
+                'url' => $this->enrollmentLinks->issueForUser($user, $actor)['url'],
                 'email_sent' => false,
                 'email_error' => null,
                 'recipient' => $user->email,
@@ -127,6 +129,7 @@ class StaffAccountService
      * @param  array{
      *     name: string,
      *     email: string,
+     *     phone?: string|null,
      *     staff_role_id?: int|null
      * }  $data
      */
@@ -162,6 +165,7 @@ class StaffAccountService
         $user->fill([
             'name' => $name,
             'email' => $email,
+            'phone' => $data['phone'] ?? null,
             'staff_role_id' => $user->role === UserRole::Admin ? $staffRoleId : null,
         ]);
 

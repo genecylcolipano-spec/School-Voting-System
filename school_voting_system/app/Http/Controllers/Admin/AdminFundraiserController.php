@@ -13,13 +13,17 @@ use App\Http\Requests\Admin\Fundraiser\StoreFundraiserRequest;
 use App\Http\Requests\Admin\Fundraiser\UpdateFundraiserRequest;
 use App\Models\Donation;
 use App\Models\Fundraiser;
+use App\Models\User;
+use App\Services\Admin\AdminScopeService;
 use App\Services\Media\ImageCompressionService;
 use App\Services\Portal\AnnouncementService;
 use App\Services\Portal\PortalNotificationService;
+use App\Support\AdminPortal;
 use App\Support\SlugGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -28,6 +32,7 @@ class AdminFundraiserController extends Controller
     use LogsAdminActions;
 
     public function __construct(
+        protected AdminScopeService $scope,
         protected PortalNotificationService $notifications,
         protected AnnouncementService $announcements,
         protected ImageCompressionService $images,
@@ -37,14 +42,15 @@ class AdminFundraiserController extends Controller
     {
         $this->authorize('viewAny', Fundraiser::class);
 
-        $fundraisers = Fundraiser::query()
+        $user = $request->user();
+        $fundraisers = $this->scope->fundraisersForReports($user)
             ->withCount('donations')
             ->latest()
             ->paginate(15);
 
         return view('admin.fundraisers.index', [
-            'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'user' => $user->loadCount('passkeys'),
+            'notificationsCount' => AdminPortal::notificationCount($user),
             'fundraisers' => $fundraisers,
         ]);
     }
@@ -53,28 +59,36 @@ class AdminFundraiserController extends Controller
     {
         $this->authorize('viewAny', Fundraiser::class);
 
-        $selectedFundraiser = $request->query('fundraiser');
+        $user = $request->user();
+        $campaigns = $this->scope->fundraisersForReports($user);
+        $campaignIds = $campaigns->pluck('id');
+        $selectedFundraiser = $this->selectedCampaignId($request, $campaignIds);
 
         $donations = Donation::query()
-            ->with(['fundraiser:id,title', 'donor:id,name'])
+            ->with(['fundraiser:id,title', 'donor:id,name,role'])
+            ->whereIn('fundraiser_id', $campaignIds->all() ?: [0])
             ->when($selectedFundraiser, fn ($q) => $q->where('fundraiser_id', $selectedFundraiser))
             ->latest('donated_at')
             ->paginate(20)
             ->withQueryString();
 
+        $paid = Donation::query()
+            ->paid()
+            ->whereIn('fundraiser_id', $campaignIds->all() ?: [0]);
+
         $summary = [
-            'total_raised' => (float) Donation::query()->paid()->sum('amount'),
-            'total_donations' => Donation::query()->paid()->count(),
-            'unique_donors' => Donation::query()->paid()->distinct('user_id')->count('user_id'),
-            'active_fundraisers' => Fundraiser::query()->where('status', FundraiserStatus::Active)->count(),
+            'total_raised' => (float) (clone $paid)->sum('amount'),
+            'total_donations' => (clone $paid)->count(),
+            'unique_donors' => (clone $paid)->distinct('user_id')->count('user_id'),
+            'active_fundraisers' => (clone $campaigns)->where('status', FundraiserStatus::Active)->count(),
         ];
 
         return view('admin.fundraisers.donations', [
-            'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'user' => $user->loadCount('passkeys'),
+            'notificationsCount' => AdminPortal::notificationCount($user),
             'donations' => $donations,
             'summary' => $summary,
-            'fundraisers' => Fundraiser::query()->orderBy('title')->get(['id', 'title']),
+            'fundraisers' => $campaigns->orderBy('title')->get(['id', 'title']),
             'selectedFundraiser' => $selectedFundraiser,
         ]);
     }
@@ -83,20 +97,24 @@ class AdminFundraiserController extends Controller
     {
         $this->authorize('viewAny', Fundraiser::class);
 
-        $selectedFundraiser = $request->query('fundraiser');
+        $user = $request->user();
+        $campaigns = $this->scope->fundraisersForReports($user);
+        $campaignIds = $campaigns->pluck('id');
+        $selectedFundraiser = $this->selectedCampaignId($request, $campaignIds);
 
         $transactions = Donation::query()
-            ->with(['fundraiser:id,title', 'donor:id,name'])
+            ->with(['fundraiser:id,title', 'donor:id,name,role'])
+            ->whereIn('fundraiser_id', $campaignIds->all() ?: [0])
             ->when($selectedFundraiser, fn ($q) => $q->where('fundraiser_id', $selectedFundraiser))
             ->latest('donated_at')
             ->paginate(25)
             ->withQueryString();
 
         return view('admin.fundraisers.transactions', [
-            'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'user' => $user->loadCount('passkeys'),
+            'notificationsCount' => AdminPortal::notificationCount($user),
             'transactions' => $transactions,
-            'fundraisers' => Fundraiser::query()->orderBy('title')->get(['id', 'title']),
+            'fundraisers' => $campaigns->orderBy('title')->get(['id', 'title']),
             'selectedFundraiser' => $selectedFundraiser,
         ]);
     }
@@ -206,12 +224,13 @@ class AdminFundraiserController extends Controller
 
         $this->logAdminAction('Deleted fundraiser: '.$title, AuditActionType::Election, 'fundraiser', $fundraiserId);
 
-        return redirect()->route('admin.fundraisers.index')->with('success', 'Activity deleted successfully.');
+        return redirect()->route('admin.fundraisers.index')->with('success', 'Fundraising campaign deleted successfully.');
     }
 
     public function confirmDonation(Request $request, Donation $donation): RedirectResponse
     {
         $this->authorize('update', $donation->fundraiser);
+        $this->assertCampaignInScope($request->user(), $donation->fundraiser);
 
         if ($donation->isPaid()) {
             return back()->with('success', 'This donation is already confirmed.');
@@ -243,6 +262,29 @@ class AdminFundraiserController extends Controller
         return back()->with('success', 'Donation confirmed and added to the campaign total.');
     }
 
+    protected function selectedCampaignId(Request $request, Collection $campaignIds): ?int
+    {
+        if (! $request->filled('fundraiser')) {
+            return null;
+        }
+
+        $id = (int) $request->query('fundraiser');
+        abort_unless($campaignIds->contains($id), 403);
+
+        return $id;
+    }
+
+    protected function assertCampaignInScope(User $user, ?Fundraiser $fundraiser): void
+    {
+        abort_unless($fundraiser instanceof Fundraiser, 404);
+
+        if ($user->isSuperAdmin()) {
+            return;
+        }
+
+        abort_unless((int) $fundraiser->created_by === (int) $user->id, 403);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -250,7 +292,7 @@ class AdminFundraiserController extends Controller
     {
         return [
             'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => $this->recoveryCount(),
+            'notificationsCount' => AdminPortal::notificationCount($request->user()),
             'statuses' => FundraiserStatus::manualCases(),
             'categories' => FundraiserCategory::cases(),
             'visibilities' => FundraiserVisibility::cases(),
@@ -276,10 +318,10 @@ class AdminFundraiserController extends Controller
             'allow_anonymous' => (bool) ($validated['allow_anonymous'] ?? true),
             'generate_receipt' => (bool) ($validated['generate_receipt'] ?? true),
             'accept_cash' => (bool) ($validated['accept_cash'] ?? true),
-            'accept_gcash' => (bool) ($validated['accept_gcash'] ?? true),
-            'accept_maya' => (bool) ($validated['accept_maya'] ?? true),
             'accept_qrph' => (bool) ($validated['accept_qrph'] ?? true),
-            'accept_bank_transfer' => (bool) ($validated['accept_bank_transfer'] ?? true),
+            'accept_gcash' => false,
+            'accept_maya' => false,
+            'accept_bank_transfer' => false,
             'visibility' => $validated['visibility'] ?? FundraiserVisibility::Public->value,
             'is_featured' => (bool) ($validated['is_featured'] ?? false),
             'accept_donations' => (bool) ($validated['accept_donations'] ?? true),

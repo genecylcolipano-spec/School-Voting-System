@@ -5,6 +5,7 @@ namespace Tests\Unit\Support;
 use App\Models\SystemSetting;
 use App\Support\SchoolBranding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class SchoolBrandingTest extends TestCase
@@ -31,5 +32,29 @@ class SchoolBrandingTest extends TestCase
         SystemSetting::setValue('school_logo_path', '', 'string');
 
         $this->assertNull(SchoolBranding::logoUrl(withFallback: false));
+        $this->assertNull(SchoolBranding::logoIssue());
+    }
+
+    public function test_logo_url_cache_busts_when_file_exists(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('school-logos/seal.png', 'fake-image');
+        SystemSetting::setValue('school_logo_path', 'school-logos/seal.png', 'string');
+
+        $url = SchoolBranding::logoUrl(withFallback: false);
+
+        $this->assertNotNull($url);
+        $this->assertStringContainsString('school-logos/seal.png', $url);
+        $this->assertStringContainsString('?v=', $url);
+        $this->assertNull(SchoolBranding::logoIssue());
+    }
+
+    public function test_logo_issue_reports_missing_file(): void
+    {
+        Storage::fake('public');
+        SystemSetting::setValue('school_logo_path', 'school-logos/gone.png', 'string');
+
+        $this->assertNull(SchoolBranding::logoUrl(withFallback: false));
+        $this->assertSame('missing_file', SchoolBranding::logoIssue());
     }
 }

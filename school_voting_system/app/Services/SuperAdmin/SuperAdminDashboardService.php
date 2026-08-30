@@ -19,6 +19,8 @@ use App\Models\SystemSetting;
 use App\Models\TalentEvent;
 use App\Models\User;
 use App\Models\Vote;
+use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
@@ -34,17 +36,28 @@ class SuperAdminDashboardService
             ->where('student_status', StudentStatus::Enrolled)
             ->count();
 
-        $liveElection = $this->liveElection();
+        $liveElections = Election::query()
+            ->where('status', ElectionStatus::Active)
+            ->where('is_paused', false)
+            ->whereNull('annulled_at')
+            ->orderByDesc('id')
+            ->get(['id', 'title']);
 
+        $liveIds = $liveElections->pluck('id');
         $voteQuery = Vote::query();
-        if ($liveElection) {
-            $voteQuery->where('election_id', $liveElection->id);
-        } else {
+        if ($liveIds->isEmpty()) {
             $voteQuery->whereRaw('0 = 1');
+        } else {
+            $voteQuery->whereIn('election_id', $liveIds);
         }
 
         $votedStudents = (clone $voteQuery)->distinct('user_id')->count('user_id');
         $totalVotes = (clone $voteQuery)->count();
+        $electionScope = match ($liveElections->count()) {
+            0 => 'No live election',
+            1 => (string) $liveElections->first()?->title,
+            default => $liveElections->count().' live elections',
+        };
 
         return [
             'students' => User::query()->where('role', UserRole::Student)->count(),
@@ -66,9 +79,49 @@ class SuperAdminDashboardService
                 : 0.0,
             'eligible_students' => $eligibleStudents,
             'voted_students' => $votedStudents,
-            'election_scope' => $liveElection?->title ?? 'No live election',
-            'has_live_election' => $liveElection !== null,
+            'election_scope' => $electionScope,
+            'has_live_election' => $liveElections->isNotEmpty(),
         ];
+    }
+
+    /**
+     * @param  array{status?: string, q?: string, role?: string}  $filters
+     */
+    public function paginatedPasskeys(array $filters): LengthAwarePaginator
+    {
+        $status = $filters['status'] ?? 'active';
+        if (! in_array($status, ['active', 'revoked', 'lost', 'all'], true)) {
+            $status = 'active';
+        }
+
+        $search = trim((string) ($filters['q'] ?? ''));
+        $role = trim((string) ($filters['role'] ?? ''));
+
+        $query = Passkey::query()->with('user');
+
+        if ($status !== 'all') {
+            $query->where('status', match ($status) {
+                'revoked' => PasskeyStatus::Revoked,
+                'lost' => PasskeyStatus::Lost,
+                default => PasskeyStatus::Active,
+            });
+        }
+
+        if ($search !== '') {
+            $term = '%'.$search.'%';
+            $query->whereHas('user', function ($userQuery) use ($term) {
+                $userQuery->where('account_id', 'like', $term)
+                    ->orWhere('name', 'like', $term)
+                    ->orWhere('email', 'like', $term)
+                    ->orWhere('phone', 'like', $term);
+            });
+        }
+
+        if (in_array($role, ['student', 'admin', 'faculty', 'super_admin'], true)) {
+            $query->whereHas('user', fn ($userQuery) => $userQuery->where('role', $role));
+        }
+
+        return $query->latest()->paginate(15, ['*'], 'passkeys')->withQueryString();
     }
 
     public function liveElection(): ?Election
@@ -90,6 +143,7 @@ class SuperAdminDashboardService
         ];
 
         return [
+            'live_election' => $this->liveElection(),
             'competitions' => TalentEvent::query()
                 ->withCount('votes')
                 ->whereIn('status', $openCompetitionStatuses)
@@ -125,7 +179,7 @@ class SuperAdminDashboardService
 
         $passkeyCount = Passkey::query()->count();
         $lastBackup = SystemBackup::query()->latest('completed_at')->first();
-        $lastError = $this->lastLogError();
+        $lastError = $this->recentLogError();
 
         $overall = 'Healthy';
         if (! $dbOk) {
@@ -164,27 +218,66 @@ class SuperAdminDashboardService
         ];
     }
 
-    protected function lastLogError(): ?string
+    public function recentLogErrorFrom(string $logPath, int $withinMinutes = 15): ?string
+    {
+        if (! File::exists($logPath)) {
+            return null;
+        }
+
+        $cutoff = now()->subMinutes($withinMinutes);
+
+        foreach (array_reverse($this->tailLogLines($logPath, 200)) as $line) {
+            if (! preg_match('/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+(\w+)\.ERROR:/', $line, $matches)) {
+                continue;
+            }
+
+            if ($matches[2] === 'testing') {
+                continue;
+            }
+
+            $loggedAt = Carbon::createFromFormat('Y-m-d H:i:s', $matches[1]);
+            if ($loggedAt === false || $loggedAt->lt($cutoff)) {
+                return null;
+            }
+
+            return Str::limit($line, 120);
+        }
+
+        return null;
+    }
+
+    protected function recentLogError(): ?string
     {
         if (app()->environment('testing')) {
             return null;
         }
 
-        $logPath = storage_path('logs/laravel.log');
+        return $this->recentLogErrorFrom(storage_path('logs/laravel.log'));
+    }
 
-        if (! File::exists($logPath)) {
-            return null;
+    /**
+     * @return list<string>
+     */
+    protected function tailLogLines(string $path, int $maxLines): array
+    {
+        $size = File::size($path);
+        if ($size === 0) {
+            return [];
         }
 
-        $lines = array_slice(file($logPath, FILE_IGNORE_NEW_LINES) ?: [], -200);
-
-        foreach (array_reverse($lines) as $line) {
-            if (str_contains($line, '.ERROR:')) {
-                return Str::limit($line, 120);
-            }
+        $handle = fopen($path, 'rb');
+        if ($handle === false) {
+            return [];
         }
 
-        return null;
+        $read = min($size, 64 * 1024);
+        fseek($handle, -$read, SEEK_END);
+        $chunk = stream_get_contents($handle) ?: '';
+        fclose($handle);
+
+        $lines = preg_split("/\r\n|\n|\r/", $chunk) ?: [];
+
+        return array_values(array_slice($lines, -$maxLines));
     }
 
     public function permissionMatrix(): array

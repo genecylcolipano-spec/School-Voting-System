@@ -602,7 +602,7 @@ class AdminLiveMonitoringService
             return;
         }
 
-        $assignedId = $this->scope->assignment($viewer)?->election_id;
+        $assignedId = $this->scope->assignedElection($viewer)?->id;
 
         $query->where(function ($inner) use ($viewer, $assignedId) {
             $inner->where('created_by', $viewer->id);
@@ -619,7 +619,7 @@ class AdminLiveMonitoringService
             return;
         }
 
-        $assignedId = $this->scope->assignment($viewer)?->election_id;
+        $assignedId = $this->scope->assignedElection($viewer)?->id;
 
         $query->where(function ($inner) use ($viewer, $assignedId) {
             $inner->where('created_by', $viewer->id);

@@ -2,14 +2,14 @@
     <section id="fundraisers" class="scroll-mt-28 rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5">
         <?php if (isset($component)) { $__componentOriginal87b1b280c26c60b1db52189dd51eb1e9 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal87b1b280c26c60b1db52189dd51eb1e9 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin-section-header','data' => ['title' => 'Fundraisers','description' => 'School fundraising campaigns — visible to students when active.','badge' => $statistics['active_fundraisers'] > 0 ? $statistics['active_fundraisers'].' active' : null,'badgeTone' => 'emerald']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin-section-header','data' => ['title' => 'Fundraisers','description' => 'School fundraising campaigns — visible to students and faculty when active.','badge' => $statistics['active_fundraisers'] > 0 ? $statistics['active_fundraisers'].' active' : null,'badgeTone' => 'emerald']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('admin-section-header'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['title' => 'Fundraisers','description' => 'School fundraising campaigns — visible to students when active.','badge' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($statistics['active_fundraisers'] > 0 ? $statistics['active_fundraisers'].' active' : null),'badge-tone' => 'emerald']); ?>
+<?php $component->withAttributes(['title' => 'Fundraisers','description' => 'School fundraising campaigns — visible to students and faculty when active.','badge' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($statistics['active_fundraisers'] > 0 ? $statistics['active_fundraisers'].' active' : null),'badge-tone' => 'emerald']); ?>
              <?php $__env->slot('actions', null, []); ?> 
                 <a href="<?php echo e(route('admin.fundraisers.index')); ?>" class="rounded-lg border border-violet-500/30 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">View all</a>
                 <?php if($canCreateFundraiser): ?>

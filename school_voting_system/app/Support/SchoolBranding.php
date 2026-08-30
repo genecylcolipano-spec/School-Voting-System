@@ -80,6 +80,34 @@ class SchoolBranding
     }
 
     /**
+     * True when `public/storage` exists so `/storage/...` URLs can be served.
+     */
+    public static function publicStorageIsLinked(): bool
+    {
+        $link = public_path('storage');
+
+        return file_exists($link) && (is_link($link) || is_dir($link));
+    }
+
+    /**
+     * Why a saved logo cannot be served from disk. Display failures are handled in the UI.
+     */
+    public static function logoIssue(): ?string
+    {
+        $path = static::logoPath();
+
+        if (! $path) {
+            return null;
+        }
+
+        try {
+            return Storage::disk('public')->exists($path) ? null : 'missing_file';
+        } catch (Throwable) {
+            return 'missing_file';
+        }
+    }
+
+    /**
      * @param  bool  $withFallback  When true, always return the default crest if no upload exists.
      */
     public static function logoUrl(bool $withFallback = true): ?string
@@ -88,7 +116,15 @@ class SchoolBranding
             $path = static::logoPath();
 
             if ($path && Storage::disk('public')->exists($path)) {
-                return asset('storage/'.ltrim($path, '/'));
+                $url = asset('storage/'.ltrim($path, '/'));
+
+                try {
+                    $url .= '?v='.Storage::disk('public')->lastModified($path);
+                } catch (Throwable) {
+                    // Cache-bust is optional.
+                }
+
+                return $url;
             }
         } catch (Throwable) {
             // Fall through to the default crest.

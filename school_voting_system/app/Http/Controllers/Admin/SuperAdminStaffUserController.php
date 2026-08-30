@@ -174,7 +174,7 @@ class SuperAdminStaffUserController extends Controller
         abort_unless($request->user()?->isSuperAdmin(), 403);
         abort_unless(in_array($user->role, [UserRole::Admin, UserRole::Faculty], true), 404);
 
-        $delivery = $this->enrollmentLinks->sendToUser($user);
+        $delivery = $this->enrollmentLinks->sendToUser($user, actor: $request->user());
 
         $this->logAdminAction(
             'Issued passkey enrollment/reset link for '.$user->account_id,
@@ -427,7 +427,8 @@ class SuperAdminStaffUserController extends Controller
                 $query->where(function ($query) use ($term) {
                     $query->where('account_id', 'like', $term)
                         ->orWhere('name', 'like', $term)
-                        ->orWhere('email', 'like', $term);
+                        ->orWhere('email', 'like', $term)
+                        ->orWhere('phone', 'like', $term);
                 });
             })
             ->when($status === 'active', fn ($q) => $q->where('is_active', true)->whereNull('archived_at'))

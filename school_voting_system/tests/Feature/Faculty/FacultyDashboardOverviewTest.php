@@ -83,7 +83,9 @@ class FacultyDashboardOverviewTest extends TestCase
             ->assertViewHas('assignedCompetitionsCount', 0)
             ->assertSee(route('faculty.elections.index', ['filter' => 'open']), false)
             ->assertSee(route('faculty.events.index', ['filter' => 'upcoming']), false)
-            ->assertSee(route('faculty.judging.index', ['filter' => 'current']), false);
+            ->assertSee(route('faculty.judging.index', ['filter' => 'current']), false)
+            ->assertSee(route('faculty.fundraising.index'), false)
+            ->assertViewHas('activeFundraisersCount', 0);
     }
 
     public function test_overview_cards_stay_clickable_at_zero_and_match_filtered_lists(): void
@@ -113,6 +115,8 @@ class FacultyDashboardOverviewTest extends TestCase
         $dashboard->assertSee(route('faculty.elections.index', ['filter' => 'open']), false);
         $dashboard->assertSee(route('faculty.events.index', ['filter' => 'upcoming']), false);
         $dashboard->assertSee(route('faculty.judging.index', ['filter' => 'current']), false);
+        $dashboard->assertSee(route('faculty.fundraising.index'), false);
+        $dashboard->assertViewHas('activeFundraisersCount', 0);
 
         $this->actingAs($faculty)
             ->get(route('faculty.elections.index', ['filter' => 'open']))

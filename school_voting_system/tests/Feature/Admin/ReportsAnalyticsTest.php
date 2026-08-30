@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Enums\DonationPaymentMethod;
 use App\Enums\DonationStatus;
 use App\Enums\ElectionStatus;
+use App\Enums\EventStatus;
 use App\Enums\FundraiserStatus;
 use App\Enums\FundraiserVisibility;
 use App\Enums\TalentEventStatus;
@@ -13,6 +14,7 @@ use App\Models\Candidate;
 use App\Models\Donation;
 use App\Models\Election;
 use App\Models\ElectionCategory;
+use App\Models\Event;
 use App\Models\Fundraiser;
 use App\Models\Partylist;
 use App\Models\TalentEvent;
@@ -289,6 +291,57 @@ class ReportsAnalyticsTest extends TestCase
         $this->assertCount(12, $report['participation']['values']);
         $this->assertGreaterThan(0, max($report['participation']['values']));
         $this->assertSame($election->id, $report['election_id']);
+    }
+
+    public function test_scheduled_school_events_count_on_participation_growth(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $other = User::factory()->admin()->create();
+        $month = (int) now()->month;
+
+        Event::query()->create([
+            'title' => 'Campus Assembly',
+            'slug' => 'campus-assembly-'.uniqid(),
+            'event_date' => now(),
+            'venue' => 'Auditorium',
+            'status' => EventStatus::Scheduled,
+            'created_by' => $admin->id,
+        ]);
+
+        Event::query()->create([
+            'title' => 'Cancelled Fair',
+            'slug' => 'cancelled-fair-'.uniqid(),
+            'event_date' => now(),
+            'venue' => 'Gym',
+            'status' => EventStatus::Cancelled,
+            'created_by' => $admin->id,
+        ]);
+
+        Event::query()->create([
+            'title' => 'Other Admin Event',
+            'slug' => 'other-admin-event-'.uniqid(),
+            'event_date' => now(),
+            'venue' => 'Hall',
+            'status' => EventStatus::Scheduled,
+            'created_by' => $other->id,
+        ]);
+
+        $values = app(AdminAnalyticsService::class)->participationGrowth($admin)['values'];
+
+        $this->assertSame(1.0, $values[$month - 1]);
+        $this->assertSame('', app(AdminAnalyticsService::class)->participationGrowth($admin)['valueSuffix']);
+    }
+
+    public function test_admin_dashboard_participation_chart_includes_event_copy(): void
+    {
+        $this->withoutVite();
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('Unique voters and scheduled events each month')
+            ->assertSee('No voters or scheduled events this year.');
     }
 
     /**

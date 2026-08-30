@@ -2,7 +2,7 @@
     <div class="xl:col-span-6">
         <x-admin-chart-panel
             title="Participation Growth (Events/Voting)"
-            subtitle="Monthly turnout and event participation"
+            subtitle="Unique voters and scheduled events each month"
             type="line"
             live-key="participation"
             :labels="$analyticsWidgets['participation']['labels']"
@@ -11,7 +11,7 @@
             :y-ticks="$analyticsWidgets['participation']['yTicks']"
             :value-suffix="$analyticsWidgets['participation']['valueSuffix']"
             accent="#34d399"
-            empty-message="No participation data available."
+            empty-message="No voters or scheduled events this year."
             :footer-link="route('admin.analytics.index')"
         />
     </div>

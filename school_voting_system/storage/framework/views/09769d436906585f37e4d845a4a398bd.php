@@ -20,7 +20,9 @@
 <?php $component->withAttributes(['title' => 'Transactions','user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount)]); ?>
         <?php echo $__env->make('admin.partials.page-header', [
             'title' => 'Transactions',
-            'description' => 'Chronological ledger of all fundraising transactions.',
+            'description' => $user->isSuperAdmin()
+                ? 'Chronological ledger of every fundraising transaction.'
+                : 'Chronological ledger of transactions for campaigns you created.',
             'showAction' => false,
         ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
@@ -48,6 +50,7 @@
                         <th class="px-4 py-3">Status</th>
                         <th class="px-4 py-3">Method</th>
                         <th class="px-4 py-3">Donor</th>
+                        <th class="px-4 py-3">Role</th>
                         <th class="px-4 py-3">Campaign</th>
                         <th class="px-4 py-3">Currency</th>
                         <th class="px-4 py-3 text-right">Amount</th>
@@ -67,12 +70,13 @@
                             </td>
                             <td class="px-4 py-3 text-xs text-slate-400"><?php echo e($txn->payment_method?->label() ?? '—'); ?></td>
                             <td class="px-4 py-3"><?php echo e($txn->is_anonymous ? 'Anonymous' : ($txn->donor?->name ?? '—')); ?></td>
+                            <td class="px-4 py-3 text-xs text-slate-400"><?php echo e($txn->is_anonymous ? '—' : ($txn->donor?->roleLabel() ?? '—')); ?></td>
                             <td class="px-4 py-3"><?php echo e($txn->fundraiser?->title ?? '—'); ?></td>
                             <td class="px-4 py-3 text-xs uppercase text-slate-400"><?php echo e($txn->currency ?: 'PHP'); ?></td>
                             <td class="px-4 py-3 text-right font-bold text-emerald-300">₱<?php echo e(number_format((float) $txn->amount, 2)); ?></td>
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                        <tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">No transactions recorded yet.</td></tr>
+                        <tr><td colspan="10" class="px-4 py-10 text-center text-slate-400">No transactions recorded yet.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

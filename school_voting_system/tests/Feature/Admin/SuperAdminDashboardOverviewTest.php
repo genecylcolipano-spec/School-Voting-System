@@ -12,6 +12,7 @@ use App\Models\Candidate;
 use App\Models\Election;
 use App\Models\ElectionCategory;
 use App\Models\Fundraiser;
+use App\Models\PasskeyRecoveryRequest;
 use App\Models\PortalNotification;
 use App\Models\TalentEvent;
 use App\Models\User;
@@ -60,7 +61,8 @@ class SuperAdminDashboardOverviewTest extends TestCase
             ->assertOk()
             ->assertSee('data-initial-count="1"', false)
             ->assertSee('No backups yet')
-            ->assertSee('System Attention Needed');
+            ->assertSee('System Attention Needed')
+            ->assertSee('No live election.');
     }
 
     public function test_portal_accounts_include_faculty_and_activity_snapshot(): void
@@ -76,7 +78,9 @@ class SuperAdminDashboardOverviewTest extends TestCase
             ->assertSee('Prof Snapshot')
             ->assertSee('Open Showcase Night')
             ->assertSee('Library Drive')
-            ->assertSee('Live election');
+            ->assertSee('Live election')
+            ->assertSee('Participation Growth (Events/Voting)')
+            ->assertSee('Donation/Fundraising History');
     }
 
     public function test_live_votes_and_turnout_use_the_open_election_only(): void
@@ -127,8 +131,55 @@ class SuperAdminDashboardOverviewTest extends TestCase
             ->get(route('super-admin.dashboard'))
             ->assertOk()
             ->assertSee('Live Council')
+            ->assertSee('50% turnout')
+            ->assertSee(route('admin.elections.edit', $live), false)
+            ->assertDontSee('Votes and turnout on this dashboard are for the live election only.')
             ->assertSee('Scope: Live Council')
             ->assertSee('50%');
+    }
+
+    public function test_live_votes_and_turnout_include_all_open_elections(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $firstVoter = User::factory()->create(['student_status' => StudentStatus::Enrolled]);
+        $secondVoter = User::factory()->create(['student_status' => StudentStatus::Enrolled]);
+
+        $first = Election::factory()->active()->create(['title' => 'Council A', 'created_by' => $super->id]);
+        $second = Election::factory()->active()->create(['title' => 'Council B', 'created_by' => $super->id]);
+
+        $firstCategory = ElectionCategory::factory()->create(['election_id' => $first->id]);
+        $secondCategory = ElectionCategory::factory()->create(['election_id' => $second->id]);
+        $firstCandidate = Candidate::factory()->create([
+            'election_id' => $first->id,
+            'election_category_id' => $firstCategory->id,
+        ]);
+        $secondCandidate = Candidate::factory()->create([
+            'election_id' => $second->id,
+            'election_category_id' => $secondCategory->id,
+        ]);
+
+        Vote::castBallot($firstVoter, $firstCandidate);
+        Vote::castBallot($secondVoter, $secondCandidate);
+
+        $stats = app(SuperAdminDashboardService::class)->statistics();
+        $this->assertSame('2 live elections', $stats['election_scope']);
+        $this->assertSame(2, $stats['total_votes']);
+        $this->assertSame(2, $stats['voted_students']);
+        $this->assertSame(100.0, $stats['voter_turnout']);
+    }
+
+    public function test_portal_account_search_matches_phone(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        User::factory()->create([
+            'name' => 'Phone Student',
+            'phone' => '09171234567',
+        ]);
+
+        $this->actingAs($super)
+            ->get(route('super-admin.dashboard', ['portal_q' => '09171234567']))
+            ->assertOk()
+            ->assertSee('Phone Student');
     }
 
     public function test_draft_election_only_shows_open_action_and_rejects_pause(): void
@@ -153,6 +204,38 @@ class SuperAdminDashboardOverviewTest extends TestCase
             ->post(route('super-admin.elections.action', $election), ['action' => 'pause'])
             ->assertRedirect(route('super-admin.dashboard'))
             ->assertSessionHas('error', 'That action is not available for this election.');
+    }
+
+    public function test_dashboard_links_to_recovery_queue_instead_of_embedding_it(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        User::factory()->faculty()->create([
+            'account_id' => 'STU-REC-1',
+            'email' => 'faculty.onfile@example.com',
+        ]);
+
+        PasskeyRecoveryRequest::query()->create([
+            'account_id' => 'STU-REC-1',
+            'email' => 'stuck.recovery@example.com',
+            'status' => PasskeyRecoveryRequest::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($super)
+            ->get(route('super-admin.dashboard'))
+            ->assertOk()
+            ->assertSee('Pending Recovery')
+            ->assertSee('data-pending-recovery-stat', false)
+            ->assertSee(route('admin.recovery.index'), false)
+            ->assertDontSee('Passkey Recovery Requests')
+            ->assertDontSee('stuck.recovery@example.com')
+            ->assertDontSee('Generate enrollment link');
+
+        $this->actingAs($super)
+            ->get(route('admin.recovery.index'))
+            ->assertOk()
+            ->assertSee('Passkey Recovery Requests')
+            ->assertSee('stuck.recovery@example.com')
+            ->assertSee('Generate enrollment link');
     }
 
     protected function makeCompetition(User $creator, string $title): TalentEvent

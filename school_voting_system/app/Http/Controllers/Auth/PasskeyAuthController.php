@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Passkey;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\Auth\RoleRedirectService;
 use Illuminate\Auth\AuthenticationException;
@@ -37,6 +38,8 @@ class PasskeyAuthController extends Controller
         return view('auth.login', [
             'loginOptionsUrl' => route('login.options'),
             'loginVerifyUrl' => route('login.verify'),
+            'registrationEnabled' => (bool) SystemSetting::getValue('enable_student_registration', true),
+            'recoveryEnabled' => \App\Support\PlatformModules::recovery(),
         ]);
     }
 
@@ -171,6 +174,9 @@ class PasskeyAuthController extends Controller
                             app(\App\Services\Auth\PasskeyRecoveryTokenService::class)->markUsed($recovery);
                         }
                     }
+
+                    app(\App\Services\Auth\PasskeyEnrollmentLinkService::class)
+                        ->markUsedFromSession($request, $user);
 
                     Passkey::revokeOthersForUser($user, (int) $passkey->id, (int) $user->id);
 

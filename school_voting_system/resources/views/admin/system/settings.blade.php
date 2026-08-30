@@ -30,31 +30,74 @@
                         <p class="mt-1 text-xs text-slate-500">Shown as “Powered by …” under the system name.</p>
                         @error('school_name')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
                     </div>
-                    <div class="sm:col-span-2">
+                    <div class="sm:col-span-2" x-data="schoolLogoPreview(@js($logoUrl))">
                         <label class="block text-sm font-medium text-slate-300">School Logo</label>
-                        <div class="mt-2 flex flex-wrap items-center gap-4">
-                            @if ($logoUrl)
-                                <div>
-                                    <img src="{{ $logoUrl }}" alt="School logo" class="h-16 w-16 rounded-xl border border-slate-700 object-cover">
-                                    <p class="mt-1 text-center text-[10px] text-emerald-400/90">Custom upload</p>
-                                </div>
-                            @else
-                                <div>
-                                    <div class="flex h-16 w-16 items-center justify-center rounded-xl border border-slate-700 bg-gradient-to-br from-violet-600 to-indigo-500 text-white" aria-hidden="true">
-                                        <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        @if (($logoIssue ?? null) === 'missing_file')
+                            <p class="mt-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                                The saved logo file is missing. Upload a new image or remove the current logo, then save.
+                            </p>
+                        @endif
+                        <p
+                            x-show="showLoadError"
+                            x-cloak
+                            class="mt-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-100"
+                        >
+                            This logo could not be displayed here. Try uploading it again. If login and the sidebar also hide it, ask ICT to publish storage files.
+                        </p>
+                        <div class="mt-3 flex flex-wrap items-end gap-5">
+                            <div>
+                                <div class="relative h-32 w-32 overflow-hidden rounded-full border border-slate-600 bg-white shadow-inner">
+                                    <img
+                                        x-show="preview && !broken"
+                                        x-cloak
+                                        :src="preview"
+                                        x-on:error="onImgError()"
+                                        alt="School logo preview"
+                                        class="h-full w-full object-contain p-1.5"
+                                    >
+                                    <div
+                                        x-show="!preview || broken"
+                                        class="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600 to-indigo-500 text-white"
+                                        aria-hidden="true"
+                                    >
+                                        <svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                                         </svg>
                                     </div>
-                                    <p class="mt-1 text-center text-[10px] text-slate-500">Default icon</p>
                                 </div>
-                            @endif
+                                <p class="mt-1.5 text-center text-[10px]" :class="pending ? 'text-sky-300' : (preview && !broken ? 'text-emerald-400/90' : 'text-slate-500')" x-text="statusLabel"></p>
+                            </div>
+                            <div>
+                                <div class="relative h-11 w-11 overflow-hidden rounded-full border border-slate-600 bg-white">
+                                    <img x-show="preview && !broken" x-cloak :src="preview" alt="" class="h-full w-full object-contain p-0.5">
+                                    <div x-show="!preview || broken" class="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600 to-indigo-500 text-white" aria-hidden="true">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                    </div>
+                                </div>
+                                <p class="mt-1.5 text-center text-[10px] text-slate-500">Sidebar</p>
+                            </div>
+                            <div>
+                                <div class="relative h-14 w-14 overflow-hidden rounded-full border border-slate-600 bg-white">
+                                    <img x-show="preview && !broken" x-cloak :src="preview" alt="" class="h-full w-full object-contain p-0.5">
+                                    <div x-show="!preview || broken" class="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600 to-indigo-500 text-white" aria-hidden="true">
+                                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                    </div>
+                                </div>
+                                <p class="mt-1.5 text-center text-[10px] text-slate-500">Login</p>
+                            </div>
                             <div class="min-w-0 flex-1">
-                                <input type="file" name="school_logo" accept="image/jpeg,image/png,image/webp"
-                                    class="block w-full text-sm text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-violet-600 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white">
-                                <p class="mt-1 text-xs text-slate-500">If nothing is uploaded, portals use the purple book icon.</p>
-                                @if ($logoUrl)
+                                <input
+                                    type="file"
+                                    name="school_logo"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    @change="onFile($event)"
+                                    class="block w-full text-sm text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-violet-600 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
+                                >
+                                <p class="mt-1 text-xs text-slate-500">Best: a transparent PNG of the seal only, at least 512×512. A circle on a white square will look smaller. JPEG, PNG, or WebP, up to 2&nbsp;MB. Click Save Settings to apply.</p>
+                                <p x-show="fileName" x-cloak class="mt-1 truncate text-xs text-sky-300/90" x-text="fileName"></p>
+                                @if ($logoUrl || ($logoIssue ?? null))
                                     <label class="mt-2 inline-flex items-center gap-2 text-xs text-slate-400">
-                                        <input type="checkbox" name="remove_logo" value="1" class="rounded border-slate-600 bg-slate-900 text-violet-500">
+                                        <input type="checkbox" name="remove_logo" value="1" class="rounded border-slate-600 bg-slate-900 text-violet-500" @change="onRemove($event)">
                                         Remove current logo
                                     </label>
                                 @endif
@@ -87,13 +130,6 @@
                             <span class="mt-0.5 block text-slate-500">Users can register after matching Student, Faculty, or Administrator Roster records.</span>
                         </span>
                     </label>
-                    <label class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/40 px-4 py-3 text-sm text-slate-300">
-                        <input type="checkbox" name="enable_faculty_registration" value="1" class="mt-1 rounded border-slate-600 bg-slate-900 text-violet-500" @checked(old('enable_faculty_registration', $settings['enable_faculty_registration']))>
-                        <span>
-                            <span class="font-medium text-white">Enable Faculty Registration</span>
-                            <span class="mt-0.5 block text-slate-500">Future-ready. Faculty accounts are still created by Super Admin today.</span>
-                        </span>
-                    </label>
                     <div class="rounded-xl border border-slate-800 bg-slate-950/40 px-4 py-3">
                         <p class="text-sm font-medium text-white">Passwordless Authentication Status</p>
                         <p class="mt-1 text-sm text-emerald-300">Enabled (Passkeys) — read-only</p>
@@ -103,12 +139,12 @@
 
             <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5 sm:p-6">
                 <h2 class="text-lg font-semibold text-white">Voting</h2>
-                <p class="mt-1 text-sm text-slate-400">Module availability flags for the platform.</p>
+                <p class="mt-1 text-sm text-slate-400">When off, the module is hidden from students, faculty, and regular admins. Super Admin can still open it to manage existing data.</p>
                 <div class="mt-5 grid gap-3 sm:grid-cols-3">
                     @foreach ([
                         'enable_elections' => ['Enable Elections', 'Student election ballots'],
                         'enable_talent_voting' => ['Enable Talent Competition Voting', 'Talent voting & judging'],
-                        'enable_fundraising' => ['Enable Fundraising', 'Donation campaigns'],
+                        'enable_fundraising' => ['Enable Fundraising', 'Student and faculty donation campaigns'],
                     ] as $field => [$label, $hint])
                         <label class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/40 px-4 py-3 text-sm text-slate-300">
                             <input type="checkbox" name="{{ $field }}" value="1" class="mt-1 rounded border-slate-600 bg-slate-900 text-violet-500" @checked(old($field, $settings[$field]))>
@@ -165,13 +201,12 @@
                         <input type="checkbox" name="ip_whitelist_enabled" value="1" class="mt-1 rounded border-slate-600 bg-slate-900 text-violet-500" @checked(old('ip_whitelist_enabled', $settings['ip_whitelist_enabled']))>
                         <span class="font-medium text-white">Enable IP Whitelist for Admin Access</span>
                     </label>
-                    <label class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/40 px-4 py-3 text-sm text-slate-300">
-                        <input type="checkbox" name="two_factor_recovery_enabled" value="1" class="mt-1 rounded border-slate-600 bg-slate-900 text-violet-500" @checked(old('two_factor_recovery_enabled', $settings['two_factor_recovery_enabled']))>
-                        <span class="font-medium text-white">Enable Passkey Recovery Flow</span>
-                    </label>
                     <label class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/40 px-4 py-3 text-sm text-slate-300 sm:col-span-2">
-                        <input type="checkbox" name="public_results_published" value="1" class="mt-1 rounded border-slate-600 bg-slate-900 text-violet-500" @checked(old('public_results_published', $settings['public_results_published']))>
-                        <span class="font-medium text-white">Mark public results as published (platform flag)</span>
+                        <input type="checkbox" name="two_factor_recovery_enabled" value="1" class="mt-1 rounded border-slate-600 bg-slate-900 text-violet-500" @checked(old('two_factor_recovery_enabled', $settings['two_factor_recovery_enabled']))>
+                        <span>
+                            <span class="font-medium text-white">Enable Passkey Recovery Flow</span>
+                            <span class="mt-0.5 block text-slate-500">Shows “Recover access” on the login page and accepts self-service reset requests. Existing recovery emails still work.</span>
+                        </span>
                     </label>
                     <div>
                         <label class="block text-sm font-medium text-slate-300">Support Team Label</label>
@@ -188,4 +223,56 @@
             </div>
         </form>
     </x-admin-portal>
+
+    @push('scripts')
+        <style>[x-cloak]{display:none !important;}</style>
+        <script>
+            function schoolLogoPreview(initial) {
+                return {
+                    preview: initial || null,
+                    broken: false,
+                    pending: false,
+                    showLoadError: false,
+                    fileName: '',
+                    get statusLabel() {
+                        if (this.pending) return 'Preview — not saved';
+                        if (this.preview && !this.broken) return 'Preview';
+                        return 'Default icon';
+                    },
+                    revokePreview() {
+                        if (this.preview && String(this.preview).startsWith('blob:')) {
+                            URL.revokeObjectURL(this.preview);
+                        }
+                    },
+                    onImgError() {
+                        this.broken = true;
+                        this.showLoadError = !this.pending;
+                    },
+                    onFile(event) {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
+                        this.revokePreview();
+                        this.broken = false;
+                        this.showLoadError = false;
+                        this.pending = true;
+                        this.fileName = file.name + ' · not saved yet';
+                        this.preview = URL.createObjectURL(file);
+                        const remove = this.$root.querySelector('input[name="remove_logo"]');
+                        if (remove) remove.checked = false;
+                    },
+                    onRemove(event) {
+                        if (!event.target.checked) return;
+                        this.revokePreview();
+                        this.preview = null;
+                        this.pending = false;
+                        this.broken = false;
+                        this.showLoadError = false;
+                        this.fileName = '';
+                        const input = this.$root.querySelector('input[name="school_logo"]');
+                        if (input) input.value = '';
+                    },
+                };
+            }
+        </script>
+    @endpush
 </x-app-layout>

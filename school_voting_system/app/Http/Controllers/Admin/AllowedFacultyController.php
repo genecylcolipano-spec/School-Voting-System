@@ -84,6 +84,16 @@ class AllowedFacultyController extends Controller
         return $this->rosterIndex($request);
     }
 
+    public function create(Request $request): View
+    {
+        return $this->rosterCreate($request);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        return $this->rosterStore($request);
+    }
+
     public function show(Request $request, AllowedFaculty $allowedFaculty): View
     {
         return $this->rosterShow($request, $allowedFaculty);

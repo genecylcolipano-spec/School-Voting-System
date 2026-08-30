@@ -18,10 +18,6 @@
                     </div>
                 @endif
             </div>
-
-            <x-passkey-recovery-queue :recovery-requests="$recoveryRequests" />
         </div>
     </div>
-
-    @vite('resources/js/passkey-admin-recovery.js')
 </x-app-layout>

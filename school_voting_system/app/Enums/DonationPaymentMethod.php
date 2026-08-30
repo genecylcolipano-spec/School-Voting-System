@@ -29,6 +29,27 @@ enum DonationPaymentMethod: string
     }
 
     /**
+     * Methods students can choose for a new donation.
+     * GCash, Maya, and bank transfer stay on historical records only.
+     *
+     * @return list<self>
+     */
+    public static function offeredForCheckout(): array
+    {
+        return [self::Qrph, self::Cash];
+    }
+
+    public function isOfferedForCheckout(): bool
+    {
+        return in_array($this, self::offeredForCheckout(), true);
+    }
+
+    public function donateSubmitLabel(): string
+    {
+        return $this->isOnline() ? 'Continue to payment' : 'Submit donation';
+    }
+
+    /**
      * PayMongo payment_method_types value, or null for offline methods.
      */
     public function paymongoType(): ?string

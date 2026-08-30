@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\DashboardController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasskeyBootstrapController;
 use App\Http\Controllers\Auth\PasskeyDeviceController;
+use App\Http\Controllers\Auth\PasskeyEnrollmentContinueController;
 use App\Http\Controllers\Auth\PasskeyRecoveryController;
 use App\Http\Controllers\Auth\PortalRegistrationController;
 use App\Http\Controllers\Admin\AdminActionController;
@@ -110,6 +111,11 @@ Route::middleware(['web', 'passkey.secure'])->group(function () {
         ->middleware('signed')
         ->name('register.passkey.bootstrap');
 
+    Route::get('/e/{token}', PasskeyEnrollmentContinueController::class)
+        ->middleware('throttle:20,1')
+        ->where('token', '[A-Za-z0-9]{24,64}')
+        ->name('enroll.passkey.token');
+
     Route::get('/enroll/passkey-options', [LoginController::class, 'registerOptions'])
         ->middleware(['passkey.bootstrap', 'throttle:10,1'])
         ->name('register.passkey.bootstrap.options');
@@ -124,7 +130,7 @@ Route::middleware(['web', 'passkey.secure'])->group(function () {
 | Authenticated area — dashboards, devices, passkey registration
 |--------------------------------------------------------------------------
 */
-Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin.ip', 'app.maintenance'])->group(function () {
+Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin.ip', 'app.maintenance', 'platform.module'])->group(function () {
     Route::get('/dashboard', function (RoleRedirectService $redirects) {
         return redirect($redirects->dashboardPathFor(auth()->user()));
     })->name('dashboard');
@@ -152,6 +158,16 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
         Route::get('/announcements/{announcement:slug}', [FacultyPortalController::class, 'announcementShow'])->name('announcements.show');
         Route::get('/announcements/{announcement:slug}/attachments/{attachment}', [FacultyPortalController::class, 'downloadAnnouncementAttachment'])
             ->name('announcements.attachments.download');
+
+        Route::get('/fundraising', [FacultyPortalController::class, 'fundraising'])->name('fundraising.index');
+        Route::get('/fundraising/{fundraiser:slug}', [FacultyPortalController::class, 'fundraiserShow'])->name('fundraising.show');
+        Route::post('/fundraising/{fundraiser:slug}/donate', [FacultyPortalController::class, 'donate'])
+            ->middleware('throttle:20,1')
+            ->name('fundraising.donate');
+        Route::get('/fundraising/{fundraiser:slug}/donate/return', [FacultyPortalController::class, 'donateReturn'])
+            ->name('fundraising.donate.return');
+        Route::get('/fundraising/{fundraiser:slug}/donate/cancel', [FacultyPortalController::class, 'donateCancel'])
+            ->name('fundraising.donate.cancel');
 
         Route::get('/results', [FacultyResultsController::class, 'index'])->name('results.index');
         Route::get('/results/election/{election:slug}', [FacultyResultsController::class, 'showElection'])->name('results.election.show');
@@ -441,6 +457,8 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
         Route::prefix('roster')->name('roster.')->group(function () {
             Route::prefix('students')->name('students.')->group(function () {
                 Route::get('/', [AllowedStudentController::class, 'index'])->name('index');
+                Route::get('/create', [AllowedStudentController::class, 'create'])->name('create');
+                Route::post('/', [AllowedStudentController::class, 'store'])->name('store');
                 Route::get('/export', [AllowedStudentController::class, 'export'])->name('export');
                 Route::get('/import', [AllowedStudentController::class, 'importForm'])->name('import');
                 Route::post('/import', [AllowedStudentController::class, 'importStore'])->name('import.store');
@@ -455,6 +473,8 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
 
             Route::prefix('faculty')->name('faculty.')->group(function () {
                 Route::get('/', [AllowedFacultyController::class, 'index'])->name('index');
+                Route::get('/create', [AllowedFacultyController::class, 'create'])->name('create');
+                Route::post('/', [AllowedFacultyController::class, 'store'])->name('store');
                 Route::get('/export', [AllowedFacultyController::class, 'export'])->name('export');
                 Route::get('/import', [AllowedFacultyController::class, 'importForm'])->name('import');
                 Route::post('/import', [AllowedFacultyController::class, 'importStore'])->name('import.store');
@@ -469,6 +489,8 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
 
             Route::prefix('administrators')->name('administrators.')->group(function () {
                 Route::get('/', [AllowedAdministratorController::class, 'index'])->name('index');
+                Route::get('/create', [AllowedAdministratorController::class, 'create'])->name('create');
+                Route::post('/', [AllowedAdministratorController::class, 'store'])->name('store');
                 Route::get('/export', [AllowedAdministratorController::class, 'export'])->name('export');
                 Route::get('/import', [AllowedAdministratorController::class, 'importForm'])->name('import');
                 Route::post('/import', [AllowedAdministratorController::class, 'importStore'])->name('import.store');
@@ -495,9 +517,6 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
         Route::post('/users/bulk', [SuperAdminActionController::class, 'bulkUsers'])->name('users.bulk');
         Route::post('/elections/{election}/action', [SuperAdminActionController::class, 'electionAction'])->name('elections.action');
         Route::post('/passkeys/{passkey}/action', [SuperAdminActionController::class, 'passkeyAction'])->name('passkeys.action');
-        Route::post('/settings', [SuperAdminActionController::class, 'updateSettings'])->name('settings.update');
-        Route::post('/backups', [SuperAdminActionController::class, 'createBackup'])->name('backups.create');
-        Route::get('/backups/{backup}/download', [SuperAdminActionController::class, 'downloadBackup'])->name('backups.download');
         Route::get('/audit-logs/export', [SuperAdminActionController::class, 'exportAuditLogs'])->name('audit.export');
         Route::get('/reports/generate', [SuperAdminActionController::class, 'generateReport'])->name('reports.generate');
 

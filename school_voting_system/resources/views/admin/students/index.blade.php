@@ -21,19 +21,14 @@
             <div class="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{{ session('error') }}</div>
         @endif
 
-        @if (session('enrollment_url'))
-            <div class="mb-4 rounded-xl border border-violet-500/20 bg-slate-900/70 p-4">
-                <p class="text-sm text-slate-300">Enrollment link (valid 2 hours):</p>
-                <a href="{{ session('enrollment_url') }}" class="mt-2 block break-all text-sm text-violet-300 hover:text-violet-200">{{ session('enrollment_url') }}</a>
-            </div>
-        @endif
+        @include('admin.partials.enrollment-link-banner')
 
         <form method="GET" class="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <input
                 name="q"
                 type="search"
                 value="{{ request('q') }}"
-                placeholder="Search by Student ID, name, or email"
+                placeholder="Search by Student ID, name, email, or phone"
                 class="w-full min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 sm:min-w-[16rem]"
             />
             <select name="status" class="w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-100 sm:w-auto">

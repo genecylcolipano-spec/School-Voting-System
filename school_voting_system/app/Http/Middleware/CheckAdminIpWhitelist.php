@@ -17,6 +17,10 @@ class CheckAdminIpWhitelist
             return $next($request);
         }
 
+        if ($user->isSuperAdmin() && $request->routeIs('super-admin.system.*', 'logout')) {
+            return $next($request);
+        }
+
         if (! SystemSetting::getValue('ip_whitelist_enabled', false)) {
             return $next($request);
         }

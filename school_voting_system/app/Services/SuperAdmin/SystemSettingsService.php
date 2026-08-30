@@ -3,12 +3,18 @@
 namespace App\Services\SuperAdmin;
 
 use App\Models\SystemSetting;
+use App\Services\Media\ImageCompressionService;
 use App\Support\SchoolBranding;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class SystemSettingsService
 {
+    public function __construct(
+        protected ImageCompressionService $images,
+    ) {}
+
     /**
      * @return array<string, mixed>
      */
@@ -112,7 +118,13 @@ class SystemSettingsService
             if (filled($existing)) {
                 Storage::disk('public')->delete((string) $existing);
             }
-            $path = $logo->store('school-logos', 'public');
+
+            try {
+                $path = $this->images->storeSchoolLogo($logo);
+            } catch (Throwable) {
+                $path = $logo->store('school-logos', 'public');
+            }
+
             SystemSetting::setValue('school_logo_path', $path, 'string');
         }
     }

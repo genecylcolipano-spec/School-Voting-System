@@ -1,7 +1,9 @@
 @php
     $announcement = $announcement ?? null;
     $isEdit = $announcement !== null;
-    $selectedAudiences = old('target_audiences', $isEdit ? ($announcement->target_audiences ?? [\App\Enums\AnnouncementAudience::Students->value]) : [\App\Enums\AnnouncementAudience::Students->value]);
+    $defaultAudiences = $defaultAudiences ?? [\App\Enums\AnnouncementAudience::Students->value];
+    $defaultExpiresAt = $defaultExpiresAt ?? null;
+    $selectedAudiences = old('target_audiences', $isEdit ? ($announcement->target_audiences ?? $defaultAudiences) : $defaultAudiences);
     $relatedModule = old('related_module', $isEdit ? optional($announcement->related_module)->value : \App\Enums\AnnouncementRelatedModule::None->value);
     $relatedId = old('related_id', $isEdit ? $announcement->related_id : null);
     $resolvedStatus = $isEdit ? $announcement->resolvedStatus() : null;
@@ -234,7 +236,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-300">Expiration Date & Time</label>
-                        <input type="datetime-local" name="expires_at" value="{{ old('expires_at', optional(optional($announcement)->expires_at)->format('Y-m-d\TH:i')) }}" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" />
+                        <input type="datetime-local" name="expires_at" value="{{ old('expires_at', $isEdit ? optional(optional($announcement)->expires_at)->format('Y-m-d\TH:i') : $defaultExpiresAt) }}" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" />
                         @error('expires_at')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
                     </div>
                     <div>

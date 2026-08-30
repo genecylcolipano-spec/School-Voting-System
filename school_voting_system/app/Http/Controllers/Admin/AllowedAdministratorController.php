@@ -84,6 +84,16 @@ class AllowedAdministratorController extends Controller
         return $this->rosterIndex($request);
     }
 
+    public function create(Request $request): View
+    {
+        return $this->rosterCreate($request);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        return $this->rosterStore($request);
+    }
+
     public function show(Request $request, AllowedAdministrator $allowedAdministrator): View
     {
         return $this->rosterShow($request, $allowedAdministrator);

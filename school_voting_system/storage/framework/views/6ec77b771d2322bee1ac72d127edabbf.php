@@ -38,10 +38,6 @@
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
 <?php $component->withAttributes(['title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($isEdit ? 'Edit Fundraising Campaign' : 'Create Fundraising Campaign'),'user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount)]); ?>
-        <?php if(session('success')): ?>
-            <div class="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200"><?php echo e(session('success')); ?></div>
-        <?php endif; ?>
-
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h1 class="text-xl font-bold text-white"><?php echo e($isEdit ? 'Edit Campaign' : 'Create Campaign'); ?></h1>
@@ -298,7 +294,7 @@ unset($__errorArgs, $__bag); ?>
                         <label class="block text-sm font-medium text-slate-300">Minimum Donation (₱)</label>
                         <input type="number" name="min_donation" min="<?php echo e($defaultMinDonation); ?>" step="0.01" value="<?php echo e(old('min_donation', $fundraiser?->min_donation)); ?>" placeholder="Default <?php echo e(number_format($defaultMinDonation, 2)); ?>"
                             class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
-                        <p class="mt-1 text-xs text-slate-500">PayMongo GCash, Maya, and QR Ph require at least ₱<?php echo e(number_format($defaultMinDonation, 2)); ?>.</p>
+                        <p class="mt-1 text-xs text-slate-500">PayMongo QR Ph requires at least ₱<?php echo e(number_format($defaultMinDonation, 2)); ?>.</p>
                         <?php $__errorArgs = ['min_donation'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -327,10 +323,7 @@ unset($__errorArgs, $__bag); ?>
                         ['allow_anonymous', 'Allow Anonymous Donations', $fundraiser?->allow_anonymous ?? true],
                         ['generate_receipt', 'Generate Donation Receipt', $fundraiser?->generate_receipt ?? true],
                         ['accept_cash', 'Accept Cash', $fundraiser?->accept_cash ?? true],
-                        ['accept_gcash', 'Accept GCash', $fundraiser?->accept_gcash ?? true],
-                        ['accept_maya', 'Accept Maya', $fundraiser?->accept_maya ?? true],
                         ['accept_qrph', 'Accept QR Ph', $fundraiser?->accept_qrph ?? true],
-                        ['accept_bank_transfer', 'Accept Bank Transfer', $fundraiser?->accept_bank_transfer ?? true],
                     ]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as [$name, $label, $default]): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <label class="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2 text-sm text-slate-300">
                             <input type="checkbox" name="<?php echo e($name); ?>" value="1" <?php if(old($name, $default)): echo 'checked'; endif; ?>

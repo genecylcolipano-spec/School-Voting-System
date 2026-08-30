@@ -257,6 +257,199 @@ class UserManagementTest extends TestCase
             ->assertSee('Jane Faculty');
     }
 
+    public function test_super_admin_sees_student_phone_on_profile(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $student = User::factory()->create([
+            'name' => 'Phone Student',
+            'phone' => '+639171112233',
+            'grade_level' => '11',
+            'section' => 'A',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.students.show', $student))
+            ->assertOk()
+            ->assertSee('Phone')
+            ->assertSee('+639171112233')
+            ->assertSee('If they cannot open email', false);
+    }
+
+    public function test_super_admin_sees_faculty_phone_on_profile(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $faculty = User::factory()->faculty()->create([
+            'name' => 'Phone Faculty',
+            'phone' => '09179876543',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('super-admin.faculty.show', $faculty))
+            ->assertOk()
+            ->assertSee('Phone')
+            ->assertSee('09179876543');
+    }
+
+    public function test_super_admin_can_record_student_phone_on_edit(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $student = User::factory()->create([
+            'grade_level' => '10',
+            'section' => 'B',
+            'student_status' => StudentStatus::Enrolled,
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.students.update', $student), [
+                'name' => $student->name,
+                'email' => $student->email,
+                'phone' => '09170001111',
+                'grade_level' => '10',
+                'section' => 'B',
+                'student_status' => StudentStatus::Enrolled->value,
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $this->assertSame('09170001111', $student->refresh()->phone);
+    }
+
+    public function test_super_admin_can_record_faculty_phone_on_edit(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $faculty = User::factory()->faculty()->create();
+
+        $this->actingAs($admin)
+            ->put(route('super-admin.faculty.update', $faculty), [
+                'name' => $faculty->name,
+                'email' => $faculty->email,
+                'phone' => '+639170001111',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('+639170001111', $faculty->refresh()->phone);
+    }
+
+    public function test_super_admin_sees_administrator_phone_on_profile(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $staff = User::factory()->admin()->create([
+            'phone' => '09170009999',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('super-admin.administrators.show', $staff))
+            ->assertOk()
+            ->assertSee('Phone')
+            ->assertSee('09170009999')
+            ->assertSee('If they cannot open email', false)
+            ->assertDontSee('Send link by SMS');
+    }
+
+    public function test_super_admin_can_record_administrator_phone_on_edit(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $staff = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->put(route('super-admin.administrators.update', $staff), [
+                'name' => $staff->name,
+                'email' => $staff->email,
+                'phone' => '09170002222',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('super-admin.administrators.show', $staff));
+
+        $this->assertSame('09170002222', $staff->refresh()->phone);
+    }
+
+    public function test_super_admin_can_create_an_administrator_with_a_phone(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+
+        $this->actingAs($admin)
+            ->post(route('super-admin.administrators.store'), [
+                'account_id' => 'ADMIN-200',
+                'name' => 'Pat Operations',
+                'email' => 'pat.ops@example.com',
+                'phone' => '09170003333',
+                'send_enrollment_email' => false,
+            ])
+            ->assertRedirect(route('super-admin.administrators.index'))
+            ->assertSessionHas('enrollment_url');
+
+        $this->assertDatabaseHas('users', [
+            'account_id' => 'ADMIN-200',
+            'email' => 'pat.ops@example.com',
+            'phone' => '09170003333',
+            'role' => UserRole::Admin->value,
+        ]);
+    }
+
+    public function test_super_admin_can_search_administrators_by_phone(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $match = User::factory()->admin()->create([
+            'name' => 'Phone Match Admin',
+            'phone' => '09170004444',
+        ]);
+        $other = User::factory()->admin()->create([
+            'name' => 'Other Admin',
+            'phone' => '09170005555',
+        ]);
+
+        $html = $this->actingAs($admin)
+            ->get(route('super-admin.administrators.index', ['q' => '09170004444']))
+            ->assertOk()
+            ->assertSee('Phone Match Admin')
+            ->assertDontSee('Other Admin')
+            ->assertSee('Search by Administrator ID, name, email, or phone', false)
+            ->getContent();
+
+        $this->assertStringContainsString($match->account_id, $html);
+        $this->assertStringNotContainsString($other->account_id, $html);
+    }
+
+    public function test_super_admin_can_search_faculty_by_phone(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        User::factory()->faculty()->create([
+            'name' => 'Phone Match Faculty',
+            'phone' => '09170006666',
+        ]);
+        User::factory()->faculty()->create([
+            'name' => 'Other Faculty',
+            'phone' => '09170007777',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('super-admin.faculty.index', ['q' => '09170006666']))
+            ->assertOk()
+            ->assertSee('Phone Match Faculty')
+            ->assertDontSee('Other Faculty')
+            ->assertSee('Search by Faculty ID, name, email, or phone', false);
+    }
+
+    public function test_super_admin_can_search_students_by_phone(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        User::factory()->create([
+            'name' => 'Phone Match Student',
+            'phone' => '09170008888',
+        ]);
+        User::factory()->create([
+            'name' => 'Other Student',
+            'phone' => '09170009999',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.students.index', ['q' => '09170008888']))
+            ->assertOk()
+            ->assertSee('Phone Match Student')
+            ->assertDontSee('Other Student')
+            ->assertSee('Search by Student ID, name, email, or phone', false);
+    }
+
     public function test_regular_admin_cannot_open_faculty_management(): void
     {
         $admin = User::factory()->admin()->create();

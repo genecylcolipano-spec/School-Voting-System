@@ -29,7 +29,7 @@ function setStatus(message, type = 'info') {
 function setLoading(isLoading) {
     loginButton().disabled = isLoading;
     spinner().classList.toggle('hidden', !isLoading);
-    loginLabel().textContent = isLoading ? 'Authenticating…' : 'Login with Passkey / Fingerprint';
+    loginLabel().textContent = isLoading ? 'Authenticating…' : 'Sign in with Passkey';
 }
 
 function toPublicKeyOptions(payload) {

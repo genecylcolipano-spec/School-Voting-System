@@ -51,12 +51,18 @@ trait ManagesInstitutionalRoster
         $status = $request->string('status')->toString();
 
         $records = $model::query()
+            ->with('registeredUser')
             ->when($request->string('q')->trim()->isNotEmpty(), function ($query) use ($request) {
                 $term = '%'.$request->string('q')->trim().'%';
-                $query->where(function ($query) use ($term) {
-                    $query->where('account_id', 'like', $term)
-                        ->orWhere('first_name', 'like', $term)
-                        ->orWhere('last_name', 'like', $term);
+                $columns = $this->rosterColumns();
+                $query->where(function ($query) use ($term, $columns) {
+                    foreach ($columns as $index => $column) {
+                        if ($index === 0) {
+                            $query->where($column, 'like', $term);
+                        } else {
+                            $query->orWhere($column, 'like', $term);
+                        }
+                    }
                 });
             })
             ->when($status === 'registered', fn ($q) => $q->where('is_registered', true)->whereNull('archived_at'))
@@ -74,6 +80,7 @@ trait ManagesInstitutionalRoster
         return view('admin.rosters.index', array_merge($this->sharedRosterViewData($request), [
             'records' => $records,
             'statusFilter' => $status,
+            'hasFilters' => $request->string('q')->trim()->isNotEmpty() || $status !== '',
             'summary' => [
                 'total' => $model::query()->whereNull('archived_at')->count(),
                 'registered' => $model::query()->whereNull('archived_at')->where('is_registered', true)->count(),
@@ -91,17 +98,51 @@ trait ManagesInstitutionalRoster
     {
         abort_unless($request->user()?->isSuperAdmin(), 403);
 
+        $record->loadMissing('registeredUser');
+
         return view('admin.rosters.show', array_merge($this->sharedRosterViewData($request), [
             'record' => $record,
+            'portalAccountUrl' => $record->registeredUser?->adminAccountUrl(),
         ]));
+    }
+
+    protected function rosterCreate(Request $request): View
+    {
+        abort_unless($request->user()?->isSuperAdmin(), 403);
+
+        return view('admin.rosters.form', array_merge($this->sharedRosterViewData($request), [
+            'record' => null,
+            'accountIdLocked' => false,
+        ]));
+    }
+
+    protected function rosterStore(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()?->isSuperAdmin(), 403);
+
+        $validated = $request->validate($this->rosterValidationRules());
+        $model = $this->rosterModelClass();
+        $record = $model::query()->create($this->normalizedRosterAttributes($validated));
+
+        $this->logAdminAction(
+            'Created '.$this->rosterLabel().' roster row '.$record->account_id,
+            AuditActionType::User,
+            $this->rosterModelClass(),
+            $record->getKey(),
+        );
+
+        return redirect()
+            ->route($this->rosterRoutePrefix().'.index')
+            ->with('success', 'Roster record added. This does not create a login or send an enrollment email.');
     }
 
     protected function rosterEdit(Request $request, Model $record): View
     {
         abort_unless($request->user()?->isSuperAdmin(), 403);
 
-        return view('admin.rosters.edit', array_merge($this->sharedRosterViewData($request), [
+        return view('admin.rosters.form', array_merge($this->sharedRosterViewData($request), [
             'record' => $record,
+            'accountIdLocked' => $this->rosterAccountIdIsLocked($record),
         ]));
     }
 
@@ -109,8 +150,21 @@ trait ManagesInstitutionalRoster
     {
         abort_unless($request->user()?->isSuperAdmin(), 403);
 
-        $validated = $request->validate($this->rosterValidationRules($record));
-        $record->update($this->normalizedRosterAttributes($validated));
+        $accountIdLocked = $this->rosterAccountIdIsLocked($record);
+        $rules = $this->rosterValidationRules($record);
+
+        if ($accountIdLocked) {
+            unset($rules['account_id']);
+        }
+
+        $validated = $request->validate($rules);
+        $attributes = $this->normalizedRosterAttributes($validated);
+
+        if ($accountIdLocked) {
+            unset($attributes['account_id']);
+        }
+
+        $record->update($attributes);
 
         $this->logAdminAction(
             'Updated '.$this->rosterLabel().' roster row '.$record->account_id,
@@ -321,7 +375,34 @@ trait ManagesInstitutionalRoster
             'routePrefix' => $this->rosterRoutePrefix(),
             'columns' => $this->rosterColumns(),
             'extraFields' => $this->extraFieldDefinitions(),
+            'searchPlaceholder' => $this->rosterSearchPlaceholder(),
         ];
+    }
+
+    protected function rosterSearchPlaceholder(): string
+    {
+        $parts = [$this->rosterIdLabel(), 'name'];
+
+        foreach ($this->extraFieldDefinitions() as $field) {
+            $parts[] = strtolower((string) $field['label']);
+        }
+
+        $last = array_pop($parts);
+
+        return 'Search '.implode(', ', $parts).', or '.$last;
+    }
+
+    protected function rosterAccountIdIsLocked(Model $record): bool
+    {
+        if (method_exists($record, 'isFullyRegistered') && $record->isFullyRegistered()) {
+            return true;
+        }
+
+        if ($record->getAttribute('is_registered')) {
+            return true;
+        }
+
+        return User::query()->where('account_id', $record->account_id)->exists();
     }
 
     protected function uniqueRosterAccountIdRule(?Model $record = null)

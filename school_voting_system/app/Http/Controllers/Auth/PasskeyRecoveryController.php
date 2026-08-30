@@ -9,6 +9,8 @@ use App\Models\User;
 use App\Services\Auth\PasskeyEnrollmentLinkService;
 use App\Services\Auth\PasskeyRecoveryQueueService;
 use App\Services\Auth\PasskeyRecoveryTokenService;
+use App\Support\PlatformModules;
+use App\Support\PortalSupportSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,17 +32,29 @@ class PasskeyRecoveryController extends Controller
         protected PasskeyRecoveryQueueService $recoveryQueue,
     ) {}
 
-    public function show(): View
+    public function show(): View|RedirectResponse
     {
+        if (! PlatformModules::recovery()) {
+            return redirect()->route('login')->with('error', 'Passkey recovery is currently disabled. Contact an administrator.');
+        }
+
         return view('auth.recovery', [
             'loginUrl' => route('login'),
-            'supportEmail' => config('mail.from.address'),
+            'supportEmail' => PortalSupportSettings::email(),
             'resetExpirationMinutes' => $this->recoveryTokens->expirationMinutes(),
         ]);
     }
 
     public function requestReset(Request $request): JsonResponse|RedirectResponse
     {
+        if (! PlatformModules::recovery()) {
+            return $this->resetRequestResponse(
+                $request,
+                'Passkey recovery is currently disabled. Contact an administrator.',
+                403,
+            );
+        }
+
         $validated = $request->validate([
             'account_id' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],
@@ -231,7 +245,7 @@ class PasskeyRecoveryController extends Controller
         $recipientEmail = $user->email;
         $expiresInMinutes = max(60, (int) config('enrollment.link_expiration_hours', 24) * 60);
 
-        $result = $this->enrollmentLinks->sendToUser($user, $recipientEmail, $expiresInMinutes);
+        $result = $this->enrollmentLinks->sendToUser($user, $recipientEmail, $expiresInMinutes, $request->user());
 
         if ($recoveryRequest) {
             $recoveryRequest->forceFill([
@@ -262,13 +276,19 @@ class PasskeyRecoveryController extends Controller
             ]);
         }
 
-        if ($emailSent) {
-            return back()->with('success', "Enrollment link emailed to {$recipientEmail}.");
+        $message = $emailSent
+            ? "Enrollment link emailed to {$recipientEmail}."
+            : 'Enrollment link generated. Copy it below if email delivery failed.';
+
+        $redirect = back()
+            ->with('success', $message)
+            ->with('enrollment_url', $result['url']);
+
+        if ($emailError && ! $emailSent) {
+            $redirect = $redirect->with('error', $emailError);
         }
 
-        return back()
-            ->with('success', 'Enrollment link generated. Copy it below if email delivery failed.')
-            ->with('enrollment_url', $result['url'])
-            ->with('error', $emailError);
+        return $redirect;
     }
 }
+

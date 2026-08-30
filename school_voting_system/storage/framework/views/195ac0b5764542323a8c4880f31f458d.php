@@ -185,7 +185,8 @@ unset($__errorArgs, $__bag); ?>
 
                         <div>
                             <label for="phone" class="block text-sm font-medium text-slate-300">Phone Number <span class="text-slate-500">(optional)</span></label>
-                            <input id="phone" name="phone" type="text" value="<?php echo e(old('phone', $user->phone)); ?>" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" placeholder="+63…" />
+                            <input id="phone" name="phone" type="tel" value="<?php echo e(old('phone', $user->phone)); ?>" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" placeholder="+63…" autocomplete="tel" />
+                            <p class="mt-1 text-xs text-slate-500">School staff can see this on your profile if they need to reach you when email is unavailable (for example to share a passkey link).</p>
                             <?php $__errorArgs = ['phone'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :

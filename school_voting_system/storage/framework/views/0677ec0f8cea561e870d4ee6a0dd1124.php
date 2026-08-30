@@ -19,6 +19,11 @@
         $defaultPaymentMethod = collect($paymentMethods)
             ->first(fn ($method) => ! ($method->isOnline() && ! $paymongoConfigured))
             ?->value;
+        $selectedPaymentMethod = \App\Enums\DonationPaymentMethod::tryFrom((string) old('payment_method', $defaultPaymentMethod));
+        $submitLabel = $selectedPaymentMethod?->donateSubmitLabel() ?? 'Submit donation';
+        $submitLabels = collect($paymentMethods)
+            ->mapWithKeys(fn ($method) => [$method->value => $method->donateSubmitLabel()])
+            ->all();
     ?>
     <div class="min-h-screen bg-slate-950 text-slate-100">
         <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -76,43 +81,41 @@
 <?php endif; ?>
                 <?php endif; ?>
                 <div class="p-6">
-                    <div class="flex flex-wrap items-start justify-between gap-4">
-                        <div class="min-w-0">
-                            <h1 class="truncate text-2xl font-bold text-white"><?php echo e($fundraiser->title); ?></h1>
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0 flex-1">
+                            <h1 class="text-2xl font-bold text-white break-words"><?php echo e($fundraiser->title); ?></h1>
                             <?php if($fundraiser->category): ?>
                                 <p class="mt-1 text-xs font-semibold uppercase tracking-wide text-cyan-300"><?php echo e($fundraiser->category->label()); ?></p>
                             <?php endif; ?>
                             <?php if($fundraiser->description): ?>
-                                <p class="mt-2 text-sm text-slate-300"><?php echo e($fundraiser->description); ?></p>
+                                <p class="mt-2 text-sm leading-relaxed text-slate-300 text-justify whitespace-pre-line"><?php echo e($fundraiser->description); ?></p>
                             <?php endif; ?>
                             <?php if($fundraiser->beneficiary || $fundraiser->purpose): ?>
                                 <dl class="mt-3 space-y-1 text-sm text-slate-400">
                                     <?php if($fundraiser->beneficiary): ?>
-                                        <div><span class="text-slate-500">Beneficiary:</span> <?php echo e($fundraiser->beneficiary); ?></div>
+                                        <div><span class="text-slate-400">Beneficiary:</span> <?php echo e($fundraiser->beneficiary); ?></div>
                                     <?php endif; ?>
                                     <?php if($fundraiser->purpose): ?>
-                                        <div><span class="text-slate-500">Purpose:</span> <?php echo e($fundraiser->purpose); ?></div>
+                                        <div><span class="text-slate-400">Purpose:</span> <?php echo e($fundraiser->purpose); ?></div>
                                     <?php endif; ?>
                                 </dl>
                             <?php endif; ?>
                         </div>
-                        <div class="text-right">
-                            <p class="text-xs uppercase tracking-wide text-slate-500"><?php echo e($fundraiser->displayStatusLabel()); ?></p>
-                            <p class="mt-1 text-xs text-slate-400">
-                                Raised ₱<?php echo e(number_format((float) $fundraiser->amount_raised, 2)); ?>
+                        <div class="shrink-0 sm:text-right">
+                            <span class="inline-flex rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-300">
+                                <?php echo e($fundraiser->displayStatusLabel()); ?>
 
-                            </p>
-                            <p class="text-xs text-slate-400">
-                                Goal ₱<?php echo e(number_format((float) $fundraiser->goal_amount, 2)); ?>
-
-                            </p>
+                            </span>
+                            <p class="mt-2 text-lg font-semibold tabular-nums text-white">₱<?php echo e(number_format((float) $fundraiser->amount_raised, 2)); ?></p>
+                            <p class="text-xs text-slate-400">Raised</p>
+                            <p class="mt-1 text-sm text-slate-300">Goal ₱<?php echo e(number_format((float) $fundraiser->goal_amount, 2)); ?></p>
                         </div>
                     </div>
 
-                    <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-800">
+                    <div class="mt-4 h-3 overflow-hidden rounded-full bg-slate-800">
                         <div class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-sky-400" style="width: <?php echo e($fundraiser->progressPercent()); ?>%"></div>
                     </div>
-                    <p class="mt-2 text-xs text-slate-500"><?php echo e(number_format($fundraiser->progressPercent(), 1)); ?>% of goal · Remaining ₱<?php echo e(number_format($fundraiser->remainingAmount(), 2)); ?></p>
+                    <p class="mt-2 text-xs text-slate-400"><?php echo e(number_format($fundraiser->progressPercent(), 1)); ?>% of goal · Remaining ₱<?php echo e(number_format($fundraiser->remainingAmount(), 2)); ?></p>
                 </div>
             </article>
 
@@ -121,126 +124,16 @@
                 <?php if($preview): ?>
                     <p class="mt-3 text-sm text-slate-400">
                         <?php if($fundraiser->isAcceptingDonations()): ?>
-                            Students can donate here when this campaign is published and visible.
+                            Students and faculty can donate here when this campaign is published and visible.
                         <?php else: ?>
                             This campaign is not currently accepting donations.
                         <?php endif; ?>
                     </p>
                 <?php elseif($accepting): ?>
-                    <?php if($paymentMethods === []): ?>
-                        <p class="mt-3 text-sm text-slate-400">This campaign has no payment methods enabled.</p>
-                    <?php elseif($hasOnlineMethod && ! $paymongoConfigured): ?>
-                        <p class="mt-3 text-sm text-amber-200">Online payments are not configured yet. Cash and bank transfer can still be submitted for confirmation if this campaign accepts them.</p>
-                    <?php endif; ?>
-                    <form method="POST" action="<?php echo e(route('student.fundraising.donate', $fundraiser)); ?>" class="mt-4 space-y-4">
-                        <?php echo csrf_field(); ?>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-300">Amount (PHP)</label>
-                            <input
-                                name="amount"
-                                type="number"
-                                step="0.01"
-                                min="<?php echo e($minDonation); ?>"
-                                <?php if($maxDonation): ?> max="<?php echo e($maxDonation); ?>" <?php endif; ?>
-                                required
-                                value="<?php echo e(old('amount')); ?>"
-                                class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
-                            />
-                            <p class="mt-1 text-xs text-slate-500">
-                                Minimum ₱<?php echo e(number_format($minDonation, 2)); ?>
-
-                                <?php if($maxDonation): ?>
-                                    · Maximum ₱<?php echo e(number_format($maxDonation, 2)); ?>
-
-                                <?php endif; ?>
-                            </p>
-                            <?php $__errorArgs = ['amount'];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?>
-                                <p class="mt-1 text-sm text-rose-300"><?php echo e($message); ?></p>
-                            <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>
-                        </div>
-
-                        <fieldset>
-                            <legend class="block text-sm font-medium text-slate-300">Payment method</legend>
-                            <div class="mt-2 grid gap-2 sm:grid-cols-2">
-                                <?php $__currentLoopData = $paymentMethods; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $method): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <?php
-                                        $disabled = $method->isOnline() && ! $paymongoConfigured;
-                                    ?>
-                                    <label class="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2 text-sm <?php echo e($disabled ? 'cursor-not-allowed text-slate-500' : 'text-slate-300'); ?>">
-                                        <input
-                                            type="radio"
-                                            name="payment_method"
-                                            value="<?php echo e($method->value); ?>"
-                                            <?php if(old('payment_method', $defaultPaymentMethod) === $method->value): echo 'checked'; endif; ?>
-                                            <?php if($disabled): echo 'disabled'; endif; ?>
-                                            required
-                                            class="border-slate-700 bg-slate-950/50 text-cyan-500 focus:ring-cyan-500/30"
-                                        />
-                                        <span>
-                                            <?php echo e($method->label()); ?>
-
-                                            <?php if($method->isOnline()): ?>
-                                                <span class="text-xs text-slate-500">via PayMongo</span>
-                                            <?php else: ?>
-                                                <span class="text-xs text-slate-500">pending confirmation</span>
-                                            <?php endif; ?>
-                                        </span>
-                                    </label>
-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                            </div>
-                            <?php $__errorArgs = ['payment_method'];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?>
-                                <p class="mt-1 text-sm text-rose-300"><?php echo e($message); ?></p>
-                            <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>
-                            <p class="mt-2 text-xs text-slate-500">GCash, Maya, and QR Ph open a PayMongo checkout page. Your donation is counted only after payment succeeds.</p>
-                        </fieldset>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-300">Message (optional)</label>
-                            <input
-                                name="message"
-                                type="text"
-                                maxlength="255"
-                                value="<?php echo e(old('message')); ?>"
-                                class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
-                            />
-                            <?php $__errorArgs = ['message'];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?>
-                                <p class="mt-1 text-sm text-rose-300"><?php echo e($message); ?></p>
-                            <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>
-                        </div>
-
-                        <?php if($fundraiser->allow_anonymous !== false): ?>
-                            <label class="flex items-center gap-2 text-sm text-slate-300">
-                                <input type="checkbox" name="is_anonymous" value="1" <?php if(old('is_anonymous')): echo 'checked'; endif; ?> class="rounded border-slate-700 bg-slate-950/50 text-cyan-500 focus:ring-cyan-500/30" />
-                                Donate anonymously
-                            </label>
-                        <?php endif; ?>
-
-                        <button type="submit" class="inline-flex rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-5 py-2.5 text-sm font-semibold text-slate-950">
-                            Continue to payment
-                        </button>
-                    </form>
+                    <?php echo $__env->make('fundraising._donate-form', [
+                        'donateAction' => route('student.fundraising.donate', $fundraiser),
+                        'accent' => 'cyan',
+                    ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                 <?php else: ?>
                     <p class="mt-3 text-sm text-slate-400">This campaign is not currently accepting donations.</p>
                 <?php endif; ?>

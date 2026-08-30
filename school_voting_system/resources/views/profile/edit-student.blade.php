@@ -146,7 +146,8 @@
 
                         <div>
                             <label for="phone" class="block text-sm font-medium text-slate-300">Phone Number <span class="text-slate-500">(optional)</span></label>
-                            <input id="phone" name="phone" type="text" value="{{ old('phone', $user->phone) }}" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" placeholder="+63…" />
+                            <input id="phone" name="phone" type="tel" value="{{ old('phone', $user->phone) }}" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" placeholder="+63…" autocomplete="tel" />
+                            <p class="mt-1 text-xs text-slate-500">School staff can see this on your profile if they need to reach you when email is unavailable (for example to share a passkey link).</p>
                             @error('phone')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
                         </div>
 

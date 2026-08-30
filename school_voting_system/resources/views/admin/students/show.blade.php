@@ -7,7 +7,7 @@
                     <a href="{{ route('admin.students.edit', $account) }}" class="rounded-xl border border-violet-500/30 px-4 py-2 text-sm font-semibold text-violet-300 hover:bg-violet-500/10">Edit</a>
                 @endcan
                 @can('issuePasskeyReset', $account)
-                    <form method="POST" action="{{ route('admin.passkey.reset', $account) }}" onsubmit="return confirm('Generate a passkey reset / enrollment link?');">
+                    <form method="POST" action="{{ route('admin.passkey.reset', $account) }}" onsubmit="return confirm('Generate a passkey reset / enrollment link? This emails the address on file.');">
                         @csrf
                         <button type="submit" class="rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800">Reset Passkey</button>
                     </form>
@@ -21,14 +21,14 @@
         @if (session('error'))
             <div class="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{{ session('error') }}</div>
         @endif
-        @include('admin.partials.enrollment-link-banner')
+        @include('admin.partials.enrollment-link-banner', ['contactAccount' => $account])
 
         <section class="mb-6 rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5 sm:p-6">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="font-mono text-xs text-slate-500">{{ $account->account_id }}</p>
                     <h2 class="mt-1 text-2xl font-bold text-white">{{ $account->name }}</h2>
-                    <p class="mt-1 text-sm text-slate-400">{{ $account->email }} · {{ $account->roleLabel() }}</p>
+                    @include('admin.partials.profile-contact', ['account' => $account])
                     <p class="mt-1 text-sm text-slate-400">
                         Grade {{ $account->grade_level ?: '—' }} · Section {{ $account->section ?: '—' }}
                     </p>

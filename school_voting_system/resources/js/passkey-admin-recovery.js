@@ -131,6 +131,7 @@ document.querySelectorAll('[data-enroll-url], [data-reset-url]').forEach((button
                         : `Enrollment link generated: ${result.enrollment_url}`
                 );
             }
+
             removeRecoveryRows(button.dataset.recoveryRequestId);
         } catch (error) {
             setStatus(error?.message ?? 'Could not generate enrollment link.', 'error');

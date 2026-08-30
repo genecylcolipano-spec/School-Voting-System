@@ -1,4 +1,7 @@
 @php
+    $election = ($election ?? null) instanceof \App\Models\Election && ! $election->trashed()
+        ? $election
+        : null;
     $countdownRemaining = $countdown['remaining'] ?? '—';
     $countdownLabel = $countdown['label'] ?? 'Voting Starts In';
     $countdownPhase = $countdown['phase'] ?? 'before_start';

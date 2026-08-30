@@ -10,6 +10,8 @@ class GenerateReportRequest extends SuperAdminFormRequest
     {
         return [
             'report' => ['required', 'in:election_summary,voter_turnout,audit_trail,passkey_inventory'],
+            'election_id' => ['nullable', 'integer', 'exists:elections,id'],
+            'format' => ['nullable', 'in:html,pdf'],
         ];
     }
 }

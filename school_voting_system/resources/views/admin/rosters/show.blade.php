@@ -9,6 +9,9 @@
         <div class="mb-4 flex flex-wrap gap-2">
             <a href="{{ route($routePrefix.'.index') }}" class="text-sm font-semibold text-violet-300 hover:text-violet-200">&larr; Back to roster</a>
             <a href="{{ route($routePrefix.'.edit', $record) }}" class="rounded-xl border border-violet-500/30 px-4 py-2 text-sm font-semibold text-violet-300 hover:bg-violet-500/10">Edit</a>
+            @if ($portalAccountUrl ?? null)
+                <a href="{{ $portalAccountUrl }}" class="rounded-xl border border-sky-500/30 px-4 py-2 text-sm font-semibold text-sky-200 hover:bg-sky-500/10">View portal account</a>
+            @endif
         </div>
 
         <section class="mx-auto max-w-2xl rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5 sm:p-6">

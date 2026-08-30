@@ -1,6 +1,9 @@
 @php
     $onDashboard = request()->routeIs('student.dashboard');
     $onStatistics = request()->routeIs('student.statistics');
+    $showElections = \App\Support\PlatformModules::elections();
+    $showTalent = \App\Support\PlatformModules::talent();
+    $showFundraising = \App\Support\PlatformModules::fundraising();
 @endphp
 
 <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
@@ -40,6 +43,7 @@
         </x-slot:icon>
     </x-portal-sidebar-link>
 
+    @if ($showElections)
     <x-portal-sidebar-link
         :href="route('student.voting.index')"
         label="My Voting"
@@ -51,7 +55,9 @@
             </svg>
         </x-slot:icon>
     </x-portal-sidebar-link>
+    @endif
 
+    @if ($showElections || $showTalent)
     <x-portal-sidebar-link
         :href="route('student.results.index')"
         label="Results"
@@ -63,7 +69,9 @@
             </svg>
         </x-slot:icon>
     </x-portal-sidebar-link>
+    @endif
 
+    @if ($showElections)
     <x-portal-sidebar-link
         :href="route('student.campaigns.index')"
         label="Campaigns"
@@ -75,7 +83,9 @@
             </svg>
         </x-slot:icon>
     </x-portal-sidebar-link>
+    @endif
 
+    @if ($showTalent)
     <x-portal-sidebar-link
         :href="route('student.talent-voting.index')"
         label="Talent Competition"
@@ -87,7 +97,9 @@
             </svg>
         </x-slot:icon>
     </x-portal-sidebar-link>
+    @endif
 
+    @if ($showFundraising)
     <x-portal-sidebar-link
         :href="route('student.fundraising.index')"
         label="Fundraising"
@@ -99,6 +111,7 @@
             </svg>
         </x-slot:icon>
     </x-portal-sidebar-link>
+    @endif
 
     <x-portal-sidebar-link
         :href="route('student.announcements.index')"

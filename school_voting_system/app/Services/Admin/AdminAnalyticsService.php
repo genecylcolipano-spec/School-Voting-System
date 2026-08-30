@@ -2,11 +2,11 @@
 
 namespace App\Services\Admin;
 
+use App\Enums\EventStatus;
 use App\Enums\StudentStatus;
 use App\Models\Candidate;
 use App\Models\Donation;
 use App\Models\Election;
-use App\Models\Event;
 use App\Models\TalentEvent;
 use App\Models\TalentEventVote;
 use App\Models\User;
@@ -28,7 +28,6 @@ class AdminAnalyticsService
         $labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         $election ??= $this->scope->resolveReportElection($admin, null, preferClosed: false);
         $eligibleIds = $this->eligibleParticipantIds($admin);
-        $eligible = max(1, $eligibleIds->count());
 
         $yearStart = Carbon::create($year, 1, 1)->startOfYear();
         $yearEnd = Carbon::create($year, 12, 31)->endOfYear();
@@ -60,14 +59,21 @@ class AdminAnalyticsService
             }
         }
 
+        $eventCounts = $this->monthlyEventCounts($admin);
         $values = [];
 
         foreach (range(1, 12) as $month) {
-            $participants = isset($participantsByMonth[$month]) ? count($participantsByMonth[$month]) : 0;
-            $values[] = round(($participants / $eligible) * 100, 1);
+            $voters = isset($participantsByMonth[$month]) ? count($participantsByMonth[$month]) : 0;
+            $values[] = round($voters + $eventCounts[$month], 1);
         }
 
-        return $this->chartPayload($labels, $values, 100, [0, 25, 50, 75, 100], '%');
+        [$yMax, $yTicks] = $this->niceAxis(
+            (float) max($values),
+            fallbackMax: 10,
+            fallbackTicks: [0, 2.5, 5, 7.5, 10],
+        );
+
+        return $this->chartPayload($labels, $values, $yMax, $yTicks);
     }
 
     public function fundraisingHistory(User $admin): array
@@ -205,35 +211,8 @@ class AdminAnalyticsService
 
     public function eventAttendanceHistory(User $admin): array
     {
-        $year = now()->year;
         $labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        $yearStart = Carbon::create($year, 1, 1)->startOfYear();
-        $yearEnd = Carbon::create($year, 12, 31)->endOfYear();
-        $monthExpr = $this->monthExpression('event_date');
-
-        $schoolEventsByMonth = Event::query()
-            ->whereBetween('event_date', [$yearStart, $yearEnd])
-            ->selectRaw($monthExpr.' as month, COUNT(*) as total')
-            ->groupByRaw($monthExpr)
-            ->pluck('total', 'month');
-
-        $talentQuery = TalentEvent::query()->whereBetween('event_date', [$yearStart, $yearEnd]);
-
-        if (! $admin->isSuperAdmin()) {
-            $talentIds = $this->scope->talentEvents($admin)->pluck('id');
-            $talentQuery->whereIn('id', $talentIds->all() ?: [0]);
-        }
-
-        $talentEventsByMonth = $talentQuery
-            ->selectRaw($monthExpr.' as month, COUNT(*) as total')
-            ->groupByRaw($monthExpr)
-            ->pluck('total', 'month');
-
-        $values = [];
-
-        foreach (range(1, 12) as $month) {
-            $values[] = (float) (($schoolEventsByMonth[$month] ?? 0) + ($talentEventsByMonth[$month] ?? 0));
-        }
+        $values = array_values($this->monthlyEventCounts($admin));
 
         $peak = max(1, (int) max($values));
         $yMax = max(10, (int) (ceil($peak / 5) * 5));
@@ -296,6 +275,46 @@ class AdminAnalyticsService
                 'event_date' => $event->event_date?->format('M d, Y'),
             ];
         })->values()->all();
+    }
+
+    /**
+     * School events and talent competitions scheduled in the current year, by month.
+     *
+     * @return array<int, float>
+     */
+    protected function monthlyEventCounts(User $admin): array
+    {
+        $year = now()->year;
+        $yearStart = Carbon::create($year, 1, 1)->startOfYear();
+        $yearEnd = Carbon::create($year, 12, 31)->endOfYear();
+        $monthExpr = $this->monthExpression('event_date');
+
+        $schoolEventsByMonth = $this->scope->schoolEventsQuery($admin)
+            ->where('status', '!=', EventStatus::Cancelled)
+            ->whereBetween('event_date', [$yearStart, $yearEnd])
+            ->selectRaw($monthExpr.' as month, COUNT(*) as total')
+            ->groupByRaw($monthExpr)
+            ->pluck('total', 'month');
+
+        $talentQuery = TalentEvent::query()->whereBetween('event_date', [$yearStart, $yearEnd]);
+
+        if (! $admin->isSuperAdmin()) {
+            $talentIds = $this->scope->talentEvents($admin)->pluck('id');
+            $talentQuery->whereIn('id', $talentIds->all() ?: [0]);
+        }
+
+        $talentEventsByMonth = $talentQuery
+            ->selectRaw($monthExpr.' as month, COUNT(*) as total')
+            ->groupByRaw($monthExpr)
+            ->pluck('total', 'month');
+
+        $counts = [];
+
+        foreach (range(1, 12) as $month) {
+            $counts[$month] = (float) (($schoolEventsByMonth[$month] ?? 0) + ($talentEventsByMonth[$month] ?? 0));
+        }
+
+        return $counts;
     }
 
     /**

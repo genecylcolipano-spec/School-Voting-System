@@ -20,6 +20,9 @@
 <?php $component->withAttributes(['title' => 'Fundraisers','user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount)]); ?>
         <?php echo $__env->make('admin.partials.page-header', [
             'title' => 'Fundraisers',
+            'description' => $user->isSuperAdmin()
+                ? 'Every fundraising campaign across the institution.'
+                : 'Fundraising campaigns you created.',
             'action' => route('admin.fundraisers.create'),
             'actionLabel' => 'Create fundraiser',
             'showAction' => auth()->user()->can('create', App\Models\Fundraiser::class),
@@ -78,7 +81,14 @@
                             </td>
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                        <tr><td colspan="5" class="px-4 py-6 text-slate-400">No fundraisers yet.</td></tr>
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-sm text-slate-400">
+                                No fundraisers yet.
+                                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('create', App\Models\Fundraiser::class)): ?>
+                                    <a href="<?php echo e(route('admin.fundraisers.create')); ?>" class="ml-2 text-violet-300 hover:text-violet-200">Create your first campaign</a>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
