@@ -23,7 +23,9 @@ class LoginPageTest extends TestCase
             ->assertSee(route('register'), false)
             ->assertSee(route('login.recovery'), false)
             ->assertSee(\App\Support\SchoolBranding::periodLabel(), false)
-            ->assertSee(\App\Support\SchoolBranding::poweredBy(), false);
+            ->assertSee(\App\Support\SchoolBranding::poweredBy(), false)
+            ->assertSee('favicon-svs.png', false)
+            ->assertSee('theme-color', false);
     }
 
     public function test_login_page_shows_flash_error_and_status(): void

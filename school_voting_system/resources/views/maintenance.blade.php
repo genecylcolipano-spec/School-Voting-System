@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @include('partials.favicon')
     <title>Maintenance — {{ \App\Support\SchoolBranding::systemName() }}</title>
     @vite(['resources/css/app.css'])
 </head>
