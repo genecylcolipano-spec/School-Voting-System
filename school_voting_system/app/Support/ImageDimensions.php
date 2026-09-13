@@ -4,6 +4,7 @@ namespace App\Support;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class ImageDimensions
 {
@@ -35,11 +36,21 @@ class ImageDimensions
      */
     public static function fromStoragePath(string $disk, string $path): ?array
     {
-        if (! Storage::disk($disk)->exists($path)) {
+        try {
+            if (! Storage::disk($disk)->exists($path)) {
+                return null;
+            }
+
+            $binary = Storage::disk($disk)->get($path);
+        } catch (Throwable) {
             return null;
         }
 
-        $size = @getimagesize(Storage::disk($disk)->path($path));
+        if (! is_string($binary) || $binary === '') {
+            return null;
+        }
+
+        $size = @getimagesizefromstring($binary);
 
         if ($size === false) {
             return null;

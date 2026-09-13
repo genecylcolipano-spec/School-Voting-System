@@ -335,7 +335,7 @@ class Fundraiser extends Model
             return null;
         }
 
-        return asset('storage/'.ltrim((string) $path, '/'));
+        return Storage::disk('public')->url(ltrim((string) $path, '/'));
     }
 
     public function scopeAcceptingDonations(Builder $query, ?Carbon $on = null): Builder

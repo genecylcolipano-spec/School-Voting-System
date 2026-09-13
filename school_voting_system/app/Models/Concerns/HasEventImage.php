@@ -123,6 +123,6 @@ trait HasEventImage
             return null;
         }
 
-        return asset('storage/'.ltrim((string) $path, '/'));
+        return Storage::disk('public')->url(ltrim((string) $path, '/'));
     }
 }

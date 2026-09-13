@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Passkeys\Contracts\PasskeyUser;
 use Laravel\Passkeys\PasskeyAuthenticatable;
 
@@ -135,7 +136,7 @@ class User extends Authenticatable implements PasskeyUser
             return null;
         }
 
-        $url = asset('storage/'.ltrim($this->avatar_path, '/'));
+        $url = Storage::disk('public')->url(ltrim($this->avatar_path, '/'));
 
         // Bust browser cache after profile photo changes (same path edge cases).
         if ($this->updated_at) {

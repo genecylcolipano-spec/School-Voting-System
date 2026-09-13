@@ -76,7 +76,7 @@ class EventImageUrl
                 : self::placeholder();
         }
 
-        return asset('storage/'.$normalized);
+        return Storage::disk('public')->url($normalized);
     }
 
     public static function hasUploadedImage(?string $imagePath): bool

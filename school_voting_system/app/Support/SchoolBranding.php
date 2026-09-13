@@ -116,7 +116,7 @@ class SchoolBranding
             $path = static::logoPath();
 
             if ($path && Storage::disk('public')->exists($path)) {
-                $url = asset('storage/'.ltrim($path, '/'));
+                $url = Storage::disk('public')->url(ltrim($path, '/'));
 
                 try {
                     $url .= '?v='.Storage::disk('public')->lastModified($path);

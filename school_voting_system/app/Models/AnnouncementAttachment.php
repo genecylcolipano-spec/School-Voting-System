@@ -83,7 +83,7 @@ class AnnouncementAttachment extends Model
             return null;
         }
 
-        return asset('storage/'.$this->path);
+        return Storage::disk('public')->url($this->path);
     }
 
     public function deleteFile(): void

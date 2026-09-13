@@ -66,7 +66,7 @@ Uploads (school logo, campaign images, candidate photos, avatars, announcements)
 2. Make the bucket **public**.
 3. Cloud injects AWS / S3 variables. If `AWS_URL` is shown on the bucket page but not injected, copy it into custom env vars.
 
-After the first deploy, if logos or photos 404, the `public` disk is still writing to ephemeral local storage. Say so and we can point that disk at the bucket.
+When `AWS_BUCKET` is set, uploads on the `public` disk go to that bucket. Add `AWS_URL` if Cloud shows it but does not inject it. Make the bucket **public**. Leave `AWS_BUCKET` empty on local XAMPP. Do not add `storage:link` as a deploy command.
 
 ## 5. Environment variables
 

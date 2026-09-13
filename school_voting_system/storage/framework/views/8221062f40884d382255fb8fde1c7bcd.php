@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php echo $__env->make('partials.favicon', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
     <title>Maintenance — <?php echo e(\App\Support\SchoolBranding::systemName()); ?></title>
     <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css']); ?>
 </head>
