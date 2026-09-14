@@ -66,6 +66,7 @@ class PortalNotificationService
         'student_talent_voting_resumed' => '▶',
         'student_talent_voting_closed' => '🔒',
         'student_talent_published' => '🏆',
+        'student_talent_registration_open' => '🏆',
         'student_talent_results_published' => '🎉',
         'admin_talent_voting_paused' => '⏸',
         'admin_talent_voting_resumed' => '▶',
@@ -571,6 +572,63 @@ class PortalNotificationService
                     );
                 });
         }
+    }
+
+    public function talentRegistrationOpened(TalentEvent $event, ?User $actor = null): int
+    {
+        if (! $event->isRegistrationOpen()) {
+            return 0;
+        }
+
+        if ($this->talentRegistrationOpenedAlreadySent($event)) {
+            return 0;
+        }
+
+        return $this->notifyStudents(
+            'Talent Registration Open',
+            "Registration is now open for {$event->title}. Submit your entry before registration closes.",
+            'student_talent_registration_open',
+            $actor,
+            NotificationModule::Competition,
+            $event->id,
+        );
+    }
+
+    /**
+     * Notify students when a published competition's registration window is live.
+     * Dedupes per competition via existing portal_notifications rows.
+     */
+    public function dispatchTalentRegistrationOpenedNotices(): int
+    {
+        $now = now();
+        $dispatched = 0;
+
+        $events = TalentEvent::query()
+            ->publishedToStudents()
+            ->where(function ($query) {
+                $query->whereNotNull('registration_starts_at')
+                    ->orWhereNotNull('registration_ends_at');
+            })
+            ->where(function ($query) use ($now) {
+                $query->whereNull('registration_ends_at')
+                    ->orWhere('registration_ends_at', '>=', $now);
+            })
+            ->get();
+
+        foreach ($events as $event) {
+            if (! $event->isRegistrationOpen($now)) {
+                continue;
+            }
+
+            $actor = $event->creator
+                ?? User::query()->whereKey($event->created_by)->first();
+
+            if ($this->talentRegistrationOpened($event, $actor) > 0) {
+                $dispatched++;
+            }
+        }
+
+        return $dispatched;
     }
 
     public function talentVotingOpened(TalentEvent $event, User $actor): void
@@ -1305,6 +1363,7 @@ class PortalNotificationService
 
                 return match (true) {
                     str_starts_with($type, 'student_talent_results') => route('student.results.talent.show', $event),
+                    $type === 'student_talent_registration_open' => route('student.talent-registration.show', $event),
                     str_starts_with($type, 'faculty_talent_results') => route('faculty.results.talent.show', $event),
                     str_starts_with($type, 'student_') => route('student.talent-voting.show', $event),
                     str_starts_with($type, 'faculty_') => route('faculty.judging.show', $event),
@@ -1346,6 +1405,14 @@ class PortalNotificationService
     protected function queryForUser(User $user): Builder
     {
         return PortalNotification::query()->forUser($user);
+    }
+
+    protected function talentRegistrationOpenedAlreadySent(TalentEvent $event): bool
+    {
+        return PortalNotification::query()
+            ->where('type', 'student_talent_registration_open')
+            ->where('related_id', $event->id)
+            ->exists();
     }
 
     /**

@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Models\Election;
 use App\Models\Event;
 use App\Models\User;
+use App\Services\Portal\PortalNotificationService;
 use App\Services\SuperAdmin\ElectionLifecycleService;
 use Illuminate\Console\Command;
 
@@ -16,8 +17,14 @@ class ProcessScheduledElectionsCommand extends Command
 
     protected $description = 'Open or close elections whose scheduled or voting window times have elapsed';
 
-    public function handle(ElectionLifecycleService $lifecycle): int
+    public function handle(ElectionLifecycleService $lifecycle, PortalNotificationService $notifications): int
     {
+        $registrationNotices = $notifications->dispatchTalentRegistrationOpenedNotices();
+
+        if ($registrationNotices > 0) {
+            $this->line("Talent registration notices sent: {$registrationNotices}.");
+        }
+
         $completedEvents = Event::markOverdueAsCompleted();
 
         if ($completedEvents > 0) {

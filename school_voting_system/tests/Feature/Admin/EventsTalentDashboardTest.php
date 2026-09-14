@@ -5,14 +5,18 @@ namespace Tests\Feature\Admin;
 use App\Enums\ElectionStatus;
 use App\Enums\EventStatus;
 use App\Enums\TalentEventStatus;
+use App\Enums\TalentRegistrationMethod;
 use App\Enums\TalentVotingMethod;
+use App\Mail\AnnouncementPublishedMail;
 use App\Models\AdminAssignment;
+use App\Models\Announcement;
 use App\Models\Election;
 use App\Models\Event;
 use App\Models\PortalNotification;
 use App\Models\TalentEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class EventsTalentDashboardTest extends TestCase
@@ -169,6 +173,69 @@ class EventsTalentDashboardTest extends TestCase
             ->get(route('admin.events-talent.index'))
             ->assertOk()
             ->assertSee('Campus-Wide Assembly');
+    }
+
+    public function test_opening_talent_registration_notifies_students_in_app_not_email(): void
+    {
+        Mail::fake();
+
+        $super = User::factory()->superAdmin()->create();
+        $student = User::factory()->create();
+        $faculty = User::factory()->faculty()->create();
+        $election = Election::factory()->create([
+            'status' => ElectionStatus::Active,
+            'created_by' => $super->id,
+        ]);
+        $event = TalentEvent::query()->create([
+            'election_id' => $election->id,
+            'title' => 'Chorus Showcase',
+            'slug' => 'chorus-showcase-'.uniqid(),
+            'event_date' => now()->addDays(8),
+            'venue' => 'Online',
+            'status' => TalentEventStatus::Scheduled,
+            'voting_method' => TalentVotingMethod::StudentOnly->value,
+            'registration_method' => TalentRegistrationMethod::Both,
+            'voting_starts_at' => now()->addDays(8),
+            'voting_ends_at' => now()->addDays(10),
+            'published_to_students' => false,
+            'created_by' => $super->id,
+        ]);
+
+        $this->actingAs($super)
+            ->from(route('admin.talent-competition.show', $event))
+            ->post(route('admin.talent-competition.open-registration', $event))
+            ->assertRedirect(route('admin.talent-competition.show', $event));
+
+        $this->actingAs($super)
+            ->from(route('admin.talent-competition.show', $event))
+            ->post(route('admin.talent-competition.open-registration', $event))
+            ->assertRedirect(route('admin.talent-competition.show', $event));
+
+        Mail::assertNothingOutgoing();
+        Mail::assertNotQueued(AnnouncementPublishedMail::class);
+
+        $this->assertTrue($event->fresh()->isRegistrationOpen());
+        $this->assertTrue(
+            Announcement::query()
+                ->where('auto_source_type', 'talent_registration_open')
+                ->where('auto_source_id', $event->id)
+                ->where('send_email', false)
+                ->exists()
+        );
+        $this->assertSame(
+            1,
+            PortalNotification::query()
+                ->where('user_id', $student->id)
+                ->where('type', 'student_talent_registration_open')
+                ->where('related_id', $event->id)
+                ->count()
+        );
+        $this->assertFalse(
+            PortalNotification::query()
+                ->where('user_id', $faculty->id)
+                ->where('type', 'student_talent_registration_open')
+                ->exists()
+        );
     }
 
     protected function makeSchoolEvent(User $creator, string $title): Event

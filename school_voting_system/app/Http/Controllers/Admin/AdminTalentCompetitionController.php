@@ -465,7 +465,18 @@ class AdminTalentCompetitionController extends Controller
             'published_at' => $talentEvent->published_at ?? now(),
         ])->save();
 
-        $this->announcements->generateForTalentRegistrationOpen($talentEvent->fresh(), $request->user());
+        $opened = $talentEvent->fresh();
+
+        $this->announcements->generateForTalentRegistrationOpen($opened, $request->user());
+        $this->notifications->talentRegistrationOpened($opened, $request->user());
+
+        $this->audit->record(
+            $request->user(),
+            "Opened registration for talent event: {$opened->title}",
+            AuditActionType::Election,
+            targetType: 'talent_event',
+            targetId: $opened->id,
+        );
 
         return back()->with('success', 'Registration opened.');
     }

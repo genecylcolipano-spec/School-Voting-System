@@ -4,6 +4,7 @@ namespace Tests\Unit\Portal;
 
 use App\Enums\ElectionStatus;
 use App\Enums\TalentEventStatus;
+use App\Enums\TalentRegistrationMethod;
 use App\Enums\TalentVotingMethod;
 use App\Jobs\SendTalentVotingClosingSoonJob;
 use App\Mail\AnnouncementPublishedMail;
@@ -222,6 +223,135 @@ class PortalNotificationDeliveryTest extends TestCase
                 ->where('user_id', $student->id)
                 ->where('type', 'student_talent_voting_paused')
                 ->exists()
+        );
+    }
+
+    public function test_talent_registration_open_notifies_students_without_email(): void
+    {
+        Mail::fake();
+
+        $admin = User::factory()->admin()->create();
+        $student = User::factory()->create();
+        $faculty = User::factory()->faculty()->create();
+        $election = Election::factory()->create(['created_by' => $admin->id]);
+
+        $event = TalentEvent::query()->create([
+            'election_id' => $election->id,
+            'title' => 'Open Mic Night',
+            'slug' => 'open-mic-'.Str::random(6),
+            'event_date' => now()->addDay(),
+            'status' => TalentEventStatus::EntriesOpen,
+            'voting_method' => TalentVotingMethod::StudentOnly->value,
+            'registration_method' => TalentRegistrationMethod::Both,
+            'registration_starts_at' => now()->subMinute(),
+            'registration_ends_at' => now()->addDays(7),
+            'voting_starts_at' => now()->addDays(8),
+            'voting_ends_at' => now()->addDays(10),
+            'published_to_students' => true,
+            'created_by' => $admin->id,
+        ]);
+
+        $sent = $this->notifications->talentRegistrationOpened($event, $admin);
+        $duplicate = $this->notifications->talentRegistrationOpened($event, $admin);
+
+        $this->assertSame(1, $sent);
+        $this->assertSame(0, $duplicate);
+        Mail::assertNothingQueued();
+        $this->assertSame(
+            1,
+            PortalNotification::query()
+                ->where('type', 'student_talent_registration_open')
+                ->where('related_id', $event->id)
+                ->count()
+        );
+        $this->assertTrue(
+            PortalNotification::query()
+                ->where('user_id', $student->id)
+                ->where('type', 'student_talent_registration_open')
+                ->exists()
+        );
+        $this->assertFalse(
+            PortalNotification::query()
+                ->where('user_id', $faculty->id)
+                ->where('type', 'student_talent_registration_open')
+                ->exists()
+        );
+
+        $notification = PortalNotification::query()
+            ->where('user_id', $student->id)
+            ->where('type', 'student_talent_registration_open')
+            ->first();
+
+        $this->assertSame(
+            route('student.talent-registration.show', $event),
+            $this->notifications->actionUrlFor($notification)
+        );
+    }
+
+    public function test_scheduled_command_notifies_when_talent_registration_window_opens(): void
+    {
+        Mail::fake();
+
+        $admin = User::factory()->admin()->create();
+        $student = User::factory()->create();
+        $election = Election::factory()->create();
+
+        $event = TalentEvent::query()->create([
+            'election_id' => $election->id,
+            'title' => 'Scheduled Registration Showcase',
+            'slug' => 'scheduled-reg-'.Str::random(6),
+            'event_date' => now()->addDay(),
+            'status' => TalentEventStatus::Scheduled,
+            'voting_method' => TalentVotingMethod::StudentOnly->value,
+            'registration_method' => TalentRegistrationMethod::StudentRegistration,
+            'registration_starts_at' => now()->subMinute(),
+            'registration_ends_at' => now()->addDays(3),
+            'voting_starts_at' => now()->addDays(4),
+            'voting_ends_at' => now()->addDays(6),
+            'published_to_students' => true,
+            'created_by' => $admin->id,
+        ]);
+
+        $future = TalentEvent::query()->create([
+            'election_id' => $election->id,
+            'title' => 'Future Registration Showcase',
+            'slug' => 'future-reg-'.Str::random(6),
+            'event_date' => now()->addDays(10),
+            'status' => TalentEventStatus::Scheduled,
+            'voting_method' => TalentVotingMethod::StudentOnly->value,
+            'registration_method' => TalentRegistrationMethod::Both,
+            'registration_starts_at' => now()->addDay(),
+            'registration_ends_at' => now()->addDays(4),
+            'voting_starts_at' => now()->addDays(5),
+            'voting_ends_at' => now()->addDays(7),
+            'published_to_students' => true,
+            'created_by' => $admin->id,
+        ]);
+
+        Artisan::call('portal:process-scheduled-elections');
+        Artisan::call('portal:process-scheduled-elections');
+
+        Mail::assertNothingQueued();
+        $this->assertTrue(
+            PortalNotification::query()
+                ->where('user_id', $student->id)
+                ->where('type', 'student_talent_registration_open')
+                ->where('related_id', $event->id)
+                ->exists()
+        );
+        $this->assertFalse(
+            PortalNotification::query()
+                ->where('type', 'student_talent_registration_open')
+                ->where('related_id', $future->id)
+                ->exists()
+        );
+        $this->assertSame(
+            1,
+            PortalNotification::query()
+                ->where('user_id', $student->id)
+                ->where('type', 'student_talent_registration_open')
+                ->where('related_id', $event->id)
+                ->count()
         );
     }
 
