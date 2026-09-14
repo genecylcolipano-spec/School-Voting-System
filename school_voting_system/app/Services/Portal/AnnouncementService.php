@@ -597,7 +597,7 @@ class AnnouncementService
             $audiences,
         )));
 
-        return $values === [] ? [AnnouncementAudience::Students->value] : $values;
+        return $values === [] ? [AnnouncementAudience::AllUsers->value] : $values;
     }
 
     /**

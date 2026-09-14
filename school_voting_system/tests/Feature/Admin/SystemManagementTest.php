@@ -179,10 +179,16 @@ class SystemManagementTest extends TestCase
 
         $super = User::factory()->superAdmin()->create();
 
-        $this->actingAs($super)
+        $html = $this->actingAs($super)
             ->get(route('admin.announcements.create'))
             ->assertOk()
-            ->assertSee('value="'.AnnouncementAudience::AllUsers->value.'"', false);
+            ->assertSee('value="'.AnnouncementAudience::AllUsers->value.'"', false)
+            ->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/name="send_email"[^>]*checked|checked[^>]*name="send_email"/',
+            $html,
+        );
     }
 
     public function test_recovery_page_is_blocked_when_disabled(): void

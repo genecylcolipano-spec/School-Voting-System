@@ -9,6 +9,7 @@ use App\Enums\AnnouncementRelatedModule;
 use App\Enums\AnnouncementStatus;
 use App\Http\Requests\Admin\AdminFormRequest;
 use App\Models\Announcement;
+use App\Support\PlatformModules;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Validation\Rule;
 
@@ -101,7 +102,10 @@ class StoreAnnouncementRequest extends AdminFormRequest
             'pin_to_homepage' => $this->boolean('pin_to_homepage'),
             'send_email' => $this->boolean('send_email'),
             'resend_notifications' => $this->boolean('resend_notifications'),
-            'target_audiences' => $this->input('target_audiences', [AnnouncementAudience::Students->value]),
+            'target_audiences' => $this->input(
+                'target_audiences',
+                PlatformModules::announcementDefaultAudiences(),
+            ),
         ]);
     }
 }

@@ -10,9 +10,11 @@ use App\Models\Announcement;
 use App\Models\AnnouncementAttachment;
 use App\Models\Election;
 use App\Models\User;
+use App\Mail\AnnouncementPublishedMail;
 use App\Services\Portal\AnnouncementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -20,6 +22,60 @@ use Tests\TestCase;
 class AnnouncementCommunicationTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_empty_audiences_include_every_active_registered_user(): void
+    {
+        $student = User::factory()->create();
+        $faculty = User::factory()->faculty()->create();
+        $admin = User::factory()->admin()->create();
+        $super = User::factory()->superAdmin()->create();
+
+        $payload = app(AnnouncementService::class)->payloadFromValidated([
+            'title' => 'School-wide Notice',
+            'target_audiences' => [],
+            'is_published' => true,
+        ]);
+
+        $this->assertSame([AnnouncementAudience::AllUsers->value], $payload['target_audiences']);
+
+        $announcement = $this->makeAnnouncement([
+            'target_audiences' => $payload['target_audiences'],
+        ]);
+
+        $ids = app(AnnouncementService::class)->recipientQuery($announcement)->pluck('id');
+
+        $this->assertTrue($ids->contains($student->id));
+        $this->assertTrue($ids->contains($faculty->id));
+        $this->assertTrue($ids->contains($admin->id));
+        $this->assertTrue($ids->contains($super->id));
+    }
+
+    public function test_published_announcement_emails_registered_users_with_an_address(): void
+    {
+        Mail::fake();
+
+        $super = User::factory()->superAdmin()->create(['email' => 'chief@school.test']);
+        $admin = User::factory()->admin()->create(['email' => 'ops@school.test']);
+        $faculty = User::factory()->faculty()->create(['email' => 'prof@school.test']);
+        $student = User::factory()->create(['email' => 'student@school.test']);
+        User::factory()->create(['email' => '']);
+
+        $this->actingAs($super)
+            ->post(route('admin.announcements.store'), [
+                'title' => 'Assembly Tomorrow',
+                'summary' => 'Please attend',
+                'body' => 'Gymnasium at 9 AM',
+                'is_published' => '1',
+                'notify_in_app' => '1',
+                'send_email' => '1',
+                'target_audiences' => [AnnouncementAudience::AllUsers->value],
+            ])
+            ->assertRedirect();
+
+        Mail::assertQueued(AnnouncementPublishedMail::class, 4);
+        Mail::assertQueued(AnnouncementPublishedMail::class, fn (AnnouncementPublishedMail $mail) => $mail->hasTo('student@school.test'));
+        Mail::assertQueued(AnnouncementPublishedMail::class, fn (AnnouncementPublishedMail $mail) => $mail->hasTo('chief@school.test'));
+    }
 
     public function test_students_plus_grade_only_notifies_that_grade(): void
     {

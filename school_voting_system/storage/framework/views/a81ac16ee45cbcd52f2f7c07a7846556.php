@@ -1,7 +1,7 @@
 <?php
     $announcement = $announcement ?? null;
     $isEdit = $announcement !== null;
-    $defaultAudiences = $defaultAudiences ?? [\App\Enums\AnnouncementAudience::Students->value];
+    $defaultAudiences = $defaultAudiences ?? [\App\Enums\AnnouncementAudience::AllUsers->value];
     $defaultExpiresAt = $defaultExpiresAt ?? null;
     $selectedAudiences = old('target_audiences', $isEdit ? ($announcement->target_audiences ?? $defaultAudiences) : $defaultAudiences);
     $relatedModule = old('related_module', $isEdit ? optional($announcement->related_module)->value : \App\Enums\AnnouncementRelatedModule::None->value);
@@ -346,10 +346,11 @@ unset($__errorArgs, $__bag); ?>
                         Pin to homepage
                     </label>
                     <label class="flex items-center gap-2 text-sm text-slate-300">
-                        <input type="checkbox" name="send_email" value="1" <?php if(old('send_email', optional($announcement)->send_email)): echo 'checked'; endif; ?> class="rounded border-slate-700 bg-slate-950/50 text-violet-500" />
+                        <input type="checkbox" name="send_email" value="1" <?php if(old('send_email', $isEdit ? (bool) $announcement->send_email : true)): echo 'checked'; endif; ?> class="rounded border-slate-700 bg-slate-950/50 text-violet-500" />
                         Send email notification
                     </label>
                 </div>
+                <p class="mt-3 text-xs text-slate-500">Email goes to active portal accounts in the selected audience that already have an email on file. Roster-only rows without a login are not emailed.</p>
                 <?php if($isEdit): ?>
                     <label class="mt-4 flex items-center gap-2 text-sm text-slate-300">
                         <input type="checkbox" name="resend_notifications" value="1" class="rounded border-slate-700 bg-slate-950/50 text-violet-500" />
