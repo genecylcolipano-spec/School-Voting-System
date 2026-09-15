@@ -9,7 +9,6 @@ use App\Models\TalentEventEntry;
 use App\Models\TalentEventJudge;
 use App\Models\TalentJudgeScoreSheet;
 use App\Models\User;
-use App\Enums\TalentJudgeScoreStatus;
 use App\Services\Talent\TalentJudgingService;
 use App\Support\AdminPortal;
 use Illuminate\Http\RedirectResponse;
@@ -25,6 +24,7 @@ class FacultyJudgingController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user()->loadCount('passkeys');
+        $this->judging->assertHasActiveAssignment($user);
         $phase = $request->string('filter')->toString() === 'past' ? 'past' : 'current';
 
         $competitions = $this->judging->assignedCompetitionsQuery($user, $phase)
@@ -61,6 +61,7 @@ class FacultyJudgingController extends Controller
     public function performances(Request $request): View
     {
         $user = $request->user()->loadCount('passkeys');
+        $this->judging->assertHasActiveAssignment($user);
 
         return view('faculty.judging.performances', [
             'user' => $user,
@@ -72,6 +73,7 @@ class FacultyJudgingController extends Controller
     public function submitted(Request $request): View
     {
         $user = $request->user()->loadCount('passkeys');
+        $this->judging->assertHasActiveAssignment($user);
 
         $summaries = $this->judging->submittedSummariesFor($user);
 

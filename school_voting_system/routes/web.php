@@ -1,5 +1,35 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminActionController;
+use App\Http\Controllers\Admin\AdminAnalyticsController;
+use App\Http\Controllers\Admin\AdminAnnouncementController;
+use App\Http\Controllers\Admin\AdminAuditLogController;
+use App\Http\Controllers\Admin\AdminCampaignController;
+use App\Http\Controllers\Admin\AdminCandidateController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminElectionController;
+use App\Http\Controllers\Admin\AdminEventController;
+use App\Http\Controllers\Admin\AdminEventsTalentController;
+use App\Http\Controllers\Admin\AdminFundraiserController;
+use App\Http\Controllers\Admin\AdminLiveMonitoringController;
+use App\Http\Controllers\Admin\AdminNotificationController;
+use App\Http\Controllers\Admin\AdminPasskeyRecoveryController;
+use App\Http\Controllers\Admin\AdminReportController;
+use App\Http\Controllers\Admin\AdminResultsController;
+use App\Http\Controllers\Admin\AdminStudentController;
+use App\Http\Controllers\Admin\AdminTalentCompetitionController;
+use App\Http\Controllers\Admin\AdminTalentJudgingController;
+use App\Http\Controllers\Admin\AdminTalentParticipantController;
+use App\Http\Controllers\Admin\AllowedAdministratorController;
+use App\Http\Controllers\Admin\AllowedFacultyController;
+use App\Http\Controllers\Admin\AllowedStudentController;
+use App\Http\Controllers\Admin\SuperAdminActionController;
+use App\Http\Controllers\Admin\SuperAdminDashboardController;
+use App\Http\Controllers\Admin\SuperAdminStaffUserController;
+use App\Http\Controllers\Admin\System\SystemAuditLogController;
+use App\Http\Controllers\Admin\System\SystemBackupController;
+use App\Http\Controllers\Admin\System\SystemMaintenanceController;
+use App\Http\Controllers\Admin\System\SystemSettingsController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\DashboardController;
 use App\Http\Controllers\Auth\LoginController;
@@ -8,45 +38,16 @@ use App\Http\Controllers\Auth\PasskeyDeviceController;
 use App\Http\Controllers\Auth\PasskeyEnrollmentContinueController;
 use App\Http\Controllers\Auth\PasskeyRecoveryController;
 use App\Http\Controllers\Auth\PortalRegistrationController;
-use App\Http\Controllers\Admin\AdminActionController;
-use App\Http\Controllers\Admin\AdminAnnouncementController;
-use App\Http\Controllers\Admin\AdminCampaignController;
-use App\Http\Controllers\Admin\AdminCandidateController;
-use App\Http\Controllers\Admin\AdminDashboardController;
-use App\Http\Controllers\Admin\AdminPasskeyRecoveryController;
-use App\Http\Controllers\Admin\AdminElectionController;
-use App\Http\Controllers\Admin\AdminEventController;
-use App\Http\Controllers\Admin\AdminEventsTalentController;
-use App\Http\Controllers\Admin\AdminFundraiserController;
-use App\Http\Controllers\Admin\System\SystemAuditLogController;
-use App\Http\Controllers\Admin\System\SystemBackupController;
-use App\Http\Controllers\Admin\System\SystemMaintenanceController;
-use App\Http\Controllers\Admin\System\SystemSettingsController;
-use App\Http\Controllers\Admin\SuperAdminActionController;
-use App\Http\Controllers\Admin\SuperAdminDashboardController;
-use App\Http\Controllers\Admin\SuperAdminStaffUserController;
-use App\Http\Controllers\Admin\AdminAnalyticsController;
-use App\Http\Controllers\Admin\AdminAuditLogController;
-use App\Http\Controllers\Admin\AdminNotificationController;
-use App\Http\Controllers\Admin\AdminReportController;
-use App\Http\Controllers\Admin\AdminResultsController;
-use App\Http\Controllers\Admin\AdminStudentController;
-use App\Http\Controllers\Admin\AllowedAdministratorController;
-use App\Http\Controllers\Admin\AllowedFacultyController;
-use App\Http\Controllers\Admin\AllowedStudentController;
-use App\Http\Controllers\Admin\AdminLiveMonitoringController;
-use App\Http\Controllers\Admin\AdminTalentCompetitionController;
-use App\Http\Controllers\Admin\AdminTalentJudgingController;
-use App\Http\Controllers\Admin\AdminTalentParticipantController;
 use App\Http\Controllers\Faculty\FacultyDashboardController;
 use App\Http\Controllers\Faculty\FacultyJudgingController;
-use App\Http\Controllers\Faculty\FacultyResultsController;
 use App\Http\Controllers\Faculty\FacultyPortalController;
+use App\Http\Controllers\Faculty\FacultyResultsController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Student\StudentPortalController;
 use App\Http\Controllers\Student\StudentTalentRegistrationController;
 use App\Http\Controllers\TalentVideoStreamController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Webhooks\PayMongoWebhookController;
+use App\Models\AllowedStudent;
 use App\Services\Auth\RoleRedirectService;
 use Illuminate\Support\Facades\Route;
 
@@ -153,6 +154,9 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
 
         Route::get('/events', [FacultyPortalController::class, 'events'])->name('events.index');
         Route::get('/events/{event:slug}', [FacultyPortalController::class, 'eventShow'])->name('events.show');
+
+        Route::get('/talent', [FacultyPortalController::class, 'talentCompetitions'])->name('talent.index');
+        Route::get('/talent/{talentEvent:slug}', [FacultyPortalController::class, 'talentCompetitionShow'])->name('talent.show');
 
         Route::get('/announcements', [FacultyPortalController::class, 'announcements'])->name('announcements.index');
         Route::get('/announcements/{announcement:slug}', [FacultyPortalController::class, 'announcementShow'])->name('announcements.show');
@@ -509,7 +513,7 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
         Route::redirect('/allowed-students/import', '/super-admin/roster/students/import');
         Route::redirect('/allowed-students/import/template', '/super-admin/roster/students/import/template');
         Route::get('/allowed-students/export', fn () => redirect()->route('super-admin.roster.students.export'));
-        Route::get('/allowed-students/{allowedStudent}/edit', function (\App\Models\AllowedStudent $allowedStudent) {
+        Route::get('/allowed-students/{allowedStudent}/edit', function (AllowedStudent $allowedStudent) {
             return redirect()->route('super-admin.roster.students.edit', $allowedStudent);
         });
 
@@ -562,4 +566,3 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
     Route::post('/profile/logout-other-sessions', [ProfileController::class, 'logoutOtherSessions'])->name('profile.logout-other-sessions');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-

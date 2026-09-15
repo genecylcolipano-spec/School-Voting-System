@@ -348,6 +348,23 @@ class FacultyJudgingTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_unassigned_faculty_cannot_open_judging_workspace(): void
+    {
+        $faculty = User::factory()->faculty()->create();
+
+        $this->actingAs($faculty)
+            ->get(route('faculty.judging.index'))
+            ->assertForbidden();
+
+        $this->actingAs($faculty)
+            ->get(route('faculty.judging.performances'))
+            ->assertForbidden();
+
+        $this->actingAs($faculty)
+            ->get(route('faculty.judging.submitted'))
+            ->assertForbidden();
+    }
+
     public function test_faculty_can_view_assigned_performance_profile_without_voting(): void
     {
         $faculty = $this->withPasskey(User::factory()->faculty()->create());

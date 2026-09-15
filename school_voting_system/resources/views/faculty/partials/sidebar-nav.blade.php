@@ -10,6 +10,7 @@
         || (request()->routeIs('faculty.judging.score', 'faculty.judging.profile') && $fromSubmitted);
     $onElections = request()->routeIs('faculty.elections.*');
     $onEvents = request()->routeIs('faculty.events.*');
+    $onTalent = request()->routeIs('faculty.talent.*');
     $onAnnouncements = request()->routeIs('faculty.announcements.*');
     $onResults = request()->routeIs('faculty.results.*');
     $onFundraising = request()->routeIs('faculty.fundraising.*');
@@ -17,6 +18,9 @@
     $showElections = \App\Support\PlatformModules::elections();
     $showTalent = \App\Support\PlatformModules::talent();
     $showFundraising = \App\Support\PlatformModules::fundraising();
+    $showJudging = $showTalent
+        && auth()->user()?->isFaculty()
+        && app(\App\Services\Talent\TalentJudgingService::class)->hasActiveAssignment(auth()->user());
 @endphp
 
 <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
@@ -32,7 +36,7 @@
         </x-slot:icon>
     </x-portal-sidebar-link>
 
-    @if ($showTalent)
+    @if ($showJudging)
     <div class="px-3 py-2">
         <p x-show="!collapsed" class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">My Judging</p>
     </div>
@@ -105,6 +109,20 @@
             </svg>
         </x-slot:icon>
     </x-portal-sidebar-link>
+
+    @if ($showTalent)
+    <x-portal-sidebar-link
+        :href="route('faculty.talent.index')"
+        label="Talent Competitions"
+        :active="$onTalent"
+    >
+        <x-slot:icon>
+            <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+            </svg>
+        </x-slot:icon>
+    </x-portal-sidebar-link>
+    @endif
 
     <x-portal-sidebar-link
         :href="route('faculty.announcements.index')"

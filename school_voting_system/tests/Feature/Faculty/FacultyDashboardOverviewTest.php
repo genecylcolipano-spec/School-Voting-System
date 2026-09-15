@@ -81,9 +81,13 @@ class FacultyDashboardOverviewTest extends TestCase
             ->assertViewHas('openElectionsCount', 0)
             ->assertViewHas('upcomingEventsCount', 0)
             ->assertViewHas('assignedCompetitionsCount', 0)
+            ->assertViewHas('hasJudgingAssignment', false)
             ->assertSee(route('faculty.elections.index', ['filter' => 'open']), false)
             ->assertSee(route('faculty.events.index', ['filter' => 'upcoming']), false)
-            ->assertSee(route('faculty.judging.index', ['filter' => 'current']), false)
+            ->assertSee(route('faculty.talent.index'), false)
+            ->assertDontSee(route('faculty.judging.index', ['filter' => 'current']), false)
+            ->assertDontSee('My Judging')
+            ->assertDontSee('Assigned Competitions')
             ->assertSee(route('faculty.fundraising.index'), false)
             ->assertViewHas('activeFundraisersCount', 0);
     }
@@ -112,9 +116,12 @@ class FacultyDashboardOverviewTest extends TestCase
         $dashboard->assertViewHas('openElectionsCount', 1);
         $dashboard->assertViewHas('upcomingEventsCount', 1);
         $dashboard->assertViewHas('assignedCompetitionsCount', 0);
+        $dashboard->assertViewHas('hasJudgingAssignment', false);
         $dashboard->assertSee(route('faculty.elections.index', ['filter' => 'open']), false);
         $dashboard->assertSee(route('faculty.events.index', ['filter' => 'upcoming']), false);
-        $dashboard->assertSee(route('faculty.judging.index', ['filter' => 'current']), false);
+        $dashboard->assertSee(route('faculty.talent.index'), false);
+        $dashboard->assertDontSee(route('faculty.judging.index', ['filter' => 'current']), false);
+        $dashboard->assertDontSee('My Judging');
         $dashboard->assertSee(route('faculty.fundraising.index'), false);
         $dashboard->assertViewHas('activeFundraisersCount', 0);
 
@@ -149,6 +156,71 @@ class FacultyDashboardOverviewTest extends TestCase
             ->assertOk()
             ->assertSee($upcoming->title)
             ->assertSee($past->title);
+    }
+
+    public function test_unassigned_faculty_dashboard_hides_judging_and_shows_talent_browse(): void
+    {
+        $faculty = User::factory()->faculty()->create();
+        $published = $this->makeCompetition([
+            'title' => 'Campus Talent Night',
+            'slug' => 'campus-talent-night-browse',
+        ]);
+        $this->makeCompetition([
+            'title' => 'Hidden Draft Showcase',
+            'slug' => 'hidden-draft-showcase',
+            'published_to_students' => false,
+        ]);
+
+        $this->actingAs($faculty)
+            ->get(route('faculty.dashboard'))
+            ->assertOk()
+            ->assertSee('Talent Competitions')
+            ->assertSee('View Talent Competitions')
+            ->assertDontSee('View Assigned Competitions')
+            ->assertDontSee('My Judging')
+            ->assertDontSee('Judge Performances')
+            ->assertDontSee('Submitted Scores')
+            ->assertViewHas('publishedTalentCount', 1);
+
+        $this->actingAs($faculty)
+            ->get(route('faculty.talent.index'))
+            ->assertOk()
+            ->assertSee('Campus Talent Night')
+            ->assertDontSee('Hidden Draft Showcase')
+            ->assertSee('view-only')
+            ->assertDontSee('Vote Now')
+            ->assertDontSee('Open Judging');
+
+        $this->actingAs($faculty)
+            ->get(route('faculty.talent.show', $published))
+            ->assertOk()
+            ->assertSee('Campus Talent Night')
+            ->assertSee('View only')
+            ->assertDontSee('Judge this competition')
+            ->assertDontSee('Vote Now');
+    }
+
+    public function test_past_assignment_still_shows_my_judging_menu(): void
+    {
+        $faculty = $this->withPasskey(User::factory()->faculty()->create());
+        $admin = User::factory()->superAdmin()->create();
+        $past = $this->makeCompetition([
+            'title' => 'Finished Showcase',
+            'slug' => 'finished-showcase-menu',
+            'status' => TalentEventStatus::VotingOpen,
+            'voting_starts_at' => now()->subDays(2),
+            'voting_ends_at' => now()->subHour(),
+        ]);
+        app(TalentJudgingService::class)->assignJudge($past, $faculty, $admin);
+
+        $this->actingAs($faculty)
+            ->get(route('faculty.dashboard'))
+            ->assertOk()
+            ->assertSee('My Judging')
+            ->assertSee('Assigned Competitions')
+            ->assertSee('Judge Performances')
+            ->assertSee('Submitted Scores')
+            ->assertSee('Talent Competitions');
     }
 
     /**

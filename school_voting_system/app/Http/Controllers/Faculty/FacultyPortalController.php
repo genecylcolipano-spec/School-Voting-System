@@ -15,8 +15,12 @@ use App\Models\Donation;
 use App\Models\Election;
 use App\Models\Event;
 use App\Models\Fundraiser;
+use App\Models\TalentEvent;
+use App\Models\TalentEventEntry;
+use App\Models\User;
 use App\Services\Payments\DonationCheckoutService;
 use App\Services\Portal\AnnouncementService;
+use App\Services\Talent\TalentJudgingService;
 use App\Support\AdminPortal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +36,7 @@ class FacultyPortalController extends Controller
     public function __construct(
         protected AnnouncementService $announcements,
         protected DonationCheckoutService $donationCheckout,
+        protected TalentJudgingService $judging,
     ) {}
 
     public function elections(Request $request): View
@@ -103,6 +108,39 @@ class FacultyPortalController extends Controller
         return view('faculty.events.show', [
             ...$this->portalData($request),
             'event' => $event,
+        ]);
+    }
+
+    public function talentCompetitions(Request $request): View
+    {
+        $competitions = TalentEvent::query()
+            ->publishedToStudents()
+            ->withCount([
+                'entries as approved_entries_count' => fn ($query) => $query->where('status', TalentEventEntry::STATUS_APPROVED),
+            ])
+            ->orderByDesc('published_at')
+            ->orderByDesc('event_date')
+            ->paginate(12);
+
+        return view('faculty.talent.index', [
+            ...$this->portalData($request),
+            'competitions' => $competitions,
+        ]);
+    }
+
+    public function talentCompetitionShow(Request $request, TalentEvent $talentEvent): View
+    {
+        abort_unless($talentEvent->isPublishedToStudents(), 404);
+
+        $talentEvent->loadCount([
+            'entries as approved_entries_count' => fn ($query) => $query->where('status', TalentEventEntry::STATUS_APPROVED),
+        ]);
+
+        return view('faculty.talent.show', [
+            ...$this->portalData($request),
+            'competition' => $talentEvent,
+            'isAssignedJudge' => (bool) $this->judging->assignmentFor($request->user(), $talentEvent),
+            'hasOfficialResults' => $talentEvent->hasPublishedResults(),
         ]);
     }
 
@@ -270,7 +308,7 @@ class FacultyPortalController extends Controller
     }
 
     /**
-     * @return array{user: \App\Models\User, notificationsCount: int}
+     * @return array{user: User, notificationsCount: int}
      */
     protected function portalData(Request $request): array
     {

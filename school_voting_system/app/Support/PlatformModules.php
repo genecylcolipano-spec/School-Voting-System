@@ -134,6 +134,7 @@ class PlatformModules
                 'student.talent-registration.',
                 'student.results.talent.',
                 'faculty.judging.',
+                'faculty.talent.',
                 'faculty.results.talent.',
                 'talent.video.stream',
             ],

@@ -14,7 +14,6 @@ use App\Models\TalentEventEntry;
 use App\Models\TalentEventJudge;
 use App\Models\TalentJudgeCriterionScore;
 use App\Models\TalentJudgeScoreSheet;
-use App\Models\TalentJudgingCriterion;
 use App\Models\User;
 use App\Services\Portal\PortalNotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -268,6 +267,24 @@ class TalentJudgingService
             ->when($phase === 'past', fn (Builder $query) => $query->whereJudgingPast())
             ->orderByDesc('voting_starts_at')
             ->orderByDesc('event_date');
+    }
+
+    public function hasActiveAssignment(User $faculty): bool
+    {
+        return TalentEventJudge::query()
+            ->active()
+            ->where('user_id', $faculty->id)
+            ->whereHas('talentEvent')
+            ->exists();
+    }
+
+    public function assertHasActiveAssignment(User $faculty): void
+    {
+        abort_unless(
+            $this->hasActiveAssignment($faculty),
+            403,
+            'You are not assigned to judge a competition.',
+        );
     }
 
     public function assignmentFor(User $faculty, TalentEvent $event): ?TalentEventJudge

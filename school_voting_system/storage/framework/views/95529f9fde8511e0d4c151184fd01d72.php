@@ -10,6 +10,7 @@
         || (request()->routeIs('faculty.judging.score', 'faculty.judging.profile') && $fromSubmitted);
     $onElections = request()->routeIs('faculty.elections.*');
     $onEvents = request()->routeIs('faculty.events.*');
+    $onTalent = request()->routeIs('faculty.talent.*');
     $onAnnouncements = request()->routeIs('faculty.announcements.*');
     $onResults = request()->routeIs('faculty.results.*');
     $onFundraising = request()->routeIs('faculty.fundraising.*');
@@ -17,6 +18,9 @@
     $showElections = \App\Support\PlatformModules::elections();
     $showTalent = \App\Support\PlatformModules::talent();
     $showFundraising = \App\Support\PlatformModules::fundraising();
+    $showJudging = $showTalent
+        && auth()->user()?->isFaculty()
+        && app(\App\Services\Talent\TalentJudgingService::class)->hasActiveAssignment(auth()->user());
 ?>
 
 <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
@@ -46,7 +50,7 @@
 <?php unset($__componentOriginal866f5e2d42640ffa335179aba2fdf6c7); ?>
 <?php endif; ?>
 
-    <?php if($showTalent): ?>
+    <?php if($showJudging): ?>
     <div class="px-3 py-2">
         <p x-show="!collapsed" class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">My Judging</p>
     </div>
@@ -189,6 +193,34 @@
 <?php $component = $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7; ?>
 <?php unset($__componentOriginal866f5e2d42640ffa335179aba2fdf6c7); ?>
 <?php endif; ?>
+
+    <?php if($showTalent): ?>
+    <?php if (isset($component)) { $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.portal-sidebar-link','data' => ['href' => route('faculty.talent.index'),'label' => 'Talent Competitions','active' => $onTalent]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('portal-sidebar-link'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['href' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('faculty.talent.index')),'label' => 'Talent Competitions','active' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($onTalent)]); ?>
+         <?php $__env->slot('icon', null, []); ?> 
+            <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+            </svg>
+         <?php $__env->endSlot(); ?>
+     <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7)): ?>
+<?php $attributes = $__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7; ?>
+<?php unset($__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal866f5e2d42640ffa335179aba2fdf6c7)): ?>
+<?php $component = $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7; ?>
+<?php unset($__componentOriginal866f5e2d42640ffa335179aba2fdf6c7); ?>
+<?php endif; ?>
+    <?php endif; ?>
 
     <?php if (isset($component)) { $__componentOriginal866f5e2d42640ffa335179aba2fdf6c7 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal866f5e2d42640ffa335179aba2fdf6c7 = $attributes; } ?>

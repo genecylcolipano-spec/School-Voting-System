@@ -4,10 +4,15 @@
             <span class="inline-block rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-teal-200">Faculty Portal</span>
             <h2 class="mt-4 text-2xl font-bold text-white sm:text-3xl">{{ $user->name }}</h2>
             <p class="mt-3 max-w-2xl text-slate-300">
-                Review assigned competitions, evaluate participant performances, submit scores, and stay informed with school announcements and school events{{ $showFundraising ? ', and support fundraising campaigns' : '' }}.
+                @if ($hasJudgingAssignment)
+                    Review assigned competitions, evaluate participant performances, submit scores, and stay informed with school announcements and school events{{ $showFundraising ? ', and support fundraising campaigns' : '' }}.
+                @else
+                    Stay informed with school announcements, elections, school events, and published talent competitions{{ $showFundraising ? ', and support fundraising campaigns' : '' }}.
+                @endif
             </p>
 
             <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                @if ($hasJudgingAssignment)
                 <a
                     href="{{ route('faculty.judging.index', ['filter' => 'current']) }}"
                     class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 sm:w-auto"
@@ -18,6 +23,18 @@
                     </svg>
                     View Assigned Competitions
                 </a>
+                @elseif ($showTalent)
+                <a
+                    href="{{ route('faculty.talent.index') }}"
+                    class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 sm:w-auto"
+                    aria-label="View talent competitions"
+                >
+                    <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                    </svg>
+                    View Talent Competitions
+                </a>
+                @endif
 
                 <a
                     href="{{ route('faculty.events.index') }}"
@@ -45,7 +62,7 @@
             </div>
         </section>
 
-        <div class="grid gap-4 sm:grid-cols-2 {{ $showFundraising ? 'xl:grid-cols-4' : 'xl:grid-cols-3' }}">
+        <div class="grid gap-4 sm:grid-cols-2 {{ ($showFundraising && ($hasJudgingAssignment || $showTalent)) ? 'xl:grid-cols-4' : 'xl:grid-cols-3' }}">
             <a href="{{ route('faculty.elections.index', ['filter' => 'open']) }}" class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 transition hover:border-teal-400/40 hover:bg-slate-900">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Open elections</p>
                 <p class="mt-2 text-3xl font-bold text-white">{{ $openElectionsCount }}</p>
@@ -56,16 +73,25 @@
                 <p class="mt-2 text-3xl font-bold text-white">{{ $upcomingEventsCount }}</p>
                 <p class="mt-1 text-sm text-teal-300">Scheduled upcoming →</p>
             </a>
+            @if ($hasJudgingAssignment)
             <a href="{{ route('faculty.judging.index', ['filter' => 'current']) }}" class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 transition hover:border-teal-400/40 hover:bg-slate-900">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Assigned competitions</p>
                 <p class="mt-2 text-3xl font-bold text-white">{{ $assignedCompetitionsCount }}</p>
                 <p class="mt-1 text-sm text-teal-300">Open judging →</p>
             </a>
+            @elseif ($showTalent)
+            <a href="{{ route('faculty.talent.index') }}" class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 transition hover:border-teal-400/40 hover:bg-slate-900">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Talent competitions</p>
+                <p class="mt-2 text-3xl font-bold text-white">{{ $publishedTalentCount }}</p>
+                <p class="mt-1 text-sm text-teal-300">View published →</p>
+            </a>
+            @endif
             @includeWhen($showFundraising, 'faculty.partials.fundraising-overview-card', [
                 'activeFundraisersCount' => $activeFundraisersCount,
             ])
         </div>
 
+        @if ($hasJudgingAssignment)
         <section class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 sm:p-6">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -124,6 +150,7 @@
                 @endforelse
             </div>
         </section>
+        @endif
 
         <section class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 sm:p-6">
             <div class="flex flex-wrap items-center justify-between gap-3">
