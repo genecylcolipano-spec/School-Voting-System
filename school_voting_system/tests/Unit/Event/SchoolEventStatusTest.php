@@ -24,6 +24,33 @@ class SchoolEventStatusTest extends TestCase
         $this->assertTrue($event->isVisibleToCampus());
     }
 
+    public function test_started_event_today_displays_as_ongoing(): void
+    {
+        $this->travelTo(now()->setTime(10, 0));
+
+        $event = $this->makeEvent([
+            'event_date' => now()->subHour(),
+            'status' => EventStatus::Scheduled,
+        ]);
+
+        $this->assertSame(EventStatus::Ongoing, $event->displayStatus());
+        $this->assertSame('Ongoing', $event->displayStatusLabel());
+        $this->assertSame('ongoing', $event->campusStatusKey());
+    }
+
+    public function test_later_today_event_stays_scheduled(): void
+    {
+        $this->travelTo(now()->setTime(10, 0));
+
+        $event = $this->makeEvent([
+            'event_date' => now()->setTime(18, 30),
+            'status' => EventStatus::Scheduled,
+        ]);
+
+        $this->assertSame(EventStatus::Scheduled, $event->displayStatus());
+        $this->assertSame('upcoming', $event->campusStatusKey());
+    }
+
     public function test_cancelled_event_stays_cancelled_and_hidden_from_campus(): void
     {
         $event = $this->makeEvent([
@@ -36,8 +63,23 @@ class SchoolEventStatusTest extends TestCase
         $this->assertTrue(Event::query()->visibleToCampus()->whereKey($event)->doesntExist());
     }
 
-    public function test_mark_overdue_persists_completed_status(): void
+    public function test_mark_overdue_persists_completed_status_for_previous_days(): void
     {
+        $event = $this->makeEvent([
+            'event_date' => now()->subDay(),
+            'status' => EventStatus::Scheduled,
+        ]);
+
+        $updated = Event::markOverdueAsCompleted();
+
+        $this->assertSame(1, $updated);
+        $this->assertSame(EventStatus::Completed, $event->fresh()->status);
+    }
+
+    public function test_mark_overdue_persists_ongoing_status_after_start_today(): void
+    {
+        $this->travelTo(now()->setTime(10, 0));
+
         $event = $this->makeEvent([
             'event_date' => now()->subHour(),
             'status' => EventStatus::Scheduled,
@@ -46,7 +88,7 @@ class SchoolEventStatusTest extends TestCase
         $updated = Event::markOverdueAsCompleted();
 
         $this->assertSame(1, $updated);
-        $this->assertSame(EventStatus::Completed, $event->fresh()->status);
+        $this->assertSame(EventStatus::Ongoing, $event->fresh()->status);
     }
 
     /**

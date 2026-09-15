@@ -13,6 +13,7 @@ class Event extends Model
 {
     use HasEventImage;
     use SoftDeletes;
+
     protected $fillable = [
         'title',
         'slug',
@@ -49,8 +50,19 @@ class Event extends Model
             return EventStatus::Completed;
         }
 
-        if ($this->event_date?->lt(now())) {
+        $now = now();
+        $startOfToday = $now->copy()->startOfDay();
+
+        if ($this->event_date?->lt($startOfToday)) {
             return EventStatus::Completed;
+        }
+
+        if ($this->status === EventStatus::Ongoing) {
+            return EventStatus::Ongoing;
+        }
+
+        if ($this->event_date?->lte($now)) {
+            return EventStatus::Ongoing;
         }
 
         return $this->status ?? EventStatus::Scheduled;
@@ -68,15 +80,12 @@ class Event extends Model
 
     public function campusStatusKey(): string
     {
-        if ($this->displayStatus() === EventStatus::Completed) {
-            return 'completed';
-        }
-
-        if ($this->event_date?->isToday()) {
-            return 'ongoing';
-        }
-
-        return 'upcoming';
+        return match ($this->displayStatus()) {
+            EventStatus::Cancelled => 'cancelled',
+            EventStatus::Completed => 'completed',
+            EventStatus::Ongoing => 'ongoing',
+            default => 'upcoming',
+        };
     }
 
     public function campusStatusLabel(): string
@@ -84,6 +93,7 @@ class Event extends Model
         return match ($this->campusStatusKey()) {
             'completed' => 'Completed',
             'ongoing' => 'Ongoing',
+            'cancelled' => 'Cancelled',
             default => 'Upcoming',
         };
     }
@@ -101,20 +111,38 @@ class Event extends Model
     public function scopeCampusListing(Builder $query): Builder
     {
         $now = now();
+        $startOfToday = $now->copy()->startOfDay();
 
         return $query
             ->visibleToCampus()
-            ->orderByRaw('case when event_date >= ? then 0 else 1 end', [$now])
-            ->orderByRaw('case when event_date >= ? then event_date end asc', [$now])
-            ->orderByRaw('case when event_date < ? then event_date end desc', [$now]);
+            ->orderByRaw(
+                'case when event_date >= ? and event_date <= ? then 0 when event_date > ? then 1 else 2 end',
+                [$startOfToday, $now, $now]
+            )
+            ->orderByRaw('case when event_date > ? then event_date end asc', [$now])
+            ->orderByRaw('case when event_date <= ? then event_date end desc', [$now]);
     }
 
+    /**
+     * Persist schedule-driven status: past days become Completed, started-today become Ongoing.
+     */
     public static function markOverdueAsCompleted(): int
     {
-        return static::query()
-            ->where('status', EventStatus::Scheduled)
-            ->where('event_date', '<', now())
+        $now = now();
+        $startOfToday = $now->copy()->startOfDay();
+
+        $completed = static::query()
+            ->whereIn('status', [EventStatus::Scheduled, EventStatus::Ongoing])
+            ->where('event_date', '<', $startOfToday)
             ->update(['status' => EventStatus::Completed]);
+
+        $ongoing = static::query()
+            ->where('status', EventStatus::Scheduled)
+            ->where('event_date', '<=', $now)
+            ->where('event_date', '>=', $startOfToday)
+            ->update(['status' => EventStatus::Ongoing]);
+
+        return $completed + $ongoing;
     }
 
     public function scopeUpcoming(Builder $query): Builder

@@ -248,7 +248,7 @@ class StudentUpcomingActivitiesService
             ->where('status', '!=', EventStatus::Cancelled)
             ->where(function ($query) {
                 $query->where(function ($upcoming) {
-                    $upcoming->where('status', EventStatus::Scheduled)
+                    $upcoming->whereIn('status', [EventStatus::Scheduled, EventStatus::Ongoing])
                         ->whereDate('event_date', '>=', now()->toDateString());
                 })->orWhere(function ($completed) {
                     $completed->where('status', EventStatus::Completed)

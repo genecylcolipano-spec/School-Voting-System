@@ -60,7 +60,7 @@ unset($__defined_vars, $__key, $__value); ?>
                 => 'border-slate-500/30 bg-slate-600/40 text-slate-300',
             in_array($key, ['archived', 'inactive', 'completed'], true)
                 => 'border-slate-500/25 bg-slate-600/40 text-slate-400',
-            in_array($key, ['rejected', 'failed', 'annulled'], true)
+            in_array($key, ['rejected', 'failed', 'annulled', 'cancelled'], true)
                 => 'border-rose-500/30 bg-rose-500/15 text-rose-300',
             in_array($key, ['results_published', 'published'], true)
                 => 'border-violet-500/30 bg-violet-500/15 text-violet-300',

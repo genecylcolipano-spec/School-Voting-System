@@ -79,9 +79,13 @@ class AdminEventController extends Controller
 
         $this->logAdminAction('Created school event: '.$validated['title'], AuditActionType::Election, 'event');
 
+        Event::markOverdueAsCompleted();
+        $event->refresh();
+
+        $this->notifications->schoolEventCreated($event, $request->user());
+
         if ($event->status === EventStatus::Scheduled) {
             $this->announcements->generateForSchoolEvent($event, $request->user());
-            $this->notifications->schoolEventPublished($event->title, $request->user(), $event->id);
         }
 
         return redirect()->route('admin.events.index')->with('success', 'Event created.');
@@ -128,6 +132,9 @@ class AdminEventController extends Controller
         ]);
 
         $this->logAdminAction('Updated school event: '.$event->title, AuditActionType::Election, 'event', $event->id);
+
+        Event::markOverdueAsCompleted();
+        $event->refresh();
 
         $becameScheduled = $event->status === EventStatus::Scheduled
             && $previousStatus !== EventStatus::Scheduled;

@@ -188,11 +188,36 @@ class StudentUpcomingActivitiesServiceTest extends TestCase
         $row = $this->service->forDashboard()->firstWhere('title', 'Tonight Assembly');
 
         $this->assertNotNull($row);
-        $this->assertSame('ongoing', $row['status_key']);
-        $this->assertSame('Ongoing', $row['status_label']);
+        $this->assertSame('upcoming', $row['status_key']);
+        $this->assertSame('Upcoming', $row['status_label']);
         $this->assertSame('View details', $row['action_label']);
         $this->assertSame($startsAt->format('M d, Y · g:i A'), $row['schedule_label']);
         $this->assertStringContainsString(route('student.events.show', 'tonight-assembly'), $row['action_url']);
+    }
+
+    public function test_started_school_event_today_shows_as_ongoing(): void
+    {
+        $this->travelTo(now()->setTime(10, 0));
+
+        $admin = User::factory()->admin()->create();
+        $startsAt = now()->setTime(8, 0);
+
+        Event::query()->create([
+            'title' => 'Morning Assembly',
+            'slug' => 'morning-assembly',
+            'event_date' => $startsAt,
+            'venue' => 'Auditorium',
+            'status' => EventStatus::Scheduled,
+            'created_by' => $admin->id,
+        ]);
+
+        $row = $this->service->forDashboard()->firstWhere('title', 'Morning Assembly');
+
+        $this->assertNotNull($row);
+        $this->assertSame('ongoing', $row['status_key']);
+        $this->assertSame('Ongoing', $row['status_label']);
+        $this->assertSame('View details', $row['action_label']);
+        $this->assertStringContainsString(route('student.events.show', 'morning-assembly'), $row['action_url']);
     }
 
     public function test_active_fundraiser_shows_donate_action(): void

@@ -3,13 +3,18 @@
 namespace App\Services\Portal;
 
 use App\Enums\AuditActionType;
+use App\Enums\EventStatus;
 use App\Enums\NotificationModule;
 use App\Enums\UserRole;
 use App\Models\AdminAssignment;
+use App\Models\Announcement;
 use App\Models\Election;
+use App\Models\Event;
+use App\Models\Fundraiser;
 use App\Models\PortalNotification;
 use App\Models\TalentEvent;
 use App\Models\TalentEventEntry;
+use App\Models\TalentEventJudge;
 use App\Models\User;
 use App\Services\SuperAdmin\AuditLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -40,6 +45,10 @@ class PortalNotificationService
         'admin_donation_received' => '💰',
         'admin_announcement' => '📢',
         'admin_system_settings' => '⚙️',
+        'admin_event_scheduled' => '📅',
+        'admin_event_ongoing' => '📅',
+        'admin_event_completed' => '📅',
+        'admin_event_cancelled' => '📅',
         'admin_user_created' => '👤',
         'admin_user_updated' => '👤',
         'admin_user_deleted' => '👤',
@@ -1116,7 +1125,7 @@ class PortalNotificationService
         User $faculty,
         TalentEvent $event,
         ?User $actor = null,
-        ?\App\Models\TalentEventJudge $assignment = null,
+        ?TalentEventJudge $assignment = null,
     ): void {
         $role = $assignment?->roleLabel() ?? 'Judge';
         $category = $event->talent_category?->label() ?? $event->type?->label() ?? 'Talent';
@@ -1137,7 +1146,7 @@ class PortalNotificationService
         User $superAdmin,
         User $faculty,
         TalentEvent $event,
-        ?\App\Models\TalentEventJudge $assignment = null,
+        ?TalentEventJudge $assignment = null,
     ): void {
         $role = $assignment?->roleLabel() ?? 'Judge';
 
@@ -1156,7 +1165,7 @@ class PortalNotificationService
         User $faculty,
         TalentEvent $event,
         ?User $actor = null,
-        ?\App\Models\TalentEventJudge $assignment = null,
+        ?TalentEventJudge $assignment = null,
     ): void {
         $role = $assignment?->roleLabel() ?? 'Judge';
 
@@ -1174,7 +1183,7 @@ class PortalNotificationService
     public function facultyJudgeRoleUpdated(
         User $faculty,
         TalentEvent $event,
-        \App\Models\TalentEventJudge $assignment,
+        TalentEventJudge $assignment,
         ?User $actor = null,
     ): void {
         $this->notifyUser(
@@ -1201,6 +1210,46 @@ class PortalNotificationService
         );
     }
 
+    public function schoolEventCreated(Event $event, User $actor): void
+    {
+        $status = $event->status ?? EventStatus::Scheduled;
+        $copy = match ($status) {
+            EventStatus::Scheduled => [
+                'title' => 'School Event Scheduled',
+                'message' => "\"{$event->title}\" has been scheduled.",
+                'type' => 'admin_event_scheduled',
+            ],
+            EventStatus::Ongoing => [
+                'title' => 'School Event Ongoing',
+                'message' => "\"{$event->title}\" is ongoing.",
+                'type' => 'admin_event_ongoing',
+            ],
+            EventStatus::Completed => [
+                'title' => 'School Event Completed',
+                'message' => "\"{$event->title}\" was recorded as completed.",
+                'type' => 'admin_event_completed',
+            ],
+            EventStatus::Cancelled => [
+                'title' => 'School Event Cancelled',
+                'message' => "\"{$event->title}\" was cancelled.",
+                'type' => 'admin_event_cancelled',
+            ],
+        };
+
+        $this->notifyAllPortalAdmins(
+            $copy['title'],
+            $copy['message'],
+            $copy['type'],
+            $actor,
+            NotificationModule::Event,
+            $event->id,
+        );
+
+        if ($status->notifiesCampus()) {
+            $this->notifyCampusOfSchoolEvent($event, $actor);
+        }
+    }
+
     public function schoolEventPublished(string $title, ?User $actor = null, ?int $eventId = null): void
     {
         $this->notifyFaculty(
@@ -1219,6 +1268,33 @@ class PortalNotificationService
             $actor,
             NotificationModule::Event,
             $eventId,
+        );
+    }
+
+    protected function notifyCampusOfSchoolEvent(Event $event, ?User $actor = null): void
+    {
+        $ongoing = ($event->status ?? EventStatus::Scheduled) === EventStatus::Ongoing;
+
+        $this->notifyFaculty(
+            $ongoing ? 'School Event Ongoing' : 'School Event Published',
+            $ongoing
+                ? "\"{$event->title}\" is happening now."
+                : "\"{$event->title}\" has been published.",
+            'faculty_event_published',
+            $actor,
+            NotificationModule::Event,
+            $event->id,
+        );
+
+        $this->notifyStudents(
+            $ongoing ? 'School Event Happening Now' : 'School Event Reminder',
+            $ongoing
+                ? "\"{$event->title}\" is happening now. Check the events page for details."
+                : "\"{$event->title}\" is coming up. Check the events page for details.",
+            'student_event_reminder',
+            $actor,
+            NotificationModule::Event,
+            $event->id,
         );
     }
 
@@ -1305,7 +1381,7 @@ class PortalNotificationService
 
         try {
             if (in_array($type, ['student_announcement', 'admin_announcement'], true) && $announcementId) {
-                $announcement = \App\Models\Announcement::query()->find($announcementId);
+                $announcement = Announcement::query()->find($announcementId);
                 if (! $announcement) {
                     return null;
                 }
@@ -1372,7 +1448,7 @@ class PortalNotificationService
             }
 
             if (in_array($type, ['student_fundraiser_published', 'faculty_fundraiser_published', 'student_donation_confirmed', 'admin_fundraiser_created', 'admin_fundraiser_updated', 'admin_donation_received'], true) && $relatedId) {
-                $fundraiser = \App\Models\Fundraiser::query()->find($relatedId);
+                $fundraiser = Fundraiser::query()->find($relatedId);
                 if (! $fundraiser) {
                     return null;
                 }
@@ -1390,10 +1466,29 @@ class PortalNotificationService
                     : route('admin.live.election');
             }
 
+            if (str_starts_with($type, 'admin_event_')) {
+                return $relatedId
+                    ? route('admin.events.edit', $relatedId)
+                    : route('admin.events.index');
+            }
+
             if (str_starts_with($type, 'faculty_event') || $type === 'student_event_reminder') {
-                return $role === UserRole::Faculty->value
-                    ? route('faculty.elections.index')
-                    : route('student.announcements.index');
+                if ($relatedId) {
+                    $event = Event::query()->find($relatedId);
+                    if ($event) {
+                        return match ($role) {
+                            UserRole::Faculty->value => route('faculty.events.show', $event),
+                            UserRole::Student->value => route('student.events.show', $event),
+                            default => route('admin.events.edit', $event),
+                        };
+                    }
+                }
+
+                return match ($role) {
+                    UserRole::Faculty->value => route('faculty.events.index'),
+                    UserRole::Student->value => route('student.events.index'),
+                    default => route('admin.events.index'),
+                };
             }
         } catch (\Throwable) {
             return null;

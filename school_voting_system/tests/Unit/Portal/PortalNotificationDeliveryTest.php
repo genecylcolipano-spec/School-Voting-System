@@ -3,6 +3,7 @@
 namespace Tests\Unit\Portal;
 
 use App\Enums\ElectionStatus;
+use App\Enums\EventStatus;
 use App\Enums\TalentEventStatus;
 use App\Enums\TalentRegistrationMethod;
 use App\Enums\TalentVotingMethod;
@@ -10,9 +11,11 @@ use App\Jobs\SendTalentVotingClosingSoonJob;
 use App\Mail\AnnouncementPublishedMail;
 use App\Models\Announcement;
 use App\Models\Election;
+use App\Models\Event;
 use App\Models\PortalNotification;
 use App\Models\TalentEvent;
 use App\Models\User;
+use App\Services\Admin\AdminScopeService;
 use App\Services\Portal\AnnouncementService;
 use App\Services\Portal\PortalNotificationService;
 use App\Services\SuperAdmin\ElectionLifecycleService;
@@ -47,7 +50,7 @@ class PortalNotificationDeliveryTest extends TestCase
             'created_by' => $admin->id,
         ]);
 
-        app(\App\Services\Admin\AdminScopeService::class)
+        app(AdminScopeService::class)
             ->assignElectionToAdmin($admin, $election, $admin->id);
 
         $this->notifications->electionCreated($election, $admin);
@@ -374,6 +377,111 @@ class PortalNotificationDeliveryTest extends TestCase
                 ->where('user_id', $student->id)
                 ->where('type', 'student_event_reminder')
                 ->exists()
+        );
+    }
+
+    public function test_school_event_created_notifies_admins_for_every_status(): void
+    {
+        $superAdmin = User::factory()->superAdmin()->create();
+        $admin = User::factory()->admin()->create();
+        $otherAdmin = User::factory()->admin()->create();
+        $faculty = User::factory()->faculty()->create();
+        $student = User::factory()->create();
+
+        foreach ([
+            [EventStatus::Scheduled, 'admin_event_scheduled'],
+            [EventStatus::Ongoing, 'admin_event_ongoing'],
+            [EventStatus::Completed, 'admin_event_completed'],
+            [EventStatus::Cancelled, 'admin_event_cancelled'],
+        ] as [$status, $adminType]) {
+            $event = Event::query()->create([
+                'title' => $status->label().' Assembly',
+                'slug' => $status->value.'-assembly-'.Str::random(6),
+                'event_date' => now()->addDay(),
+                'venue' => 'AVR',
+                'status' => $status,
+                'created_by' => $admin->id,
+            ]);
+
+            $this->notifications->schoolEventCreated($event, $admin);
+
+            foreach ([$superAdmin, $admin, $otherAdmin] as $recipient) {
+                $this->assertTrue(
+                    PortalNotification::query()
+                        ->where('user_id', $recipient->id)
+                        ->where('type', $adminType)
+                        ->where('related_id', $event->id)
+                        ->exists(),
+                    "Expected {$adminType} for {$recipient->role->value}"
+                );
+            }
+
+            $campusNotified = $status->notifiesCampus();
+            $this->assertSame(
+                $campusNotified,
+                PortalNotification::query()
+                    ->where('user_id', $faculty->id)
+                    ->where('type', 'faculty_event_published')
+                    ->where('related_id', $event->id)
+                    ->exists()
+            );
+            $this->assertSame(
+                $campusNotified,
+                PortalNotification::query()
+                    ->where('user_id', $student->id)
+                    ->where('type', 'student_event_reminder')
+                    ->where('related_id', $event->id)
+                    ->exists()
+            );
+
+            $adminNotice = PortalNotification::query()
+                ->where('user_id', $superAdmin->id)
+                ->where('type', $adminType)
+                ->where('related_id', $event->id)
+                ->first();
+
+            $this->assertSame(
+                route('admin.events.edit', $event),
+                $this->notifications->actionUrlFor($adminNotice)
+            );
+        }
+    }
+
+    public function test_campus_school_event_notice_links_to_event_page(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $faculty = User::factory()->faculty()->create();
+        $student = User::factory()->create();
+
+        $event = Event::query()->create([
+            'title' => 'Foundation Day',
+            'slug' => 'foundation-day-'.Str::random(6),
+            'event_date' => now()->addDays(2),
+            'venue' => 'Covered Court',
+            'status' => EventStatus::Scheduled,
+            'created_by' => $admin->id,
+        ]);
+
+        $this->notifications->schoolEventCreated($event, $admin);
+
+        $facultyNotice = PortalNotification::query()
+            ->where('user_id', $faculty->id)
+            ->where('type', 'faculty_event_published')
+            ->where('related_id', $event->id)
+            ->first();
+        $studentNotice = PortalNotification::query()
+            ->where('user_id', $student->id)
+            ->where('type', 'student_event_reminder')
+            ->where('related_id', $event->id)
+            ->first();
+
+        $this->assertSame(
+            route('faculty.events.show', $event),
+            $this->notifications->actionUrlFor($facultyNotice)
+        );
+        $this->assertSame(
+            route('student.events.show', $event),
+            $this->notifications->actionUrlFor($studentNotice)
         );
     }
 

@@ -5,6 +5,7 @@ namespace Tests\Feature\Events;
 use App\Enums\EventStatus;
 use App\Models\Announcement;
 use App\Models\Event;
+use App\Models\PortalNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -137,6 +138,27 @@ class SchoolEventVisibilityTest extends TestCase
         $this->assertSame(EventStatus::Completed, $event->fresh()->status);
     }
 
+    public function test_started_scheduled_event_is_marked_ongoing_on_student_list(): void
+    {
+        $this->travelTo(now()->setTime(10, 0));
+
+        $student = User::factory()->create();
+        $event = $this->makeEvent([
+            'title' => 'Morning Flag Ceremony',
+            'slug' => 'morning-flag-ceremony',
+            'event_date' => now()->subHour(),
+            'status' => EventStatus::Scheduled,
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('student.events.index'))
+            ->assertOk()
+            ->assertSee('Morning Flag Ceremony')
+            ->assertSee('Ongoing');
+
+        $this->assertSame(EventStatus::Ongoing, $event->fresh()->status);
+    }
+
     public function test_student_event_pages_show_time_and_status_badge(): void
     {
         $student = User::factory()->create();
@@ -215,6 +237,9 @@ class SchoolEventVisibilityTest extends TestCase
     public function test_cancelled_create_does_not_generate_an_announcement(): void
     {
         $admin = User::factory()->admin()->create();
+        $superAdmin = User::factory()->superAdmin()->create();
+        $faculty = User::factory()->faculty()->create();
+        $student = User::factory()->create();
 
         $this->actingAs($admin)
             ->post(route('admin.events.store'), [
@@ -230,6 +255,167 @@ class SchoolEventVisibilityTest extends TestCase
             'status' => EventStatus::Cancelled->value,
         ]);
         $this->assertSame(0, Announcement::query()->count());
+
+        $event = Event::query()->where('title', 'Storm Advisory Assembly')->first();
+        $this->assertNotNull($event);
+
+        foreach ([$admin, $superAdmin] as $recipient) {
+            $this->assertTrue(
+                PortalNotification::query()
+                    ->where('user_id', $recipient->id)
+                    ->where('type', 'admin_event_cancelled')
+                    ->where('related_id', $event->id)
+                    ->exists()
+            );
+        }
+        $this->assertFalse(
+            PortalNotification::query()
+                ->where('user_id', $faculty->id)
+                ->where('type', 'faculty_event_published')
+                ->exists()
+        );
+        $this->assertFalse(
+            PortalNotification::query()
+                ->where('user_id', $student->id)
+                ->where('type', 'student_event_reminder')
+                ->exists()
+        );
+    }
+
+    public function test_creating_scheduled_event_notifies_staff_and_campus(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $superAdmin = User::factory()->superAdmin()->create();
+        $faculty = User::factory()->faculty()->create();
+        $student = User::factory()->create();
+
+        $this->actingAs($admin)
+            ->post(route('admin.events.store'), [
+                'title' => 'Foundation Day',
+                'event_date' => now()->addDays(3)->format('Y-m-d\TH:i'),
+                'venue' => 'Covered Court',
+                'status' => EventStatus::Scheduled->value,
+            ])
+            ->assertRedirect(route('admin.events.index'));
+
+        $event = Event::query()->where('title', 'Foundation Day')->first();
+        $this->assertNotNull($event);
+        $this->assertSame(1, Announcement::query()->count());
+
+        foreach ([$admin, $superAdmin] as $recipient) {
+            $this->assertTrue(
+                PortalNotification::query()
+                    ->where('user_id', $recipient->id)
+                    ->where('type', 'admin_event_scheduled')
+                    ->where('related_id', $event->id)
+                    ->exists()
+            );
+        }
+        $this->assertTrue(
+            PortalNotification::query()
+                ->where('user_id', $faculty->id)
+                ->where('type', 'faculty_event_published')
+                ->where('related_id', $event->id)
+                ->exists()
+        );
+        $this->assertTrue(
+            PortalNotification::query()
+                ->where('user_id', $student->id)
+                ->where('type', 'student_event_reminder')
+                ->where('related_id', $event->id)
+                ->exists()
+        );
+    }
+
+    public function test_creating_completed_event_notifies_admins_only(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $superAdmin = User::factory()->superAdmin()->create();
+        $faculty = User::factory()->faculty()->create();
+        $student = User::factory()->create();
+
+        $this->actingAs($admin)
+            ->post(route('admin.events.store'), [
+                'title' => 'Last Week Recollection',
+                'event_date' => now()->subDays(2)->format('Y-m-d\TH:i'),
+                'venue' => 'Chapel',
+                'status' => EventStatus::Completed->value,
+            ])
+            ->assertRedirect(route('admin.events.index'));
+
+        $event = Event::query()->where('title', 'Last Week Recollection')->first();
+        $this->assertNotNull($event);
+        $this->assertSame(0, Announcement::query()->count());
+
+        foreach ([$admin, $superAdmin] as $recipient) {
+            $this->assertTrue(
+                PortalNotification::query()
+                    ->where('user_id', $recipient->id)
+                    ->where('type', 'admin_event_completed')
+                    ->where('related_id', $event->id)
+                    ->exists()
+            );
+        }
+        $this->assertFalse(
+            PortalNotification::query()
+                ->where('user_id', $faculty->id)
+                ->where('type', 'faculty_event_published')
+                ->exists()
+        );
+        $this->assertFalse(
+            PortalNotification::query()
+                ->where('user_id', $student->id)
+                ->where('type', 'student_event_reminder')
+                ->exists()
+        );
+    }
+
+    public function test_creating_ongoing_event_notifies_admins_and_campus_without_announcement(): void
+    {
+        $this->travelTo(now()->setTime(10, 0));
+
+        $admin = User::factory()->admin()->create();
+        $superAdmin = User::factory()->superAdmin()->create();
+        $faculty = User::factory()->faculty()->create();
+        $student = User::factory()->create();
+
+        $this->actingAs($admin)
+            ->post(route('admin.events.store'), [
+                'title' => 'Intramurals Opening',
+                'event_date' => now()->subHour()->format('Y-m-d\TH:i'),
+                'venue' => 'Main Gym',
+                'status' => EventStatus::Ongoing->value,
+            ])
+            ->assertRedirect(route('admin.events.index'));
+
+        $event = Event::query()->where('title', 'Intramurals Opening')->first();
+        $this->assertNotNull($event);
+        $this->assertSame(EventStatus::Ongoing, $event->status);
+        $this->assertSame(0, Announcement::query()->count());
+
+        foreach ([$admin, $superAdmin] as $recipient) {
+            $this->assertTrue(
+                PortalNotification::query()
+                    ->where('user_id', $recipient->id)
+                    ->where('type', 'admin_event_ongoing')
+                    ->where('related_id', $event->id)
+                    ->exists()
+            );
+        }
+        $this->assertTrue(
+            PortalNotification::query()
+                ->where('user_id', $faculty->id)
+                ->where('type', 'faculty_event_published')
+                ->where('related_id', $event->id)
+                ->exists()
+        );
+        $this->assertTrue(
+            PortalNotification::query()
+                ->where('user_id', $student->id)
+                ->where('type', 'student_event_reminder')
+                ->where('related_id', $event->id)
+                ->exists()
+        );
     }
 
     /**

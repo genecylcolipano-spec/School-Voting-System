@@ -25,10 +25,10 @@ class ProcessScheduledElectionsCommand extends Command
             $this->line("Talent registration notices sent: {$registrationNotices}.");
         }
 
-        $completedEvents = Event::markOverdueAsCompleted();
+        $syncedEvents = Event::markOverdueAsCompleted();
 
-        if ($completedEvents > 0) {
-            $this->line("Marked {$completedEvents} overdue school event(s) as completed.");
+        if ($syncedEvents > 0) {
+            $this->line("Synced {$syncedEvents} school event status(es).");
         }
 
         $actor = User::query()
