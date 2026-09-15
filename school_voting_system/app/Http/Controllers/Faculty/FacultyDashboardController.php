@@ -10,6 +10,7 @@ use App\Models\Fundraiser;
 use App\Models\TalentEvent;
 use App\Models\TalentEventEntry;
 use App\Models\TalentEventJudge;
+use App\Services\Faculty\FacultyUpcomingActivitiesService;
 use App\Services\Talent\TalentJudgingService;
 use App\Support\AdminPortal;
 use App\Support\PlatformModules;
@@ -23,6 +24,7 @@ class FacultyDashboardController extends Controller
 {
     public function __construct(
         protected TalentJudgingService $judging,
+        protected FacultyUpcomingActivitiesService $upcomingActivities,
     ) {}
 
     public function __invoke(Request $request): View
@@ -80,6 +82,7 @@ class FacultyDashboardController extends Controller
             'assignedCompetitions' => $assignedCompetitions,
             'assignments' => $assignments,
             'progress' => $progress,
+            'upcomingSchedule' => $this->upcomingActivities->forDashboard($user),
             'announcements' => Announcement::query()
                 ->published()
                 ->forDashboard()

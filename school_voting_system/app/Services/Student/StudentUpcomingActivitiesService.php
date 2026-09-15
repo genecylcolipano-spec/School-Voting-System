@@ -476,28 +476,7 @@ class StudentUpcomingActivitiesService
             ->each(function (Fundraiser $fundraiser) use ($items) {
                 $resolved = $fundraiser->resolvedStatus();
                 $accepting = $fundraiser->isAcceptingDonations();
-                $showUrl = route('student.fundraising.show', $fundraiser);
-
-                if ($accepting) {
-                    $statusKey = 'active';
-                    $statusLabel = 'Active';
-                    $actionLabel = 'Donate';
-                    $actionUrl = $showUrl;
-                    $priorityKey = 'active';
-                } elseif (in_array($resolved, [FundraiserStatus::Completed, FundraiserStatus::GoalReached], true)
-                    || ($fundraiser->ends_on && $fundraiser->ends_on->lt(now()->startOfDay()))) {
-                    $statusKey = 'completed';
-                    $statusLabel = 'Completed';
-                    $actionLabel = 'View Campaign';
-                    $actionUrl = $showUrl;
-                    $priorityKey = 'completed';
-                } else {
-                    $statusKey = 'scheduled';
-                    $statusLabel = $fundraiser->displayStatusLabel();
-                    $actionLabel = 'View Campaign';
-                    $actionUrl = $showUrl;
-                    $priorityKey = 'scheduled';
-                }
+                $mapped = $this->mapFundraiserAction($fundraiser, $resolved, $accepting);
 
                 $sortAt = $fundraiser->ends_on
                     ? Carbon::parse($fundraiser->ends_on)->startOfDay()
@@ -519,15 +498,62 @@ class StudentUpcomingActivitiesService
                         : ($fundraiser->starts_on
                             ? 'Starts '.$fundraiser->starts_on->format('M d, Y')
                             : 'Open now'),
-                    statusKey: $statusKey,
-                    statusLabel: $statusLabel,
-                    actionLabel: $actionLabel,
-                    actionUrl: $actionUrl,
+                    statusKey: $mapped['status_key'],
+                    statusLabel: $mapped['status_label'],
+                    actionLabel: $mapped['action_label'],
+                    actionUrl: $mapped['action_url'],
                     actionDisabled: false,
                     sortAt: $sortAt,
-                    priorityKey: $priorityKey,
+                    priorityKey: $mapped['priority_key'],
                 ));
             });
+    }
+
+    /**
+     * @return array{status_key: string, status_label: string, action_label: string, action_url: string, priority_key: string}
+     */
+    protected function mapFundraiserAction(Fundraiser $fundraiser, FundraiserStatus $resolved, bool $accepting): array
+    {
+        $showUrl = $this->fundraiserShowUrl($fundraiser);
+
+        if ($accepting) {
+            return [
+                'status_key' => 'active',
+                'status_label' => 'Active',
+                'action_label' => $this->fundraiserActionLabel(true),
+                'action_url' => $showUrl,
+                'priority_key' => 'active',
+            ];
+        }
+
+        if (in_array($resolved, [FundraiserStatus::Completed, FundraiserStatus::GoalReached], true)
+            || ($fundraiser->ends_on && $fundraiser->ends_on->lt(now()->startOfDay()))) {
+            return [
+                'status_key' => 'completed',
+                'status_label' => 'Completed',
+                'action_label' => $this->fundraiserActionLabel(false),
+                'action_url' => $showUrl,
+                'priority_key' => 'completed',
+            ];
+        }
+
+        return [
+            'status_key' => 'scheduled',
+            'status_label' => $fundraiser->displayStatusLabel(),
+            'action_label' => $this->fundraiserActionLabel(false),
+            'action_url' => $showUrl,
+            'priority_key' => 'scheduled',
+        ];
+    }
+
+    protected function fundraiserShowUrl(Fundraiser $fundraiser): string
+    {
+        return route('student.fundraising.show', $fundraiser);
+    }
+
+    protected function fundraiserActionLabel(bool $accepting): string
+    {
+        return $accepting ? 'Donate' : 'View Campaign';
     }
 
     /**

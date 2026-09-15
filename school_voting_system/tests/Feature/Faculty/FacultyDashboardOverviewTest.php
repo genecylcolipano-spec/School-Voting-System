@@ -3,11 +3,14 @@
 namespace Tests\Feature\Faculty;
 
 use App\Enums\EventStatus;
+use App\Enums\FundraiserStatus;
+use App\Enums\FundraiserVisibility;
 use App\Enums\TalentEventStatus;
 use App\Enums\TalentJudgeRole;
 use App\Enums\TalentVotingMethod;
 use App\Models\Election;
 use App\Models\Event;
+use App\Models\Fundraiser;
 use App\Models\Passkey;
 use App\Models\TalentEvent;
 use App\Models\User;
@@ -67,8 +70,15 @@ class FacultyDashboardOverviewTest extends TestCase
             ->get(route('faculty.dashboard'))
             ->assertOk()
             ->assertViewHas('assignedCompetitionsCount', 1)
+            ->assertViewHas('assignedCompetitions', fn ($competitions) => $competitions->pluck('title')->all() === ['Live Showcase'])
             ->assertSee('Live Showcase')
-            ->assertDontSee('Finished Showcase');
+            ->assertViewHas('upcomingSchedule', function ($rows) {
+                $past = $rows->firstWhere('title', 'Finished Showcase');
+
+                return $past !== null
+                    && $past['action_label'] === 'View details'
+                    && $past['action_url'] === route('faculty.talent.show', 'finished-showcase');
+            });
     }
 
     public function test_overview_cards_remain_linked_when_counts_are_zero(): void
@@ -89,7 +99,67 @@ class FacultyDashboardOverviewTest extends TestCase
             ->assertDontSee('My Judging')
             ->assertDontSee('Assigned Competitions')
             ->assertSee(route('faculty.fundraising.index'), false)
-            ->assertViewHas('activeFundraisersCount', 0);
+            ->assertViewHas('activeFundraisersCount', 0)
+            ->assertSee('Upcoming Activities')
+            ->assertSee('View-only overview');
+    }
+
+    public function test_dashboard_upcoming_activities_are_view_only(): void
+    {
+        $faculty = User::factory()->faculty()->create();
+        $election = Election::factory()->active()->create(['title' => 'Open Faculty Overview Vote']);
+        $event = $this->makeSchoolEvent([
+            'title' => 'Overview Assembly',
+            'slug' => 'overview-assembly',
+        ]);
+        $talent = $this->makeCompetition([
+            'title' => 'Overview Showcase',
+            'slug' => 'overview-showcase',
+            'voting_method' => TalentVotingMethod::StudentOnly->value,
+        ]);
+        $fundraiser = Fundraiser::query()->create([
+            'title' => 'Overview Drive',
+            'slug' => 'overview-drive',
+            'goal_amount' => 5000,
+            'amount_raised' => 100,
+            'status' => FundraiserStatus::Active,
+            'visibility' => FundraiserVisibility::Public,
+            'accept_donations' => true,
+            'starts_on' => now()->subDay()->toDateString(),
+            'ends_on' => now()->addDays(5)->toDateString(),
+            'created_by' => User::factory()->admin()->create()->id,
+        ]);
+        $published = Election::factory()->closed()->create([
+            'title' => 'Published Faculty Overview Vote',
+            'public_results_published' => true,
+            'results_published_at' => now()->subHour(),
+        ]);
+
+        $response = $this->actingAs($faculty)->get(route('faculty.dashboard'));
+
+        $response->assertOk();
+        $response->assertSee('Upcoming Activities');
+        $response->assertSee($election->title);
+        $response->assertSee($event->title);
+        $response->assertSee($talent->title);
+        $response->assertSee($fundraiser->title);
+        $response->assertSee('View details');
+        $response->assertSee('View Results');
+        $response->assertDontSee('>Vote<', false);
+        $response->assertSee(route('faculty.elections.show', $election), false);
+        $response->assertSee(route('faculty.events.show', $event), false);
+        $response->assertSee(route('faculty.talent.show', $talent), false);
+        $response->assertSee(route('faculty.fundraising.show', $fundraiser), false);
+        $response->assertSee(route('faculty.results.election.show', $published), false);
+        $response->assertViewHas('upcomingSchedule', function ($rows) {
+            $labels = $rows->pluck('action_label');
+
+            return $labels->doesntContain('Vote')
+                && $labels->doesntContain('Donate')
+                && $labels->doesntContain('Join')
+                && $labels->doesntContain('Open Judging')
+                && $labels->doesntContain('Register');
+        });
     }
 
     public function test_overview_cards_stay_clickable_at_zero_and_match_filtered_lists(): void

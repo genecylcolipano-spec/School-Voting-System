@@ -1,14 +1,18 @@
 <?php
     use App\Support\EventImageUrl;
+
+    $activitiesTitle = $activitiesTitle ?? 'Upcoming Activities';
+    $activitiesDescription = $activitiesDescription ?? 'Browse upcoming elections, school events, talent competitions, and fundraising campaigns available to you.';
+    $activitiesBorder = $activitiesBorder ?? 'border-cyan-500/15';
 ?>
 
 <section>
     <div class="mb-4">
-        <h2 class="text-xl font-bold text-white">Upcoming Activities</h2>
-        <p class="mt-1 text-sm text-slate-400">Browse upcoming elections, school events, talent competitions, and fundraising campaigns available to you.</p>
+        <h2 class="text-xl font-bold text-white"><?php echo e($activitiesTitle); ?></h2>
+        <p class="mt-1 text-sm text-slate-400"><?php echo e($activitiesDescription); ?></p>
     </div>
 
-    <div class="overflow-hidden rounded-2xl border border-cyan-500/15 bg-slate-900/70 shadow-sm shadow-black/20">
+    <div class="overflow-hidden rounded-2xl border <?php echo e($activitiesBorder); ?> bg-slate-900/70 shadow-sm shadow-black/20">
         <div class="overflow-x-auto">
             <table class="w-full min-w-[1000px] table-fixed border-collapse text-sm">
                 <colgroup>

@@ -32,7 +32,7 @@ class TalentJudgingService
         return [
             ['name' => 'Technique', 'max_points' => 25, 'sort_order' => 1],
             ['name' => 'Creativity', 'max_points' => 25, 'sort_order' => 2],
-            ['name' => 'Stage Presence', 'max_points' => 25, 'sort_order' => 3],
+            ['name' => 'Performance Presence', 'max_points' => 25, 'sort_order' => 3],
             ['name' => 'Overall Impact', 'max_points' => 25, 'sort_order' => 4],
         ];
     }

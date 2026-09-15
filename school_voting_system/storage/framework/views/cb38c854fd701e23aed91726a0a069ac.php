@@ -109,6 +109,12 @@
             ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1])); ?>
         </div>
 
+        <?php echo $__env->make('dashboards._upcoming-activities', [
+            'upcomingSchedule' => $upcomingSchedule,
+            'activitiesDescription' => 'View-only overview of elections, school events, talent competitions, and fundraising campaigns.',
+            'activitiesBorder' => 'border-teal-500/15',
+        ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
         <?php if($hasJudgingAssignment): ?>
         <section class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 sm:p-6">
             <div class="flex flex-wrap items-center justify-between gap-3">
