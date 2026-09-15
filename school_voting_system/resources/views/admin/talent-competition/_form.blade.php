@@ -13,6 +13,8 @@
     $registrationMethods = $registrationMethods ?? \App\Enums\TalentRegistrationMethod::cases();
     $submissionMethods = $submissionMethods ?? \App\Enums\TalentSubmissionMethod::cases();
     $rankingMethods = $rankingMethods ?? \App\Enums\TalentRankingMethod::cases();
+    $hostElections = $hostElections ?? collect();
+    $canPickElection = $canPickElection ?? false;
     $fileInputClass = 'w-full min-w-0 max-w-full rounded-xl border border-slate-700 bg-slate-950/50 px-3 py-2 text-sm text-slate-100 file:mb-2 file:mr-0 file:block file:w-full file:rounded-lg file:border-0 file:bg-cyan-500/20 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-cyan-300 sm:file:mb-0 sm:file:mr-4 sm:file:inline-block sm:file:w-auto';
 @endphp
 
@@ -47,7 +49,22 @@
         }"
     >
         <h2 class="text-lg font-semibold text-white">Basic Information</h2>
-        <p class="mt-1 text-sm text-slate-400">Assigned election: {{ $election->title }}</p>
+        @if ($canPickElection ?? false)
+            <div class="mt-4">
+                <label class="block text-sm font-medium text-slate-300">Linked election</label>
+                <select name="election_id" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    @foreach ($hostElections as $host)
+                        <option value="{{ $host->id }}" @selected((int) old('election_id', $election?->id) === (int) $host->id)>
+                            {{ $host->title }} ({{ $host->status?->label() ?? 'Unknown' }})
+                        </option>
+                    @endforeach
+                </select>
+                <p class="mt-1 text-xs text-slate-500">Competitions stay linked to an election for results and staff scope. Closed elections are allowed.</p>
+                @error('election_id')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
+            </div>
+        @else
+            <p class="mt-1 text-sm text-slate-400">Assigned election: {{ $election?->title ?? '—' }}</p>
+        @endif
 
         @if ($isEdit)
             <div class="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3">

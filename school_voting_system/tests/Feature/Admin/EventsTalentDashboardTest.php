@@ -4,19 +4,26 @@ namespace Tests\Feature\Admin;
 
 use App\Enums\ElectionStatus;
 use App\Enums\EventStatus;
+use App\Enums\TalentCategory;
 use App\Enums\TalentEventStatus;
+use App\Enums\TalentEventType;
+use App\Enums\TalentRankingMethod;
 use App\Enums\TalentRegistrationMethod;
+use App\Enums\TalentSubmissionMethod;
 use App\Enums\TalentVotingMethod;
 use App\Mail\AnnouncementPublishedMail;
 use App\Models\AdminAssignment;
 use App\Models\Announcement;
 use App\Models\Election;
 use App\Models\Event;
+use App\Models\Permission;
 use App\Models\PortalNotification;
+use App\Models\StaffRole;
 use App\Models\TalentEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Tests\Support\TestImageFactory;
 use Tests\TestCase;
 
 class EventsTalentDashboardTest extends TestCase
@@ -175,6 +182,80 @@ class EventsTalentDashboardTest extends TestCase
             ->assertSee('Campus-Wide Assembly');
     }
 
+    public function test_super_admin_create_form_allows_closed_elections(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $closed = Election::factory()->closed()->create([
+            'title' => 'Finished Student Council',
+            'created_by' => $super->id,
+        ]);
+
+        $this->actingAs($super)
+            ->get(route('admin.talent-competition.create'))
+            ->assertOk()
+            ->assertDontSee('You need an assigned election before creating a talent competition')
+            ->assertDontSee('Contact Super Admin')
+            ->assertSee('Linked election')
+            ->assertSee('Finished Student Council')
+            ->assertSee('Competition Title');
+    }
+
+    public function test_super_admin_without_elections_is_asked_to_create_one(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+
+        $this->actingAs($super)
+            ->get(route('admin.talent-competition.create'))
+            ->assertOk()
+            ->assertDontSee('Contact Super Admin')
+            ->assertSee('Create an election first')
+            ->assertSee(route('admin.elections.create'), false);
+    }
+
+    public function test_regular_admin_without_assignment_sees_assigned_election_notice(): void
+    {
+        $permission = Permission::query()->create([
+            'key' => 'create_talent_events',
+            'label' => 'Create Talent Competitions',
+            'category' => 'events',
+        ]);
+        $role = StaffRole::query()->create([
+            'name' => 'Operations Admin',
+            'slug' => 'election_admin_talent_create',
+            'description' => 'Can create talent events',
+            'is_system' => true,
+        ]);
+        $role->permissions()->attach($permission->id);
+        $admin = User::factory()->admin()->create([
+            'staff_role_id' => $role->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.talent-competition.create'))
+            ->assertOk()
+            ->assertSee('You need an assigned election before creating a talent competition. Contact Super Admin.')
+            ->assertDontSee('Competition Title');
+    }
+
+    public function test_super_admin_can_create_talent_competition_on_closed_election(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $closed = Election::factory()->closed()->create([
+            'title' => 'Closed Host Election',
+            'created_by' => $super->id,
+        ]);
+
+        $this->actingAs($super)
+            ->post(route('admin.talent-competition.store'), $this->competitionPayload($closed->id))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('talent_events', [
+            'title' => 'Closed Host Showcase',
+            'election_id' => $closed->id,
+            'created_by' => $super->id,
+        ]);
+    }
+
     public function test_opening_talent_registration_notifies_students_in_app_not_email(): void
     {
         Mail::fake();
@@ -265,5 +346,30 @@ class EventsTalentDashboardTest extends TestCase
             'published_to_students' => true,
             'created_by' => $creator->id,
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function competitionPayload(int $electionId): array
+    {
+        return [
+            'election_id' => $electionId,
+            'title' => 'Closed Host Showcase',
+            'type' => TalentEventType::TalentCompetition->value,
+            'talent_category' => TalentCategory::OpenTalent->value,
+            'voting_starts_at' => now()->addDay()->format('Y-m-d\TH:i'),
+            'voting_ends_at' => now()->addDays(3)->format('Y-m-d\TH:i'),
+            'image' => TestImageFactory::portraitUploadedFile(),
+            'performance_duration' => '5',
+            'max_video_duration_minutes' => 5,
+            'max_upload_size_mb' => 100,
+            'accepted_video_formats' => ['mp4', 'mov'],
+            'registration_method' => TalentRegistrationMethod::Both->value,
+            'submission_method' => TalentSubmissionMethod::Both->value,
+            'voting_method' => TalentVotingMethod::StudentOnly->value,
+            'ranking_method' => TalentRankingMethod::Votes->value,
+            'winners_count' => '3',
+        ];
     }
 }

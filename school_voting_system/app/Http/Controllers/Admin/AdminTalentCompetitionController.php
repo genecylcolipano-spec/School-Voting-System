@@ -14,6 +14,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\TalentCompetition\DeleteTalentCompetitionRequest;
 use App\Http\Requests\Admin\TalentCompetition\StoreTalentCompetitionRequest;
 use App\Http\Requests\Admin\TalentCompetition\UpdateTalentCompetitionRequest;
+use App\Models\Election;
 use App\Models\TalentEvent;
 use App\Models\TalentEventEntry;
 use App\Services\Admin\AdminScopeService;
@@ -119,26 +120,18 @@ class AdminTalentCompetitionController extends Controller
     {
         abort_unless($this->scope->canCreateTalentEvents($request->user()), 403);
 
-        $user = $request->user()->load(['staffRole', 'passkeys']);
-
-        return view('admin.talent-competition.create', [
-            'user' => $user,
-            'notificationsCount' => AdminPortal::notificationCount(auth()->user()),
-            'assignedRole' => $user->staffRole?->name ?? 'Operations Admin',
-            'types' => TalentEventType::cases(),
-            'categories' => TalentCategory::cases(),
-            'votingMethods' => TalentVotingMethod::cases(),
-            'registrationMethods' => TalentRegistrationMethod::cases(),
-            'submissionMethods' => TalentSubmissionMethod::cases(),
-            'rankingMethods' => TalentRankingMethod::cases(),
-            'election' => $this->scope->assignedElection($user),
-            'talentEvent' => null,
-        ]);
+        return view('admin.talent-competition.create', $this->competitionFormData($request));
     }
 
     public function store(StoreTalentCompetitionRequest $request): RedirectResponse
     {
-        $election = $this->scope->assignedElection($request->user());
+        $election = $this->scope->resolveTalentHostElection(
+            $request->user(),
+            $request->filled('election_id') ? (int) $request->input('election_id') : null,
+        );
+
+        abort_unless($election instanceof Election, 403, 'You need an election before creating a talent competition.');
+
         $validated = $request->validated();
 
         $slug = SlugGenerator::unique($validated['title'], TalentEvent::class);
@@ -214,21 +207,7 @@ class AdminTalentCompetitionController extends Controller
         abort_unless($this->scope->canCreateTalentEvents($request->user()), 403);
         $this->scope->assertTalentEventInScope($request->user(), $talentEvent);
 
-        $user = $request->user()->load(['staffRole', 'passkeys']);
-
-        return view('admin.talent-competition.edit', [
-            'user' => $user,
-            'notificationsCount' => AdminPortal::notificationCount(auth()->user()),
-            'assignedRole' => $user->staffRole?->name ?? 'Operations Admin',
-            'types' => TalentEventType::cases(),
-            'categories' => TalentCategory::cases(),
-            'votingMethods' => TalentVotingMethod::cases(),
-            'registrationMethods' => TalentRegistrationMethod::cases(),
-            'submissionMethods' => TalentSubmissionMethod::cases(),
-            'rankingMethods' => TalentRankingMethod::cases(),
-            'election' => $this->scope->assignedElection($user),
-            'talentEvent' => $talentEvent,
-        ]);
+        return view('admin.talent-competition.edit', $this->competitionFormData($request, $talentEvent));
     }
 
     public function settings(Request $request, TalentEvent $talentEvent): View
@@ -587,6 +566,40 @@ class AdminTalentCompetitionController extends Controller
 
     /** @var array<string, mixed>|null */
     protected ?array $lastStoredImageVariants = null;
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function competitionFormData(Request $request, ?TalentEvent $talentEvent = null): array
+    {
+        $user = $request->user()->load(['staffRole', 'passkeys']);
+        $hostElections = $this->scope->talentHostElections($user);
+        $canPickElection = $user->isSuperAdmin() && $talentEvent === null;
+
+        $talentEvent?->loadMissing('election');
+
+        $election = $talentEvent?->election
+            ?? $this->scope->resolveTalentHostElection(
+                $user,
+                old('election_id') ? (int) old('election_id') : null,
+            );
+
+        return [
+            'user' => $user,
+            'notificationsCount' => AdminPortal::notificationCount($user),
+            'assignedRole' => $user->staffRole?->name ?? 'Operations Admin',
+            'types' => TalentEventType::cases(),
+            'categories' => TalentCategory::cases(),
+            'votingMethods' => TalentVotingMethod::cases(),
+            'registrationMethods' => TalentRegistrationMethod::cases(),
+            'submissionMethods' => TalentSubmissionMethod::cases(),
+            'rankingMethods' => TalentRankingMethod::cases(),
+            'election' => $election,
+            'hostElections' => $hostElections,
+            'canPickElection' => $canPickElection,
+            'talentEvent' => $talentEvent,
+        ];
+    }
 
     protected function storeTalentEventImage(?UploadedFile $file, string $folder = 'talent-events', bool $withVariants = true): ?string
     {

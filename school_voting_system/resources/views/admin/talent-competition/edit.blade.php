@@ -8,6 +8,8 @@
         @include('admin.talent-competition._form', [
             'talentEvent' => $talentEvent,
             'election' => $election,
+            'hostElections' => $hostElections ?? collect(),
+            'canPickElection' => $canPickElection ?? false,
             'types' => $types,
             'categories' => $categories,
             'votingMethods' => $votingMethods,

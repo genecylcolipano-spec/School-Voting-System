@@ -239,4 +239,27 @@ class AdminScopeStatisticsTest extends TestCase
         $this->assertNull(app(AdminScopeService::class)->assignedElection($admin));
         $this->assertTrue($election->trashed());
     }
+
+    public function test_super_admin_can_host_talent_on_closed_elections(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $closed = Election::factory()->closed()->create([
+            'title' => 'Closed Student Council',
+            'created_by' => $super->id,
+        ]);
+        $annulled = Election::factory()->closed()->create([
+            'title' => 'Annulled Council',
+            'annulled_at' => now(),
+            'created_by' => $super->id,
+        ]);
+
+        $hosts = app(AdminScopeService::class)->talentHostElections($super);
+
+        $this->assertTrue($hosts->contains('id', $closed->id));
+        $this->assertFalse($hosts->contains('id', $annulled->id));
+        $this->assertSame(
+            $closed->id,
+            app(AdminScopeService::class)->resolveTalentHostElection($super, $closed->id)?->id
+        );
+    }
 }

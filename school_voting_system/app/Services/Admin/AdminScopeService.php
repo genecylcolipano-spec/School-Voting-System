@@ -66,6 +66,37 @@ class AdminScopeService
     }
 
     /**
+     * Elections a staff member may attach a new talent competition to.
+     * Super Admins may use any non-annulled election, including closed ones.
+     *
+     * @return Collection<int, Election>
+     */
+    public function talentHostElections(User $admin): Collection
+    {
+        if ($admin->isSuperAdmin()) {
+            return Election::query()
+                ->whereNull('annulled_at')
+                ->orderByDesc('id')
+                ->get();
+        }
+
+        $assigned = $this->assignedElection($admin);
+
+        return $assigned ? collect([$assigned]) : collect();
+    }
+
+    public function resolveTalentHostElection(User $admin, ?int $electionId): ?Election
+    {
+        $hosts = $this->talentHostElections($admin);
+
+        if ($electionId) {
+            return $hosts->firstWhere('id', $electionId);
+        }
+
+        return $hosts->first();
+    }
+
+    /**
      * Elections an administrator may generate reports and analytics for.
      * Super Admins see every non-annulled election. Regular admins see
      * the assigned election plus elections they created.

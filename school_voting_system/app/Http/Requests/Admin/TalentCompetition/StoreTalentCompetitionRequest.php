@@ -16,13 +16,27 @@ class StoreTalentCompetitionRequest extends AdminFormRequest
 {
     public function authorize(): bool
     {
-        return $this->scope()->canCreateTalentEvents($this->user())
-            && $this->scope()->assignedElection($this->user()) !== null;
+        if (! $this->scope()->canCreateTalentEvents($this->user())) {
+            return false;
+        }
+
+        if ($this->user()?->isSuperAdmin()) {
+            return $this->scope()->talentHostElections($this->user())->isNotEmpty();
+        }
+
+        return $this->scope()->assignedElection($this->user()) !== null;
     }
 
     public function rules(): array
     {
-        return $this->talentRules();
+        $rules = $this->talentRules();
+
+        if ($this->user()?->isSuperAdmin()) {
+            $hostIds = $this->scope()->talentHostElections($this->user())->pluck('id')->all();
+            $rules['election_id'] = ['required', 'integer', Rule::in($hostIds)];
+        }
+
+        return $rules;
     }
 
     protected function talentRules(): array
@@ -130,6 +144,8 @@ class StoreTalentCompetitionRequest extends AdminFormRequest
     {
         return [
             'title.required' => 'Competition title is required.',
+            'election_id.required' => 'Select an election to link this competition to.',
+            'election_id.in' => 'Select a valid election for this competition.',
             'voting_ends_at.after' => 'Voting close must be later than voting open.',
             'performance_duration_custom.required_if' => 'Enter a custom performance duration in minutes.',
             'winners_count_custom.required_if' => 'Enter the custom number of winners.',
