@@ -3,6 +3,7 @@
  */
 
 import { bufferToBase64url, base64urlToBuffer } from './passkey-helpers.js';
+import { initInAppBrowserGate } from './in-app-browser.js';
 
 const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 
@@ -111,6 +112,10 @@ export async function performPasskeyLogin() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    if (initInAppBrowserGate()) {
+        return;
+    }
+
     loginButton()?.addEventListener('click', async () => {
         setLoading(true);
         setStatus('');

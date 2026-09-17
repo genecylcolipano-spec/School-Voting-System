@@ -23,6 +23,7 @@
         $enrollAccountId = $user?->account_id ?? ($pending['account_id'] ?? '');
         $enrollRole = $user?->roleLabel() ?? 'Student';
         $isRecovery = session()->has(\App\Services\Auth\PasskeyRecoveryTokenService::SESSION_RECOVERY_REQUEST_ID);
+        $inAppBrowser = \App\Support\InAppBrowser::detect(request()->userAgent());
     @endphp
 
     <div class="relative flex h-dvh items-center justify-center px-4 py-3 sm:py-4">
@@ -64,12 +65,20 @@
                 @endif
 
                 <div class="mt-3">
+                    @include('auth.partials.in-app-browser-gate', ['inApp' => $inAppBrowser])
+
+                    <div
+                        id="passkey-supported-panel"
+                        @class(['hidden' => $inAppBrowser['blocked']])
+                        @if ($inAppBrowser['blocked']) hidden @endif
+                    >
                     <x-passkey-register
                         theme="dark"
                         compact
                         :register-options-url="$registerOptionsUrl"
                         :register-verify-url="$registerVerifyUrl"
                     />
+                    </div>
                 </div>
 
                 <p class="mt-2 text-center text-xs text-slate-500">

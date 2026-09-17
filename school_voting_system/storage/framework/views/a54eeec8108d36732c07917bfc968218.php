@@ -23,6 +23,7 @@
         $enrollAccountId = $user?->account_id ?? ($pending['account_id'] ?? '');
         $enrollRole = $user?->roleLabel() ?? 'Student';
         $isRecovery = session()->has(\App\Services\Auth\PasskeyRecoveryTokenService::SESSION_RECOVERY_REQUEST_ID);
+        $inAppBrowser = \App\Support\InAppBrowser::detect(request()->userAgent());
     ?>
 
     <div class="relative flex h-dvh items-center justify-center px-4 py-3 sm:py-4">
@@ -64,6 +65,13 @@
                 <?php endif; ?>
 
                 <div class="mt-3">
+                    <?php echo $__env->make('auth.partials.in-app-browser-gate', ['inApp' => $inAppBrowser], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
+                    <div
+                        id="passkey-supported-panel"
+                        class="<?php echo \Illuminate\Support\Arr::toCssClasses(['hidden' => $inAppBrowser['blocked']]); ?>"
+                        <?php if($inAppBrowser['blocked']): ?> hidden <?php endif; ?>
+                    >
                     <?php if (isset($component)) { $__componentOriginal15a615f1c082febb5f28527938415021 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal15a615f1c082febb5f28527938415021 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.passkey-register','data' => ['theme' => 'dark','compact' => true,'registerOptionsUrl' => $registerOptionsUrl,'registerVerifyUrl' => $registerVerifyUrl]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
@@ -84,6 +92,7 @@
 <?php $component = $__componentOriginal15a615f1c082febb5f28527938415021; ?>
 <?php unset($__componentOriginal15a615f1c082febb5f28527938415021); ?>
 <?php endif; ?>
+                    </div>
                 </div>
 
                 <p class="mt-2 text-center text-xs text-slate-500">

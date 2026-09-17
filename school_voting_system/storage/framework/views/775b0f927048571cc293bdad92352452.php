@@ -22,6 +22,7 @@
         $poweredBy = \App\Support\SchoolBranding::poweredBy();
         $registrationEnabled = $registrationEnabled ?? true;
         $recoveryEnabled = $recoveryEnabled ?? true;
+        $inAppBrowser = \App\Support\InAppBrowser::detect(request()->userAgent());
     ?>
 
     <div class="relative flex h-dvh items-center justify-center px-4 py-3 sm:py-6">
@@ -68,6 +69,13 @@
                     </div>
                 <?php endif; ?>
 
+                <?php echo $__env->make('auth.partials.in-app-browser-gate', ['inApp' => $inAppBrowser], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
+                <div
+                    id="passkey-supported-panel"
+                    class="<?php echo \Illuminate\Support\Arr::toCssClasses(['hidden' => $inAppBrowser['blocked']]); ?>"
+                    <?php if($inAppBrowser['blocked']): ?> hidden <?php endif; ?>
+                >
                 <div id="passkey-status" class="mb-3 hidden rounded-xl border px-3 py-2 text-sm" role="status" aria-live="polite"></div>
 
                 <button
@@ -102,7 +110,8 @@
                             <a href="<?php echo e(route('login.recovery')); ?>" class="font-medium text-cyan-300 hover:text-cyan-200">Recover access</a>
                         </span>
                     <?php endif; ?>
-                </p>
+                    </p>
+                </div>
             </div>
         </div>
     </div>
