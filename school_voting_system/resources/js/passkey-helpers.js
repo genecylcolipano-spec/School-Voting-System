@@ -18,3 +18,15 @@ export function base64urlToBuffer(value, field = 'value') {
     for (let i = 0; i < raw.length; i += 1) view[i] = raw.charCodeAt(i);
     return buffer;
 }
+
+export const PAGE_EXPIRED_MESSAGE = 'This page expired. Refresh the page, then try again.';
+
+export function userFacingHttpError(status, message, fallback) {
+    const text = String(message ?? '');
+
+    if (status === 419 || /csrf|token mismatch|page expired/i.test(text)) {
+        return PAGE_EXPIRED_MESSAGE;
+    }
+
+    return text || fallback;
+}

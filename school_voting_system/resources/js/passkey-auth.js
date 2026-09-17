@@ -2,7 +2,7 @@
  * Passkey login ceremony — fetches challenge options, invokes WebAuthn, posts assertion.
  */
 
-import { bufferToBase64url, base64urlToBuffer } from './passkey-helpers.js';
+import { bufferToBase64url, base64urlToBuffer, userFacingHttpError } from './passkey-helpers.js';
 import { initInAppBrowserGate } from './in-app-browser.js';
 
 const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
@@ -78,9 +78,11 @@ async function fetchJson(url, options = {}) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-        const message = data.message
-            ?? Object.values(data.errors ?? {}).flat()?.[0]
-            ?? 'Passkey authentication failed.';
+        const message = userFacingHttpError(
+            response.status,
+            data.message ?? Object.values(data.errors ?? {}).flat()?.[0],
+            'Passkey authentication failed.',
+        );
         throw new Error(message);
     }
 

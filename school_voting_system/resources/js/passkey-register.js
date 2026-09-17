@@ -3,7 +3,7 @@
  * Binds once per button to avoid duplicate handlers when the script is included twice.
  */
 
-import { bufferToBase64url, base64urlToBuffer } from './passkey-helpers.js';
+import { bufferToBase64url, base64urlToBuffer, userFacingHttpError } from './passkey-helpers.js';
 import './auto-capitalize.js';
 import { initInAppBrowserGate } from './in-app-browser.js';
 
@@ -24,11 +24,13 @@ async function fetchJson(url, options = {}) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-        const message = data.message
-            ?? Object.values(data.errors ?? {}).flat()?.[0]
-            ?? (response.status === 403
+        const message = userFacingHttpError(
+            response.status,
+            data.message ?? Object.values(data.errors ?? {}).flat()?.[0],
+            response.status === 403
                 ? 'Enrollment session expired. Open your enrollment link again.'
-                : 'Passkey registration failed.');
+                : 'Passkey registration failed.',
+        );
 
         throw new Error(message);
     }
