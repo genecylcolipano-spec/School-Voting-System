@@ -574,7 +574,7 @@ class AdminTalentCompetitionController extends Controller
     {
         $user = $request->user()->load(['staffRole', 'passkeys']);
         $hostElections = $this->scope->talentHostElections($user);
-        $canPickElection = $user->isSuperAdmin() && $talentEvent === null;
+        $canPickElection = $talentEvent === null && $hostElections->isNotEmpty();
 
         $talentEvent?->loadMissing('election');
 

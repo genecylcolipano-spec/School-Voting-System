@@ -9,6 +9,8 @@ use App\Models\AdminAssignment;
 use App\Models\Candidate;
 use App\Models\Election;
 use App\Models\ElectionCategory;
+use App\Models\Permission;
+use App\Models\StaffRole;
 use App\Models\User;
 use App\Models\Vote;
 use App\Services\Admin\AdminScopeService;
@@ -261,5 +263,42 @@ class AdminScopeStatisticsTest extends TestCase
             $closed->id,
             app(AdminScopeService::class)->resolveTalentHostElection($super, $closed->id)?->id
         );
+    }
+
+    public function test_operations_admin_can_host_talent_on_super_admin_elections(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $permission = Permission::query()->create([
+            'key' => 'create_talent_events',
+            'label' => 'Create Talent Competitions',
+            'category' => 'events',
+        ]);
+        $role = StaffRole::query()->create([
+            'name' => 'Operations Admin',
+            'slug' => 'ops-talent-host-'.uniqid(),
+            'description' => 'Can create talent events',
+            'is_system' => true,
+        ]);
+        $role->permissions()->attach($permission->id);
+        $admin = User::factory()->admin()->create([
+            'staff_role_id' => $role->id,
+        ]);
+
+        $host = Election::factory()->closed()->create([
+            'title' => 'Super Created Council',
+            'created_by' => $super->id,
+        ]);
+        $annulled = Election::factory()->closed()->create([
+            'title' => 'Annulled Council',
+            'annulled_at' => now(),
+            'created_by' => $super->id,
+        ]);
+
+        $scope = app(AdminScopeService::class);
+
+        $this->assertTrue($scope->canCreateTalentEvents($admin));
+        $this->assertTrue($scope->talentHostElections($admin)->contains('id', $host->id));
+        $this->assertFalse($scope->talentHostElections($admin)->contains('id', $annulled->id));
+        $this->assertSame($host->id, $scope->resolveTalentHostElection($admin, $host->id)?->id);
     }
 }

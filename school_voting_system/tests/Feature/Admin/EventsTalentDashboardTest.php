@@ -212,29 +212,70 @@ class EventsTalentDashboardTest extends TestCase
             ->assertSee(route('admin.elections.create'), false);
     }
 
-    public function test_regular_admin_without_assignment_sees_assigned_election_notice(): void
+    public function test_operations_admin_can_create_talent_competition_on_super_admin_election(): void
     {
-        $permission = Permission::query()->create([
-            'key' => 'create_talent_events',
-            'label' => 'Create Talent Competitions',
-            'category' => 'events',
+        $super = User::factory()->superAdmin()->create();
+        $election = Election::factory()->create([
+            'title' => 'Campus Student Council',
+            'status' => ElectionStatus::Active,
+            'created_by' => $super->id,
         ]);
-        $role = StaffRole::query()->create([
-            'name' => 'Operations Admin',
-            'slug' => 'election_admin_talent_create',
-            'description' => 'Can create talent events',
-            'is_system' => true,
-        ]);
-        $role->permissions()->attach($permission->id);
-        $admin = User::factory()->admin()->create([
-            'staff_role_id' => $role->id,
-        ]);
+        $admin = $this->makeOperationsAdmin();
 
         $this->actingAs($admin)
             ->get(route('admin.talent-competition.create'))
             ->assertOk()
-            ->assertSee('You need an assigned election before creating a talent competition. Contact Super Admin.')
+            ->assertDontSee('Contact Super Admin')
+            ->assertDontSee('You need an assigned election before creating a talent competition')
+            ->assertSee('Linked election')
+            ->assertSee('Campus Student Council')
+            ->assertSee('Competition Title');
+
+        $this->actingAs($admin)
+            ->post(route('admin.talent-competition.store'), $this->competitionPayload($election->id))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('talent_events', [
+            'title' => 'Closed Host Showcase',
+            'election_id' => $election->id,
+            'created_by' => $admin->id,
+        ]);
+    }
+
+    public function test_operations_admin_without_any_election_is_asked_to_create_one(): void
+    {
+        $admin = $this->makeOperationsAdmin();
+
+        $this->actingAs($admin)
+            ->get(route('admin.talent-competition.create'))
+            ->assertOk()
+            ->assertDontSee('Contact Super Admin')
+            ->assertSee('Create an election first')
+            ->assertSee(route('admin.elections.create'), false)
             ->assertDontSee('Competition Title');
+    }
+
+    public function test_auditor_cannot_create_talent_competition(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        Election::factory()->create([
+            'status' => ElectionStatus::Active,
+            'created_by' => $super->id,
+        ]);
+
+        $role = StaffRole::query()->create([
+            'name' => 'Auditor',
+            'slug' => 'auditor',
+            'description' => 'Read-only auditor',
+            'is_system' => true,
+        ]);
+        $auditor = User::factory()->admin()->create([
+            'staff_role_id' => $role->id,
+        ]);
+
+        $this->actingAs($auditor)
+            ->get(route('admin.talent-competition.create'))
+            ->assertForbidden();
     }
 
     public function test_super_admin_can_create_talent_competition_on_closed_election(): void
@@ -345,6 +386,28 @@ class EventsTalentDashboardTest extends TestCase
             'voting_ends_at' => now()->addDay(),
             'published_to_students' => true,
             'created_by' => $creator->id,
+        ]);
+    }
+
+    protected function makeOperationsAdmin(): User
+    {
+        $permissions = collect(['create_talent_events', 'modify_elections'])->map(function (string $key) {
+            return Permission::query()->firstOrCreate(
+                ['key' => $key],
+                ['label' => $key, 'category' => 'events'],
+            );
+        });
+
+        $role = StaffRole::query()->create([
+            'name' => 'Operations Admin',
+            'slug' => 'election_admin_talent_create_'.uniqid(),
+            'description' => 'Can create talent events',
+            'is_system' => true,
+        ]);
+        $role->permissions()->attach($permissions->pluck('id'));
+
+        return User::factory()->admin()->create([
+            'staff_role_id' => $role->id,
         ]);
     }
 

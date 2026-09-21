@@ -63,7 +63,7 @@
                 @error('election_id')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
             </div>
         @else
-            <p class="mt-1 text-sm text-slate-400">Assigned election: {{ $election?->title ?? '—' }}</p>
+            <p class="mt-1 text-sm text-slate-400">Linked election: {{ $election?->title ?? '—' }}</p>
         @endif
 
         @if ($isEdit)

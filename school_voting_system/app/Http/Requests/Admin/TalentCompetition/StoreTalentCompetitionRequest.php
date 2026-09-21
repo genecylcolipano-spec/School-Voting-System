@@ -16,25 +16,15 @@ class StoreTalentCompetitionRequest extends AdminFormRequest
 {
     public function authorize(): bool
     {
-        if (! $this->scope()->canCreateTalentEvents($this->user())) {
-            return false;
-        }
-
-        if ($this->user()?->isSuperAdmin()) {
-            return $this->scope()->talentHostElections($this->user())->isNotEmpty();
-        }
-
-        return $this->scope()->assignedElection($this->user()) !== null;
+        return $this->scope()->canCreateTalentEvents($this->user())
+            && $this->scope()->talentHostElections($this->user())->isNotEmpty();
     }
 
     public function rules(): array
     {
         $rules = $this->talentRules();
-
-        if ($this->user()?->isSuperAdmin()) {
-            $hostIds = $this->scope()->talentHostElections($this->user())->pluck('id')->all();
-            $rules['election_id'] = ['required', 'integer', Rule::in($hostIds)];
-        }
+        $hostIds = $this->scope()->talentHostElections($this->user())->pluck('id')->all();
+        $rules['election_id'] = ['required', 'integer', Rule::in($hostIds)];
 
         return $rules;
     }

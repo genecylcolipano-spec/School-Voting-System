@@ -67,13 +67,14 @@ class AdminScopeService
 
     /**
      * Elections a staff member may attach a new talent competition to.
-     * Super Admins may use any non-annulled election, including closed ones.
+     * Super Admins and Operations Admins who can create talent events may use
+     * any non-annulled election, including ones Super Admin created.
      *
      * @return Collection<int, Election>
      */
     public function talentHostElections(User $admin): Collection
     {
-        if ($admin->isSuperAdmin()) {
+        if ($admin->isSuperAdmin() || $this->canCreateTalentEvents($admin)) {
             return Election::query()
                 ->whereNull('annulled_at')
                 ->orderByDesc('id')
