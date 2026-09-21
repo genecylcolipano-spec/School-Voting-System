@@ -25,7 +25,6 @@ class DashboardController extends Controller
 
         return view('dashboards.student', [
             'user' => $user,
-            'firstName' => $user->first_name ?: str($user->name)->before(' ')->toString(),
             'notificationsCount' => $this->notificationService->unreadCountFor($user),
             'canVoteNow' => $overview['can_vote_now'],
             'voteNowUrl' => $overview['vote_now_url'],
