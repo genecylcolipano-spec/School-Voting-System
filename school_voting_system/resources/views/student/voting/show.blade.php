@@ -151,7 +151,7 @@
                                 <div class="min-w-0">
                                     <h1 class="text-2xl font-bold text-white">{{ $election->title }}</h1>
                                     @if ($election->description)
-                                        <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">{{ $election->description }}</p>
+                                    <p class="mt-1 max-w-2xl text-sm text-slate-300">{{ $election->description }}</p>
                                     @endif
                                     <span class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-200">
                                         <span class="relative flex h-2 w-2">
