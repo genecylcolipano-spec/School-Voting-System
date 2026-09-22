@@ -4,6 +4,7 @@ namespace Tests\Feature\Campaign;
 
 use App\Enums\CampaignStatus;
 use App\Enums\ElectionStatus;
+use App\Http\Requests\Admin\Campaign\StoreCampaignPosterRequest;
 use App\Models\Candidate;
 use App\Models\Election;
 use App\Models\ElectionCategory;
@@ -14,7 +15,9 @@ use App\Models\Vote;
 use App\Services\Admin\AdminAnalyticsService;
 use App\Services\Admin\ElectionSetupService;
 use App\Services\Campaign\StudentCampaignService;
+use App\Services\Media\ImageCompressionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\CreatesElectionBallotFixtures;
 use Tests\Support\TestImageFactory;
@@ -353,10 +356,42 @@ class CampaignModuleTest extends TestCase
         $campaign = Partylist::factory()->create();
 
         $this->actingAs($admin)
+            ->from(route('admin.campaigns.index'))
             ->post(route('admin.campaigns.poster.store', $campaign), [
                 'poster_image' => TestImageFactory::portraitUploadedFile(),
             ])
-            ->assertStatus(422);
+            ->assertRedirect(route('admin.campaigns.index'))
+            ->assertSessionHas('error', StoreCampaignPosterRequest::UPLOAD_FAILED_MESSAGE)
+            ->assertSessionHas('poster_upload_failed_partylist_id', $campaign->id);
+
+        $this->assertDatabaseCount('partylist_posters', 0);
+    }
+
+    public function test_invalid_poster_file_shows_friendly_error_on_campaigns_page(): void
+    {
+        $this->withoutVite();
+        Storage::fake('public');
+
+        $admin = User::factory()->superAdmin()->create();
+        $election = Election::factory()->create();
+        $campaign = Partylist::factory()->create(['name' => 'Friendly Error Party']);
+        $campaign->elections()->attach($election->id);
+
+        $response = $this->actingAs($admin)
+            ->from(route('admin.campaigns.index'))
+            ->post(route('admin.campaigns.poster.store', $campaign), [
+                'poster_image' => UploadedFile::fake()->create('notes.pdf', 100, 'application/pdf'),
+            ]);
+
+        $response
+            ->assertRedirect(route('admin.campaigns.index'))
+            ->assertSessionHas('error', StoreCampaignPosterRequest::UPLOAD_FAILED_MESSAGE)
+            ->assertSessionHas('poster_upload_failed_partylist_id', $campaign->id)
+            ->assertSessionHasErrors('poster_image');
+
+        $this->followRedirects($response)
+            ->assertOk()
+            ->assertSee(StoreCampaignPosterRequest::UPLOAD_FAILED_MESSAGE);
 
         $this->assertDatabaseCount('partylist_posters', 0);
     }
@@ -422,6 +457,49 @@ class CampaignModuleTest extends TestCase
 
         $response->assertRedirect(route('admin.campaigns.index'));
         $this->assertDatabaseHas('partylists', ['name' => 'Poster Party']);
+    }
+
+    public function test_campaign_banner_over_two_megabytes_is_accepted_and_compressed(): void
+    {
+        Storage::fake('public');
+
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->post(route('admin.campaigns.store'), [
+                'name' => 'Progress Alliance',
+                'status' => CampaignStatus::Active->value,
+                'banner' => TestImageFactory::jpegUploadedFileReportingKilobytes(3000),
+            ])
+            ->assertRedirect(route('admin.campaigns.index'))
+            ->assertSessionDoesntHaveErrors('banner');
+
+        $campaign = Partylist::query()->where('name', 'Progress Alliance')->first();
+        $this->assertNotNull($campaign?->banner_path);
+        $this->assertTrue(Storage::disk('public')->exists($campaign->banner_path));
+        $this->assertLessThanOrEqual(
+            ImageCompressionService::MAX_STORED_BYTES,
+            Storage::disk('public')->size($campaign->banner_path),
+        );
+    }
+
+    public function test_campaign_banner_over_ten_megabytes_is_rejected_with_friendly_message(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->from(route('admin.campaigns.create'))
+            ->post(route('admin.campaigns.store'), [
+                'name' => 'Huge Banner Party',
+                'status' => CampaignStatus::Active->value,
+                'banner' => TestImageFactory::jpegUploadedFileReportingKilobytes(11000, 'huge.jpg'),
+            ])
+            ->assertRedirect(route('admin.campaigns.create'))
+            ->assertSessionHasErrors([
+                'banner' => 'This banner is too large to upload. Choose a JPG, PNG, or WEBP up to 10 MB. It will be resized and compressed automatically.',
+            ]);
+
+        $this->assertDatabaseMissing('partylists', ['name' => 'Huge Banner Party']);
     }
 
     protected function buttonStateFor(Partylist $campaign, ?User $student = null): array

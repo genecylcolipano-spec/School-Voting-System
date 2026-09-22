@@ -162,9 +162,17 @@ class AdminCampaignController extends Controller
         $this->scope->assertPartylistInScope($request->user(), $partylist);
 
         $electionId = $partylist->election_id ?? $partylist->elections()->value('elections.id');
-        abort_unless($electionId, 422, 'Attach this campaign to an election before uploading posters.');
+        if (! $electionId) {
+            return StoreCampaignPosterRequest::failureRedirect($partylist->id);
+        }
 
-        $this->createPosterForPartylist($partylist, $request->file('poster_image'), $request->user(), $electionId);
+        try {
+            $this->createPosterForPartylist($partylist, $request->file('poster_image'), $request->user(), $electionId);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return StoreCampaignPosterRequest::failureRedirect($partylist->id);
+        }
 
         $this->logAdminAction(
             "Uploaded poster for campaign: {$partylist->name}",

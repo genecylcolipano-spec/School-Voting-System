@@ -11,6 +11,9 @@ class ImageCompressionService
 {
     public const MAX_STORED_BYTES = 2_097_152;
 
+    /** Incoming upload cap in kilobytes. Stored files are still compressed to MAX_STORED_BYTES. */
+    public const MAX_UPLOAD_KILOBYTES = 10240;
+
     public const MAX_DIMENSION = 1920;
 
     public const MEDIUM_DIMENSION = 1280;

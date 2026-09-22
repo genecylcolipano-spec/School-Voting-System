@@ -84,7 +84,7 @@
                     class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 file:mr-4 file:rounded-lg file:border-0 file:bg-violet-500/20 file:px-3 file:py-1.5 file:text-sm file:text-violet-300"
                     @change="onFile($event)">
                 <p class="mt-1 text-xs text-slate-500">
-                    Recommended: <span class="text-slate-300">1600 × 900 px</span> · Landscape (16:9) · JPG, PNG or WEBP · Max 2MB
+                    Recommended: <span class="text-slate-300">1600 × 900 px</span> · Landscape (16:9) · JPG, PNG or WEBP · Up to 10 MB; oversized files are compressed on save.
                 </p>
                 <p class="mt-0.5 text-[11px] text-slate-600" x-text="hint"></p>
                 @error('banner')<p class="mt-1 text-sm text-rose-400">{{ $message }}</p>@enderror
@@ -122,13 +122,29 @@
             }
 
             function campaignBannerPreview(initial, initialContain) {
+                const maxUploadBytes = {{ \App\Services\Media\ImageCompressionService::MAX_UPLOAD_KILOBYTES * 1024 }};
+                const storedTargetBytes = {{ \App\Services\Media\ImageCompressionService::MAX_STORED_BYTES }};
+                const formatBytes = (bytes) => {
+                    if (bytes < 1024) return `${bytes} B`;
+                    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+                    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+                };
+
                 return {
                     preview: initial || null,
                     contain: !!initialContain,
                     hint: 'Preview matches live campaign cards: landscape fills 16:9; portrait/square stay fully visible over a blurred backdrop.',
                     onFile(event) {
-                        const file = event.target.files?.[0];
+                        const input = event.target;
+                        const file = input.files?.[0];
                         if (!file) return;
+
+                        if (file.size > maxUploadBytes) {
+                            this.hint = `This banner is too large to upload (${formatBytes(file.size)}). Choose a JPG, PNG, or WEBP up to 10 MB.`;
+                            input.value = '';
+                            return;
+                        }
+
                         const url = URL.createObjectURL(file);
                         const img = new Image();
                         img.onload = () => {
@@ -136,8 +152,15 @@
                             const orientation = this.contain
                                 ? (img.naturalWidth === img.naturalHeight ? 'square' : 'portrait')
                                 : 'landscape';
-                            this.hint = `Selected ${img.naturalWidth}×${img.naturalHeight}px (${orientation}). Save to upload.`;
+                            const sizeLabel = formatBytes(file.size);
+                            this.hint = file.size > storedTargetBytes
+                                ? `Selected ${img.naturalWidth}×${img.naturalHeight}px (${orientation}, ${sizeLabel}). It will be resized and compressed on save.`
+                                : `Selected ${img.naturalWidth}×${img.naturalHeight}px (${orientation}, ${sizeLabel}). Save to upload.`;
                             this.preview = url;
+                        };
+                        img.onerror = () => {
+                            this.hint = 'Could not read this file. Use a JPG, PNG, or WEBP image.';
+                            URL.revokeObjectURL(url);
                         };
                         img.src = url;
                     },

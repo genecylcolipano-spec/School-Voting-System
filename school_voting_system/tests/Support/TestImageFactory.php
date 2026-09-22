@@ -29,6 +29,32 @@ class TestImageFactory
         return new UploadedFile($path, $name, 'image/jpeg', null, true);
     }
 
+    public static function jpegUploadedFileReportingKilobytes(int $kilobytes, string $name = 'progressbanner.jpg', int $width = 1672, int $height = 941): UploadedFile
+    {
+        $source = self::jpegUploadedFile($name, $width, $height);
+
+        return UploadedFile::fake()
+            ->createWithContent($name, (string) file_get_contents($source->getRealPath()))
+            ->mimeType('image/jpeg')
+            ->size($kilobytes);
+    }
+
+    public static function uncompressedPngUploadedFile(int $width = 1920, int $height = 1080, string $name = 'progressbanner.png'): UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'png-');
+        rename($path, $path .= '.png');
+
+        $image = imagecreatetruecolor($width, $height);
+        for ($y = 0; $y < $height; $y++) {
+            $color = imagecolorallocate($image, $y % 256, ($y * 3) % 256, ($y * 7) % 256);
+            imageline($image, 0, $y, $width - 1, $y, $color);
+        }
+        imagepng($image, $path, 0);
+        imagedestroy($image);
+
+        return new UploadedFile($path, $name, 'image/png', null, true);
+    }
+
     public static function uploadedFile(string $name, int $width, int $height): UploadedFile
     {
         return self::jpegUploadedFile($name, $width, $height);

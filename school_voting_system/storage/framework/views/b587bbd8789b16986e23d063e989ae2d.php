@@ -158,6 +158,9 @@
                             <?php endif; ?>
 
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('update', $partylist)): ?>
+                                <?php
+                                    $posterUploadFailed = (int) session('poster_upload_failed_partylist_id') === (int) $partylist->id;
+                                ?>
                                 <?php if($partylist->elections_count > 0): ?>
                                     <form
                                         method="POST"
@@ -173,7 +176,12 @@
                                                 name="poster_image"
                                                 accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                                                 required
-                                                class="w-full rounded-xl border border-slate-700 bg-slate-950/50 px-3 py-2 text-xs text-slate-100 file:mr-2 file:rounded-lg file:border-0 file:bg-violet-500/20 file:px-2 file:py-1 file:text-xs file:text-violet-300"
+                                                aria-invalid="<?php echo e($posterUploadFailed ? 'true' : 'false'); ?>"
+                                                class="<?php echo \Illuminate\Support\Arr::toCssClasses([
+                                                    'w-full rounded-xl border bg-slate-950/50 px-3 py-2 text-xs text-slate-100 file:mr-2 file:rounded-lg file:border-0 file:bg-violet-500/20 file:px-2 file:py-1 file:text-xs file:text-violet-300',
+                                                    'border-rose-500/60' => $posterUploadFailed,
+                                                    'border-slate-700' => ! $posterUploadFailed,
+                                                ]); ?>"
                                             >
                                         </label>
                                         <button type="submit" class="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">
@@ -181,8 +189,14 @@
                                         </button>
                                     </form>
                                     <p class="mt-1 text-[10px] text-slate-500">Portrait or landscape JPG/PNG, max 2MB.</p>
+                                    <?php if($posterUploadFailed && session('error')): ?>
+                                        <p class="mt-1 text-xs text-rose-300" role="alert"><?php echo e(session('error')); ?></p>
+                                    <?php endif; ?>
                                 <?php else: ?>
                                     <p class="mt-2 text-sm text-slate-500">Attach this campaign to an election first, then you can upload a poster.</p>
+                                    <?php if($posterUploadFailed && session('error')): ?>
+                                        <p class="mt-1 text-xs text-rose-300" role="alert"><?php echo e(session('error')); ?></p>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                             <?php endif; ?>
                         </div>
