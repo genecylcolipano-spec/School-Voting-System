@@ -27,6 +27,14 @@
                         <div class="aspect-[16/5] w-full bg-gradient-to-br from-slate-900 via-slate-950 to-violet-950/40"></div>
                     @endif
                     <div class="p-5">
+                        @php
+                            $uploadedPosters = $partylist->posters->filter->hasUploadedFile();
+                            $brokenPosters = $partylist->posters->reject->hasUploadedFile();
+                            $motto = trim((string) $partylist->motto);
+                            $platform = trim((string) $partylist->platform);
+                            $showPlatform = $platform !== '' && strcasecmp($platform, $motto) !== 0;
+                            $electionTitles = $partylist->elections->pluck('title')->filter()->values();
+                        @endphp
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3">
                                 @if ($partylist->logo_path)
@@ -37,76 +45,107 @@
                                     @if ($partylist->acronym)
                                         <p class="text-sm text-violet-300">{{ $partylist->acronym }}</p>
                                     @endif
-                                    @if ($partylist->motto)
-                                        <p class="mt-1 text-xs italic text-slate-500">"{{ $partylist->motto }}"</p>
+                                    @if ($motto !== '')
+                                        <p class="mt-1 text-xs italic text-slate-500">"{{ $motto }}"</p>
                                     @endif
                                 </div>
                             </div>
                             <x-admin-status-badge :status="$partylist->status->value" />
                         </div>
 
-                        @if ($partylist->platform)
-                            <p class="mt-3 text-sm text-slate-400">{{ \Illuminate\Support\Str::limit($partylist->platform, 160) }}</p>
+                        @if ($showPlatform)
+                            <p class="mt-3 text-sm text-slate-400">{{ \Illuminate\Support\Str::limit($platform, 160) }}</p>
                         @endif
 
                         <div class="mt-3 flex flex-wrap gap-3 text-xs text-slate-500">
                             <span>{{ $partylist->elections_count }} election(s)</span>
                             <span>{{ $partylist->candidates_count }} candidate(s)</span>
-                            <span>{{ $partylist->posters_count }} poster(s)</span>
+                            <span>{{ $uploadedPosters->count() }} poster(s)</span>
                             @if ($partylist->leader)
                                 <span>Leader: {{ $partylist->leader }}</span>
                             @endif
                         </div>
+                        @if ($electionTitles->isNotEmpty())
+                            <p class="mt-1 text-xs text-slate-500">
+                                Attached to:
+                                {{ $electionTitles->take(2)->implode(', ') }}{{ $electionTitles->count() > 2 ? ' +'.($electionTitles->count() - 2).' more' : '' }}
+                            </p>
+                        @endif
 
                         <div class="mt-4">
                             <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Posters</p>
 
-                            @if ($partylist->posters->isNotEmpty())
+                            @if ($uploadedPosters->isNotEmpty())
                                 <div class="mt-2 flex flex-wrap gap-2">
-                                    @foreach ($partylist->posters as $poster)
-                                        <a
-                                            href="{{ $poster->hasUploadedFile() ? $poster->file_url : '#' }}"
-                                            target="_blank"
-                                            rel="noopener"
-                                            class="group relative overflow-hidden rounded-lg border border-slate-800"
-                                            title="{{ ucfirst($poster->status) }}"
-                                        >
-                                            @if ($poster->hasUploadedFile())
+                                    @foreach ($uploadedPosters as $poster)
+                                        <div class="group relative overflow-hidden rounded-lg border border-slate-800">
+                                            <a
+                                                href="{{ $poster->file_url }}"
+                                                target="_blank"
+                                                rel="noopener"
+                                                title="{{ ucfirst($poster->status) }}"
+                                            >
                                                 <img src="{{ $poster->file_url }}" alt="{{ $partylist->name }} poster" class="h-24 w-auto max-w-[6rem] rounded object-contain transition group-hover:opacity-90">
-                                            @else
-                                                <div class="flex h-24 w-24 items-center justify-center bg-slate-950 text-xs text-slate-500">No file</div>
-                                            @endif
-                                            <span class="absolute bottom-1 right-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-white">{{ $poster->status }}</span>
-                                        </a>
+                                                <span class="absolute bottom-1 right-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-white">{{ $poster->status }}</span>
+                                            </a>
+                                            @can('update', $partylist)
+                                                <form method="POST" action="{{ route('admin.campaigns.poster.destroy', [$partylist, $poster]) }}" class="absolute right-1 top-1" onsubmit="return confirm('Remove this poster?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-rose-200 hover:text-white">Remove</button>
+                                                </form>
+                                            @endcan
+                                        </div>
                                     @endforeach
                                 </div>
                             @else
                                 <p class="mt-2 text-sm text-slate-500">No poster uploaded yet.</p>
                             @endif
 
+                            @if ($brokenPosters->isNotEmpty())
+                                <div class="mt-2 space-y-2">
+                                    @foreach ($brokenPosters as $poster)
+                                        <div class="flex items-center justify-between gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-100">
+                                            <span>A poster record is missing its image file.</span>
+                                            @can('update', $partylist)
+                                                <form method="POST" action="{{ route('admin.campaigns.poster.destroy', [$partylist, $poster]) }}" onsubmit="return confirm('Remove this missing poster record?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="font-semibold text-amber-50 underline decoration-amber-300/60 underline-offset-2 hover:text-white">Remove</button>
+                                                </form>
+                                            @endcan
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+
                             @can('update', $partylist)
-                                <form
-                                    method="POST"
-                                    action="{{ route('admin.campaigns.poster.store', $partylist) }}"
-                                    enctype="multipart/form-data"
-                                    class="mt-3 flex flex-wrap items-center gap-2"
-                                >
-                                    @csrf
-                                    <label class="flex-1 min-w-[12rem]">
-                                        <span class="sr-only">Poster image for {{ $partylist->name }}</span>
-                                        <input
-                                            type="file"
-                                            name="poster_image"
-                                            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-                                            required
-                                            class="w-full rounded-xl border border-slate-700 bg-slate-950/50 px-3 py-2 text-xs text-slate-100 file:mr-2 file:rounded-lg file:border-0 file:bg-violet-500/20 file:px-2 file:py-1 file:text-xs file:text-violet-300"
-                                        >
-                                    </label>
-                                    <button type="submit" class="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">
-                                        Upload poster
-                                    </button>
-                                </form>
-                                <p class="mt-1 text-[10px] text-slate-500">Portrait or landscape JPG/PNG, max 2MB. Available once attached to an election.</p>
+                                @if ($partylist->elections_count > 0)
+                                    <form
+                                        method="POST"
+                                        action="{{ route('admin.campaigns.poster.store', $partylist) }}"
+                                        enctype="multipart/form-data"
+                                        class="mt-3 flex flex-wrap items-center gap-2"
+                                    >
+                                        @csrf
+                                        <label class="flex-1 min-w-[12rem]">
+                                            <span class="sr-only">Poster image for {{ $partylist->name }}</span>
+                                            <input
+                                                type="file"
+                                                name="poster_image"
+                                                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                                                required
+                                                class="w-full rounded-xl border border-slate-700 bg-slate-950/50 px-3 py-2 text-xs text-slate-100 file:mr-2 file:rounded-lg file:border-0 file:bg-violet-500/20 file:px-2 file:py-1 file:text-xs file:text-violet-300"
+                                            >
+                                        </label>
+                                        <button type="submit" class="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">
+                                            Upload poster
+                                        </button>
+                                    </form>
+                                    <p class="mt-1 text-[10px] text-slate-500">Portrait or landscape JPG/PNG, max 2MB.</p>
+                                @else
+                                    <p class="mt-2 text-sm text-slate-500">Attach this campaign to an election first, then you can upload a poster.</p>
+                                @endif
                             @endcan
                         </div>
 

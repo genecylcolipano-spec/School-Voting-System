@@ -8,6 +8,7 @@ use App\Models\Candidate;
 use App\Models\Election;
 use App\Models\ElectionCategory;
 use App\Models\Partylist;
+use App\Models\PartylistPoster;
 use App\Models\User;
 use App\Models\Vote;
 use App\Services\Admin\AdminAnalyticsService;
@@ -305,6 +306,108 @@ class CampaignModuleTest extends TestCase
         $this->assertFalse($campaign->hasLandscapeBanner());
         $this->assertTrue($campaign->isPortraitBanner());
         $this->assertNotNull($campaign->bannerUrl());
+    }
+
+    public function test_unattached_campaign_index_does_not_offer_poster_upload(): void
+    {
+        $this->withoutVite();
+
+        $admin = User::factory()->superAdmin()->create();
+        $campaign = Partylist::factory()->create([
+            'name' => 'Unattached Poster Party',
+            'motto' => 'One slogan only',
+            'platform' => 'One slogan only',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.campaigns.index'))
+            ->assertOk()
+            ->assertSee('Unattached Poster Party')
+            ->assertSee('Attach this campaign to an election first')
+            ->assertDontSee('Upload poster');
+    }
+
+    public function test_attached_campaign_index_offers_poster_upload_and_lists_election(): void
+    {
+        $this->withoutVite();
+
+        $admin = User::factory()->superAdmin()->create();
+        $election = Election::factory()->create(['title' => 'Campus Council 2026']);
+        $campaign = Partylist::factory()->create(['name' => 'Attached Poster Party']);
+        $campaign->elections()->attach($election->id);
+
+        $this->actingAs($admin)
+            ->get(route('admin.campaigns.index'))
+            ->assertOk()
+            ->assertSee('Attached Poster Party')
+            ->assertSee('Upload poster')
+            ->assertSee('Campus Council 2026')
+            ->assertDontSee('Attach this campaign to an election first');
+    }
+
+    public function test_poster_upload_is_rejected_before_election_is_attached(): void
+    {
+        Storage::fake('public');
+
+        $admin = User::factory()->superAdmin()->create();
+        $campaign = Partylist::factory()->create();
+
+        $this->actingAs($admin)
+            ->post(route('admin.campaigns.poster.store', $campaign), [
+                'poster_image' => TestImageFactory::portraitUploadedFile(),
+            ])
+            ->assertStatus(422);
+
+        $this->assertDatabaseCount('partylist_posters', 0);
+    }
+
+    public function test_index_does_not_repeat_identical_motto_and_platform(): void
+    {
+        $this->withoutVite();
+
+        $admin = User::factory()->superAdmin()->create();
+        Partylist::factory()->create([
+            'name' => 'Duplicate Slogan Party',
+            'motto' => 'Less Promises, More Progress',
+            'platform' => 'Less Promises, More Progress',
+        ]);
+
+        $html = $this->actingAs($admin)
+            ->get(route('admin.campaigns.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertSame(1, substr_count($html, 'Less Promises, More Progress'));
+    }
+
+    public function test_broken_poster_can_be_removed(): void
+    {
+        $this->withoutVite();
+
+        $admin = User::factory()->superAdmin()->create();
+        $election = Election::factory()->create();
+        $campaign = Partylist::factory()->create(['name' => 'Missing File Party']);
+        $campaign->elections()->attach($election->id);
+        $poster = PartylistPoster::query()->create([
+            'partylist_id' => $campaign->id,
+            'election_id' => $election->id,
+            'title' => 'Missing File Party Poster',
+            'file_path' => null,
+            'status' => PartylistPoster::STATUS_PENDING,
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.campaigns.index'))
+            ->assertOk()
+            ->assertSee('A poster record is missing its image file.')
+            ->assertDontSee('No file');
+
+        $this->actingAs($admin)
+            ->delete(route('admin.campaigns.poster.destroy', [$campaign, $poster]))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('partylist_posters', ['id' => $poster->id]);
     }
 
     public function test_portrait_campaign_banner_upload_is_accepted(): void

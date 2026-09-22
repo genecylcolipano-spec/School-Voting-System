@@ -34,7 +34,10 @@ class AdminCampaignController extends Controller
         // Campaigns are an independent, reusable pool shared across elections.
         $partylists = Partylist::query()
             ->withCount(['posters', 'candidates', 'elections'])
-            ->with(['posters' => fn ($q) => $q->latest()])
+            ->with([
+                'elections:id,title',
+                'posters' => fn ($q) => $q->latest(),
+            ])
             ->orderBy('name')
             ->get();
 
@@ -171,6 +174,25 @@ class AdminCampaignController extends Controller
         );
 
         return back()->with('success', 'Poster uploaded and displayed on dashboards.');
+    }
+
+    public function destroyPoster(Request $request, Partylist $partylist, PartylistPoster $poster): RedirectResponse
+    {
+        $this->authorize('update', $partylist);
+        $this->scope->assertPartylistInScope($request->user(), $partylist);
+        abort_unless((int) $poster->partylist_id === (int) $partylist->id, 404);
+
+        $this->deletePosterFile($poster);
+        $poster->delete();
+
+        $this->logAdminAction(
+            "Removed poster for campaign: {$partylist->name}",
+            AuditActionType::Election,
+            'partylist_poster',
+            $partylist->id,
+        );
+
+        return back()->with('success', 'Poster removed.');
     }
 
     public function destroy(Request $request, Partylist $partylist): RedirectResponse

@@ -351,6 +351,7 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
         Route::get('/campaigns/{partylist}/edit', [AdminCampaignController::class, 'edit'])->name('campaigns.edit');
         Route::put('/campaigns/{partylist}', [AdminCampaignController::class, 'update'])->name('campaigns.update');
         Route::post('/campaigns/{partylist}/poster', [AdminCampaignController::class, 'storePoster'])->name('campaigns.poster.store');
+        Route::delete('/campaigns/{partylist}/posters/{poster}', [AdminCampaignController::class, 'destroyPoster'])->name('campaigns.poster.destroy');
         Route::delete('/campaigns/{partylist}', [AdminCampaignController::class, 'destroy'])->name('campaigns.destroy');
         Route::get('/events-talent', [AdminEventsTalentController::class, 'index'])->name('events-talent.index');
 

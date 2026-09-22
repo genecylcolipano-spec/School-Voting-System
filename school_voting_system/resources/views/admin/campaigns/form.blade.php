@@ -2,7 +2,7 @@
     $partylist = $partylist ?? null;
     $isEdit = $partylist !== null;
     $formAction = $isEdit ? route('admin.campaigns.update', $partylist) : route('admin.campaigns.store');
-    $currentStatus = old('status', $isEdit ? ($partylist->status?->value ?? 'draft') : 'draft');
+    $currentStatus = old('status', $isEdit ? ($partylist->status?->value ?? 'active') : 'active');
     $currentColor = old('color', optional($partylist)->color ?? '#7c3aed');
     $logoUrl = optional($partylist)->logo_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($partylist->logo_path) : null;
     $bannerUrl = optional($partylist)->banner_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($partylist->banner_path) : null;
