@@ -22,7 +22,7 @@
                 <h1 class="text-2xl font-bold text-white">{{ $election->title }}</h1>
 
                 @if ($election->description)
-                    <p class="mx-auto mt-3 max-w-xl text-sm text-slate-400">{{ $election->description }}</p>
+                    <p class="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-400 text-justify whitespace-pre-line">{{ $election->description }}</p>
                 @endif
 
                 <p class="mx-auto mt-6 max-w-md text-base text-amber-200">{{ $message }}</p>

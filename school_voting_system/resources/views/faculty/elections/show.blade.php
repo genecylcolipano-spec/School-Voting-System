@@ -20,7 +20,7 @@
                 <div class="min-w-0">
                     <h2 class="text-xl font-bold text-white sm:text-2xl">{{ $election->title }}</h2>
                     @if ($election->description)
-                        <p class="mt-2 text-sm text-slate-300">{{ $election->description }}</p>
+                        <p class="mt-2 text-sm leading-relaxed text-slate-300 text-justify whitespace-pre-line">{{ $election->description }}</p>
                     @endif
                 </div>
                 <div class="text-right">
