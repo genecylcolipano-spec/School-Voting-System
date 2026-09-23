@@ -21,21 +21,21 @@
                     @if ($candidate->platform)
                         <section>
                             <h2 class="text-sm font-semibold uppercase tracking-wide text-cyan-300">Platform</h2>
-                            <p class="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-300">{{ $candidate->platform }}</p>
+                            <p class="mt-3 break-words whitespace-pre-line text-justify text-sm leading-relaxed text-slate-300">{{ $candidate->platform }}</p>
                         </section>
                     @endif
 
                     @if ($candidate->biography)
                         <section>
                             <h2 class="text-sm font-semibold uppercase tracking-wide text-cyan-300">Biography</h2>
-                            <p class="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-300">{{ $candidate->biography }}</p>
+                            <p class="mt-3 break-words whitespace-pre-line text-justify text-sm leading-relaxed text-slate-300">{{ $candidate->biography }}</p>
                         </section>
                     @endif
 
                     @if ($candidate->campaign_promises)
                         <section>
                             <h2 class="text-sm font-semibold uppercase tracking-wide text-cyan-300">Campaign Promises</h2>
-                            <p class="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-300">{{ $candidate->campaign_promises }}</p>
+                            <p class="mt-3 break-words whitespace-pre-line text-justify text-sm leading-relaxed text-slate-300">{{ $candidate->campaign_promises }}</p>
                         </section>
                     @endif
                 </div>
