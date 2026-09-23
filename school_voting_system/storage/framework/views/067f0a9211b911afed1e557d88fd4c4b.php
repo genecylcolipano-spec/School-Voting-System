@@ -18,14 +18,12 @@
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
 <?php $component->withAttributes(['title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute('Create Talent Competition'),'user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount),'assigned-role' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($assignedRole)]); ?>
-        <?php if($user->isSuperAdmin() && $hostElections->isEmpty()): ?>
+        <?php if($hostElections->isEmpty()): ?>
             <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
                 Create an election first, then you can add a talent competition.
-                <a href="<?php echo e(route('admin.elections.create')); ?>" class="ml-1 font-semibold text-amber-50 underline decoration-amber-300/60 underline-offset-2 hover:text-white">Create election</a>
-            </div>
-        <?php elseif(! $user->isSuperAdmin() && ! $election): ?>
-            <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-                You need an assigned election before creating a talent competition. Contact Super Admin.
+                <?php if($user->isSuperAdmin() || $user->hasPermission('modify_elections')): ?>
+                    <a href="<?php echo e(route('admin.elections.create')); ?>" class="ml-1 font-semibold text-amber-50 underline decoration-amber-300/60 underline-offset-2 hover:text-white">Create election</a>
+                <?php endif; ?>
             </div>
         <?php else: ?>
             <?php echo $__env->make('admin.talent-competition._form', [
