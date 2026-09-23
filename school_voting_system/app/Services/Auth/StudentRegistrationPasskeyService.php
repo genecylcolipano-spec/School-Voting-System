@@ -131,6 +131,7 @@ class StudentRegistrationPasskeyService
             if ($role === UserRole::Student) {
                 $attributes['grade_level'] = $roster->grade_level ?? ($pending['grade_level'] ?? null);
                 $attributes['section'] = $roster->section ?? ($pending['section'] ?? null);
+                $attributes['school_year'] = $roster->school_year ?? ($pending['school_year'] ?? null);
                 $attributes['student_status'] = StudentStatus::Enrolled;
             }
 

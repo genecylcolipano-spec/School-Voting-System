@@ -25,6 +25,10 @@
                 <h2 class="text-lg font-semibold text-white">Upload CSV</h2>
                 <p class="mt-1 text-sm text-slate-400">
                     Existing roster entries are matched by account ID and updated. Import never creates login accounts or sends enrollment emails. Records that have already registered cannot be overwritten.
+                    @if ($supportsYearlySync ?? false)
+                        For year-end grade, section, and graduate updates, use
+                        <a href="{{ route($routePrefix.'.year-sync') }}" class="font-semibold text-violet-300 hover:text-violet-200">Yearly sync</a>.
+                    @endif
                 </p>
 
                 <form method="POST" action="{{ route($routePrefix.'.import.store') }}" enctype="multipart/form-data" class="mt-6 space-y-5">

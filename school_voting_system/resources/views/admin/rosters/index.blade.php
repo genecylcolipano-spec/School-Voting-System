@@ -9,6 +9,9 @@
         <div class="mb-6 flex flex-wrap justify-end gap-3">
             <a href="{{ route($routePrefix.'.create') }}" class="rounded-xl border border-violet-500/30 px-4 py-2 text-sm font-semibold text-violet-300 hover:bg-violet-500/10">Add record</a>
             <a href="{{ route($routePrefix.'.export') }}" class="rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800">Export CSV</a>
+            @if ($supportsYearlySync ?? false)
+                <a href="{{ route($routePrefix.'.year-sync') }}" class="rounded-xl border border-amber-500/30 px-4 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-500/10">Yearly sync</a>
+            @endif
             <a href="{{ route($routePrefix.'.import') }}" class="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Import CSV</a>
         </div>
 

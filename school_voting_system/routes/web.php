@@ -468,6 +468,10 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
                 Route::get('/import', [AllowedStudentController::class, 'importForm'])->name('import');
                 Route::post('/import', [AllowedStudentController::class, 'importStore'])->name('import.store');
                 Route::get('/import/template', [AllowedStudentController::class, 'importTemplate'])->name('import.template');
+                Route::get('/year-sync', [AllowedStudentController::class, 'yearSyncForm'])->name('year-sync');
+                Route::post('/year-sync/preview', [AllowedStudentController::class, 'yearSyncPreview'])->name('year-sync.preview');
+                Route::post('/year-sync/apply', [AllowedStudentController::class, 'yearSyncApply'])->name('year-sync.apply');
+                Route::post('/year-sync/cancel', [AllowedStudentController::class, 'yearSyncCancel'])->name('year-sync.cancel');
                 Route::get('/{allowedStudent}', [AllowedStudentController::class, 'show'])->name('show');
                 Route::get('/{allowedStudent}/edit', [AllowedStudentController::class, 'edit'])->name('edit');
                 Route::put('/{allowedStudent}', [AllowedStudentController::class, 'update'])->name('update');

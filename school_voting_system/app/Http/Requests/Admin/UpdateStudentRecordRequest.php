@@ -40,6 +40,7 @@ class UpdateStudentRecordRequest extends FormRequest
             'phone' => ContactPhone::rules(),
             'grade_level' => ['required', 'string', 'max:50'],
             'section' => ['required', 'string', 'max:50'],
+            'school_year' => ['nullable', 'string', 'max:20', 'regex:/^(\d{4}-\d{4})?$/'],
             'student_status' => ['required', Rule::enum(StudentStatus::class)],
         ];
     }
@@ -50,6 +51,7 @@ class UpdateStudentRecordRequest extends FormRequest
             'phone' => ContactPhone::normalize($this->input('phone')),
             'grade_level' => trim((string) $this->input('grade_level')),
             'section' => trim((string) $this->input('section')),
+            'school_year' => trim((string) $this->input('school_year')) ?: null,
         ]);
     }
 }

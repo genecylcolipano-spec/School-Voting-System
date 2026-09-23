@@ -119,6 +119,7 @@ class AdminStudentController extends Controller
             'phone' => $validated['phone'] ?? null,
             'grade_level' => $validated['grade_level'],
             'section' => $validated['section'],
+            'school_year' => $validated['school_year'] ?? null,
             'student_status' => $validated['student_status'],
         ]);
 
@@ -139,6 +140,7 @@ class AdminStudentController extends Controller
                 'phone' => $student->phone,
                 'grade_level' => $student->grade_level,
                 'section' => $student->section,
+                'school_year' => $student->school_year,
                 'student_status' => $student->student_status?->value,
             ],
         );

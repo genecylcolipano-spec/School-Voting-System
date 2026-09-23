@@ -90,7 +90,7 @@ class RosterManagementTest extends TestCase
         $this->actingAs($admin)
             ->get(route('super-admin.roster.students.index'))
             ->assertOk()
-            ->assertSee('Search Student ID, name, grade, or section', false)
+            ->assertSee('Search Student ID, name, grade, section, or school year', false)
             ->assertDontSee('>Clear</a>', false);
 
         $this->actingAs($admin)
@@ -181,6 +181,8 @@ class RosterManagementTest extends TestCase
         $this->assertSame('Name', $row->last_name);
         $this->assertSame('11', $row->grade_level);
         $this->assertSame('B', $row->section);
+        $this->assertSame('11', User::findByAccountId('STU-LOCKED')?->grade_level);
+        $this->assertSame('B', User::findByAccountId('STU-LOCKED')?->section);
         $this->assertNotNull(User::findByAccountId('STU-LOCKED'));
         $this->assertNull(User::findByAccountId('STU-TAMPERED'));
         $this->assertSame($user->id, User::findByAccountId('STU-LOCKED')?->id);

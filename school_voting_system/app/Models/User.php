@@ -34,6 +34,7 @@ class User extends Authenticatable implements PasskeyUser
         'staff_role_id',
         'grade_level',
         'section',
+        'school_year',
         'student_status',
         'is_active',
     ];

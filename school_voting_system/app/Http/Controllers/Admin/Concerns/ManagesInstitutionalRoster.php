@@ -54,7 +54,10 @@ trait ManagesInstitutionalRoster
             ->with('registeredUser')
             ->when($request->string('q')->trim()->isNotEmpty(), function ($query) use ($request) {
                 $term = '%'.$request->string('q')->trim().'%';
-                $columns = $this->rosterColumns();
+                $columns = array_values(array_unique([
+                    ...$this->rosterColumns(),
+                    ...array_column($this->extraFieldDefinitions(), 'name'),
+                ]));
                 $query->where(function ($query) use ($term, $columns) {
                     foreach ($columns as $index => $column) {
                         if ($index === 0) {
@@ -165,6 +168,7 @@ trait ManagesInstitutionalRoster
         }
 
         $record->update($attributes);
+        $this->afterRosterUpdated($record);
 
         $this->logAdminAction(
             'Updated '.$this->rosterLabel().' roster row '.$record->account_id,
@@ -376,7 +380,17 @@ trait ManagesInstitutionalRoster
             'columns' => $this->rosterColumns(),
             'extraFields' => $this->extraFieldDefinitions(),
             'searchPlaceholder' => $this->rosterSearchPlaceholder(),
+            'supportsYearlySync' => $this->rosterSupportsYearlySync(),
         ];
+    }
+
+    protected function rosterSupportsYearlySync(): bool
+    {
+        return false;
+    }
+
+    protected function afterRosterUpdated(Model $record): void
+    {
     }
 
     protected function rosterSearchPlaceholder(): string

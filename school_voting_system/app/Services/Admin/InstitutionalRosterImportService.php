@@ -103,6 +103,15 @@ class InstitutionalRosterImportService
      * @param  list<string>  $columns
      * @return list<array<string, string|null>>
      */
+    public function parseRosterRows(UploadedFile $file, array $columns): array
+    {
+        return $this->parseCsv($file, $columns);
+    }
+
+    /**
+     * @param  list<string>  $columns
+     * @return list<array<string, string|null>>
+     */
     protected function parseCsv(UploadedFile $file, array $columns): array
     {
         $handle = fopen($file->getRealPath(), 'r');

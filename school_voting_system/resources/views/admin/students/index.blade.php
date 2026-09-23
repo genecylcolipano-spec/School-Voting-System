@@ -84,7 +84,10 @@
                             </td>
                             <td class="px-4 py-3">
                                 @if ($student->grade_level)
-                                    {{ $student->grade_level }}
+                                    <div>{{ $student->grade_level }}</div>
+                                    @if ($student->school_year)
+                                        <div class="text-xs text-slate-500">SY {{ $student->school_year }}</div>
+                                    @endif
                                 @else
                                     <span class="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-200">Unassigned</span>
                                 @endif
