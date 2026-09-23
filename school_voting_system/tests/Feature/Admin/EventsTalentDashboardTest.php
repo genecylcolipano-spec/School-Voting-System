@@ -115,6 +115,22 @@ class EventsTalentDashboardTest extends TestCase
         );
     }
 
+    public function test_operations_admin_sees_super_admin_talent_competitions(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $admin = $this->makeOperationsAdmin();
+        $election = Election::factory()->create([
+            'status' => ElectionStatus::Active,
+            'created_by' => $super->id,
+        ]);
+        $this->makeCompetition($election, $super, 'Super Admin Showcase');
+
+        $this->actingAs($admin)
+            ->get(route('admin.events-talent.index'))
+            ->assertOk()
+            ->assertSee('Super Admin Showcase');
+    }
+
     public function test_super_admin_sees_all_talent_competitions_on_events_dashboard(): void
     {
         $super = User::factory()->superAdmin()->create();

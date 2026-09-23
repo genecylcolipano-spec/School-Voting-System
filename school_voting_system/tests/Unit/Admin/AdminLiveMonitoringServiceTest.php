@@ -9,6 +9,8 @@ use App\Enums\UserRole;
 use App\Models\Candidate;
 use App\Models\Election;
 use App\Models\ElectionCategory;
+use App\Models\Permission;
+use App\Models\StaffRole;
 use App\Models\TalentEvent;
 use App\Models\User;
 use App\Models\Vote;
@@ -60,6 +62,51 @@ class AdminLiveMonitoringServiceTest extends TestCase
 
         $this->assertTrue($cards->contains(fn (array $card) => $card['name'] === 'Mine'));
         $this->assertFalse($cards->contains(fn (array $card) => $card['name'] === 'Theirs'));
+    }
+
+    public function test_operations_admin_sees_super_admin_elections_and_can_manage_live(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $admin = $this->makeOperationsAdmin();
+
+        Election::factory()->active()->create([
+            'title' => 'Super Hosted Council',
+            'created_by' => $super->id,
+        ]);
+
+        $card = app(AdminLiveMonitoringService::class)
+            ->electionCards($admin)
+            ->firstWhere('name', 'Super Hosted Council');
+
+        $this->assertNotNull($card);
+        $this->assertTrue($card['can_manage_live']);
+    }
+
+    public function test_operations_admin_sees_super_admin_talent_cards(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $admin = $this->makeOperationsAdmin();
+        $election = Election::factory()->active()->create([
+            'created_by' => $super->id,
+        ]);
+
+        TalentEvent::query()->create([
+            'election_id' => $election->id,
+            'title' => 'Super Hosted Showcase',
+            'slug' => 'super-hosted-showcase-'.uniqid(),
+            'event_date' => now()->addDay(),
+            'venue' => 'Auditorium',
+            'status' => TalentEventStatus::VotingOpen,
+            'voting_method' => TalentVotingMethod::StudentOnly->value,
+            'voting_starts_at' => now()->subHour(),
+            'voting_ends_at' => now()->addHours(3),
+            'published_to_students' => true,
+            'created_by' => $super->id,
+        ]);
+
+        $cards = app(AdminLiveMonitoringService::class)->talentCards($admin);
+
+        $this->assertTrue($cards->contains(fn (array $card) => $card['name'] === 'Super Hosted Showcase'));
     }
 
     public function test_live_election_cards_include_leading_candidates_by_position(): void
@@ -193,6 +240,28 @@ class AdminLiveMonitoringServiceTest extends TestCase
         $this->assertTrue($card['is_live']);
         $this->assertSame('Voting Ends In', $card['countdown']['label']);
         $this->assertNotEmpty($card['countdown']['target_at_iso']);
+    }
+
+    protected function makeOperationsAdmin(): User
+    {
+        $permissions = collect(['create_talent_events', 'modify_elections', 'pause_election'])->map(function (string $key) {
+            return Permission::query()->firstOrCreate(
+                ['key' => $key],
+                ['label' => $key, 'category' => 'events'],
+            );
+        });
+
+        $role = StaffRole::query()->create([
+            'name' => 'Operations Admin',
+            'slug' => 'ops-live-monitor-'.uniqid(),
+            'description' => 'Can create elections and talent events',
+            'is_system' => true,
+        ]);
+        $role->permissions()->attach($permissions->pluck('id'));
+
+        return User::factory()->admin()->create([
+            'staff_role_id' => $role->id,
+        ]);
     }
 
     protected function castVotes(Election $election, ElectionCategory $category, Candidate $candidate, int $count): void

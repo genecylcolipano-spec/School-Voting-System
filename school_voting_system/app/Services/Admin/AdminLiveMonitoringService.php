@@ -265,10 +265,8 @@ class AdminLiveMonitoringService
         $votesCast = (int) ($election->votes_count ?? 0);
         $turnout = $eligible > 0 ? round(($uniqueVoters / $eligible) * 100, 1) : 0.0;
         $lastAt = $lastVoteAt ? Carbon::parse($lastVoteAt) : null;
-        $inScope = $viewer->isSuperAdmin()
-            || $this->scope->assignedElection($viewer)?->id === $election->id;
         $canManageLive = $this->scope->canPauseElection($viewer)
-            && $inScope
+            && $this->scope->electionIsInLiveScope($viewer, $election)
             && $showPositionLeaders;
 
         $schedule = collect([
@@ -598,7 +596,7 @@ class AdminLiveMonitoringService
 
     protected function scopeElectionsQuery($query, User $viewer): void
     {
-        if ($viewer->isSuperAdmin()) {
+        if ($viewer->isSuperAdmin() || $this->scope->canCreateElections($viewer)) {
             return;
         }
 
@@ -615,7 +613,7 @@ class AdminLiveMonitoringService
 
     protected function scopeTalentQuery($query, User $viewer): void
     {
-        if ($viewer->isSuperAdmin()) {
+        if ($viewer->isSuperAdmin() || $this->scope->canCreateTalentEvents($viewer)) {
             return;
         }
 

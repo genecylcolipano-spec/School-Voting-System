@@ -905,6 +905,41 @@ class AdminScopeService
             && $admin->hasPermission('create_talent_events');
     }
 
+    public function canCreateElections(User $admin): bool
+    {
+        return ! $this->isReadOnly($admin)
+            && ! $this->isAuditor($admin)
+            && $admin->hasPermission('modify_elections');
+    }
+
+    public function electionIsInLiveScope(User $admin, Election $election): bool
+    {
+        if ($admin->isSuperAdmin() || $this->canCreateElections($admin)) {
+            return true;
+        }
+
+        if ((int) $election->created_by === (int) $admin->id) {
+            return true;
+        }
+
+        return $this->assignedElection($admin)?->id === $election->id;
+    }
+
+    public function talentEventIsInScope(User $admin, TalentEvent $event): bool
+    {
+        if ($admin->isSuperAdmin() || $this->canCreateTalentEvents($admin)) {
+            return true;
+        }
+
+        if ((int) $event->created_by === (int) $admin->id) {
+            return true;
+        }
+
+        $assignedId = $this->assignment($admin)?->election_id;
+
+        return $assignedId !== null && (int) $event->election_id === (int) $assignedId;
+    }
+
     public function canViewRealtimeTalentCounts(User $admin): bool
     {
         if ($this->isReadOnly($admin) || $this->isAuditor($admin)) {
@@ -920,14 +955,8 @@ class AdminScopeService
             return false;
         }
 
-        if (! $admin->isSuperAdmin()) {
-            $assignedId = $this->assignment($admin)?->election_id;
-            $ownsEvent = (int) $event->created_by === (int) $admin->id;
-            $inAssignedElection = $assignedId && (int) $event->election_id === (int) $assignedId;
-
-            if (! $ownsEvent && ! $inAssignedElection) {
-                return false;
-            }
+        if (! $this->talentEventIsInScope($admin, $event)) {
+            return false;
         }
 
         if ($event->votingHasClosed()
@@ -950,14 +979,15 @@ class AdminScopeService
 
     /**
      * Talent competitions an administrator may manage.
-     * Super Admins see every competition. Regular admins see competitions they
-     * created plus those linked to their assigned election.
+     * Super Admins and operations admins who can create talent events see every
+     * competition. Other admins see competitions they created plus those linked
+     * to their assigned election.
      */
     public function talentEventsQuery(User $admin): Builder
     {
         $query = TalentEvent::query();
 
-        if ($admin->isSuperAdmin()) {
+        if ($admin->isSuperAdmin() || $this->canCreateTalentEvents($admin)) {
             return $query;
         }
 
@@ -974,7 +1004,7 @@ class AdminScopeService
 
     public function talentEvents(User $admin): Collection
     {
-        if ($admin->isSuperAdmin()) {
+        if ($admin->isSuperAdmin() || $this->canCreateTalentEvents($admin)) {
             return $this->talentEventsQuery($admin)
                 ->with([
                     'entries' => fn ($q) => $q->withCount('votes')->orderBy('display_name'),
@@ -1041,18 +1071,8 @@ class AdminScopeService
 
     public function assertTalentEventInScope(User $admin, TalentEvent $event): void
     {
-        if ($admin->isSuperAdmin()) {
-            return;
-        }
-
-        if ((int) $event->created_by === (int) $admin->id) {
-            return;
-        }
-
-        $assignedId = $this->assignment($admin)?->election_id;
-
         abort_unless(
-            $assignedId && (int) $event->election_id === (int) $assignedId,
+            $this->talentEventIsInScope($admin, $event),
             403,
             'This competition is outside your assigned scope.'
         );

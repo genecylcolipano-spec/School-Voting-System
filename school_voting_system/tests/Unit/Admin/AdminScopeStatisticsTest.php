@@ -4,6 +4,8 @@ namespace Tests\Unit\Admin;
 
 use App\Enums\ElectionStatus;
 use App\Enums\StudentStatus;
+use App\Enums\TalentEventStatus;
+use App\Enums\TalentVotingMethod;
 use App\Enums\UserRole;
 use App\Models\AdminAssignment;
 use App\Models\Candidate;
@@ -11,6 +13,7 @@ use App\Models\Election;
 use App\Models\ElectionCategory;
 use App\Models\Permission;
 use App\Models\StaffRole;
+use App\Models\TalentEvent;
 use App\Models\User;
 use App\Models\Vote;
 use App\Services\Admin\AdminScopeService;
@@ -300,5 +303,50 @@ class AdminScopeStatisticsTest extends TestCase
         $this->assertTrue($scope->talentHostElections($admin)->contains('id', $host->id));
         $this->assertFalse($scope->talentHostElections($admin)->contains('id', $annulled->id));
         $this->assertSame($host->id, $scope->resolveTalentHostElection($admin, $host->id)?->id);
+    }
+
+    public function test_operations_admin_live_scope_includes_super_admin_elections(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $permissions = collect(['create_talent_events', 'modify_elections'])->map(function (string $key) {
+            return Permission::query()->firstOrCreate(
+                ['key' => $key],
+                ['label' => $key, 'category' => 'events'],
+            );
+        });
+        $role = StaffRole::query()->create([
+            'name' => 'Operations Admin',
+            'slug' => 'ops-live-scope-'.uniqid(),
+            'description' => 'Can create elections and talent events',
+            'is_system' => true,
+        ]);
+        $role->permissions()->attach($permissions->pluck('id'));
+        $admin = User::factory()->admin()->create([
+            'staff_role_id' => $role->id,
+        ]);
+
+        $election = Election::factory()->active()->create([
+            'created_by' => $super->id,
+        ]);
+        $event = TalentEvent::query()->create([
+            'election_id' => $election->id,
+            'title' => 'Hosted Showcase',
+            'slug' => 'hosted-showcase-'.uniqid(),
+            'event_date' => now()->addDay(),
+            'venue' => 'Online',
+            'status' => TalentEventStatus::VotingOpen,
+            'voting_method' => TalentVotingMethod::StudentOnly->value,
+            'voting_starts_at' => now()->subHour(),
+            'voting_ends_at' => now()->addDay(),
+            'published_to_students' => true,
+            'created_by' => $super->id,
+        ]);
+
+        $scope = app(AdminScopeService::class);
+
+        $this->assertTrue($scope->canCreateElections($admin));
+        $this->assertTrue($scope->electionIsInLiveScope($admin, $election));
+        $this->assertTrue($scope->talentEventIsInScope($admin, $event));
+        $this->assertTrue($scope->talentEventsQuery($admin)->whereKey($event->id)->exists());
     }
 }

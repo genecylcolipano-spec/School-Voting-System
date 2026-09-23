@@ -7,7 +7,7 @@ class PauseElectionRequest extends ElectionScopedActionRequest
     public function authorize(): bool
     {
         return $this->scope()->canPauseElection($this->user())
-            && $this->electionInScope();
+            && $this->electionIsLiveManageable();
     }
 
     public function rules(): array

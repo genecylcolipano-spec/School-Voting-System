@@ -21,4 +21,15 @@ abstract class ElectionScopedActionRequest extends AdminFormRequest
 
         return $this->scope()->assignedElection($this->user())?->id === $election->id;
     }
+
+    protected function electionIsLiveManageable(): bool
+    {
+        $election = $this->route('election');
+
+        if (! $election instanceof Election || $this->user() === null) {
+            return false;
+        }
+
+        return $this->scope()->electionIsInLiveScope($this->user(), $election);
+    }
 }

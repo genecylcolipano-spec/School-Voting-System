@@ -46,7 +46,7 @@ class AdminLiveMonitoringController extends Controller
             'title' => $isSuper ? 'Institution Election Monitoring' : 'My Election Monitoring',
             'description' => $isSuper
                 ? 'Institution-wide live monitoring of every election across all administrators. Positions and candidates stay in Elections.'
-                : 'Live monitoring of elections you created or manage. Positions and candidates stay in Elections.',
+                : 'Live monitoring of elections you can create or manage. Positions and candidates stay in Elections.',
             'cards' => $cards,
             'urgentCards' => $cards->where('is_urgent', true)->values(),
             'otherCards' => $cards->where('is_urgent', false)->values(),
@@ -79,7 +79,7 @@ class AdminLiveMonitoringController extends Controller
             'title' => $isSuper ? 'Institution Talent Monitoring' : 'My Talent Monitoring',
             'description' => $isSuper
                 ? 'Institution-wide live monitoring of every talent competition across all administrators.'
-                : 'Live monitoring of talent competitions you created or manage.',
+                : 'Live monitoring of talent competitions you can create or manage.',
             'cards' => $cards,
             'urgentCards' => $cards->where('is_urgent', true)->values(),
             'otherCards' => $cards->where('is_urgent', false)->values(),
