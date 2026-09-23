@@ -89,7 +89,7 @@
             @if ($showReceipt)
                 {{-- =========================== SUCCESS / RECEIPT =========================== --}}
                 <div class="mx-auto max-w-xl">
-                    <div class="rounded-3xl border border-emerald-500/25 bg-slate-900/70 p-5 text-center shadow-lg shadow-emerald-500/5 sm:p-8">
+                    <div class="rounded-3xl border border-emerald-500/25 bg-slate-900/70 p-8 text-center shadow-lg shadow-emerald-500/5">
                         <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300">
                             <svg class="h-9 w-9" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -98,24 +98,24 @@
                         <h1 class="mt-5 text-2xl font-bold text-white">Vote Successfully Submitted</h1>
                         <p class="mt-2 text-sm text-slate-300">Thank you for casting your ballot. Your vote has been securely recorded.</p>
 
-                        <dl class="mt-6 space-y-3 rounded-2xl border border-slate-800 bg-slate-950/50 p-4 text-left text-sm sm:p-5">
-                            <div class="flex items-start justify-between gap-3">
-                                <dt class="shrink-0 text-slate-400">Election</dt>
-                                <dd class="min-w-0 break-words text-right font-semibold text-white">{{ $election->title }}</dd>
+                        <dl class="mt-6 space-y-3 rounded-2xl border border-slate-800 bg-slate-950/50 p-5 text-left text-sm">
+                            <div class="flex items-center justify-between gap-4">
+                                <dt class="text-slate-400">Election</dt>
+                                <dd class="font-semibold text-white text-right">{{ $election->title }}</dd>
                             </div>
                             @if ($ballotReceipt ?? null)
-                                <div class="flex flex-col gap-1 border-t border-slate-800 pt-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                                    <dt class="shrink-0 text-slate-400">Receipt Number</dt>
-                                    <dd class="min-w-0 break-all font-mono text-sm font-semibold tracking-wide text-cyan-300 sm:text-right">{{ $ballotReceipt->receipt_token }}</dd>
+                                <div class="flex items-center justify-between gap-4 border-t border-slate-800 pt-3">
+                                    <dt class="text-slate-400">Receipt Number</dt>
+                                    <dd class="font-mono text-sm font-semibold tracking-wide text-cyan-300">{{ $ballotReceipt->receipt_token }}</dd>
                                 </div>
                             @endif
                             @if ($submittedAt)
-                                <div class="flex items-start justify-between gap-3">
-                                    <dt class="shrink-0 text-slate-400">Submission Date</dt>
+                                <div class="flex items-center justify-between gap-4">
+                                    <dt class="text-slate-400">Submission Date</dt>
                                     <dd class="font-semibold text-white">{{ $submittedAt->format('M d, Y') }}</dd>
                                 </div>
-                                <div class="flex items-start justify-between gap-3">
-                                    <dt class="shrink-0 text-slate-400">Submission Time</dt>
+                                <div class="flex items-center justify-between gap-4">
+                                    <dt class="text-slate-400">Submission Time</dt>
                                     <dd class="font-semibold text-white">{{ $submittedAt->format('g:i A') }}</dd>
                                 </div>
                             @endif
@@ -194,7 +194,7 @@
 
                         {{-- Ballot progress bar --}}
                         <div class="border-t border-slate-800/70 px-5 py-4 sm:px-6">
-                            <div class="flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex items-center justify-between text-xs">
                                 <span class="font-semibold uppercase tracking-wide text-slate-400">Ballot Progress</span>
                                 <span class="font-semibold text-cyan-300">
                                     <span x-text="completedCount"></span> of {{ $totalPositions }} positions completed
@@ -212,23 +212,23 @@
                         {{-- LEFT: positions + candidates --}}
                         <div class="space-y-6 lg:col-span-2">
                             {{-- Instructions banner --}}
-                            <div class="flex items-start gap-3 rounded-2xl border border-cyan-500/15 bg-cyan-500/5 px-4 py-4 sm:px-5">
+                            <div class="flex items-start gap-3 rounded-2xl border border-cyan-500/15 bg-cyan-500/5 px-5 py-4">
                                 <svg class="mt-0.5 h-5 w-5 shrink-0 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
-                                <div class="min-w-0 flex-1">
+                                <div>
                                     <p class="text-sm font-semibold text-cyan-100">You may vote for ONE (1) candidate per position.</p>
                                     <p class="mt-0.5 text-sm text-slate-400">Make sure to review your choices before submitting your ballot.</p>
                                 </div>
                             </div>
 
                             @forelse ($ballotCategories as $category)
-                                <section class="rounded-2xl border border-cyan-500/15 bg-slate-900/70 p-4 sm:p-6" id="position-{{ $category['id'] }}">
+                                <section class="rounded-2xl border border-cyan-500/15 bg-slate-900/70 p-6" id="position-{{ $category['id'] }}">
                                     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                                        <div class="flex min-w-0 items-center gap-3">
-                                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-violet-300">
+                                        <div class="flex items-center gap-3">
+                                            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-violet-500/15 text-violet-300">
                                                 <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z" /></svg>
                                             </span>
-                                            <div class="min-w-0 flex-1">
-                                                <h2 class="break-words text-lg font-semibold text-white">{{ $category['name'] }}</h2>
+                                            <div class="min-w-0">
+                                                <h2 class="text-lg font-semibold text-white">{{ $category['name'] }}</h2>
                                                 <p class="text-xs text-slate-400">
                                                     @if ($category['votable']) Select ONE (1) candidate @else No candidates available @endif
                                                 </p>
@@ -268,23 +268,23 @@
                                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
                                                     </div>
 
-                                                    <div class="flex items-start gap-3 sm:gap-4">
-                                                        <x-candidate-avatar :path="$candidate['photo_path']" :name="$candidate['name']" size="lg" class="!h-16 !w-16 !rounded-xl sm:!h-20 sm:!w-20" />
+                                                    <div class="flex items-start gap-4">
+                                                        <x-candidate-avatar :path="$candidate['photo_path']" :name="$candidate['name']" size="lg" class="!h-20 !w-20 !rounded-xl" />
                                                         <div class="min-w-0 flex-1">
-                                                            <div class="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
-                                                                <div class="min-w-0 flex-1">
-                                                                    <h3 class="break-words font-semibold text-white">{{ $candidate['name'] }}</h3>
-                                                                    <p class="break-words text-sm text-slate-400">{{ $candidate['party'] }}</p>
+                                                            <div class="flex items-start justify-between gap-2">
+                                                                <div class="min-w-0">
+                                                                    <h3 class="truncate font-semibold text-white">{{ $candidate['name'] }}</h3>
+                                                                    <p class="truncate text-sm text-slate-400">{{ $candidate['party'] }}</p>
                                                                 </div>
-                                                                <span class="w-fit max-w-full break-words rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide {{ $candidate['badge'] }}">
-                                                                    {{ $candidate['party'] }}
+                                                                <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide {{ $candidate['badge'] }}">
+                                                                    {{ \Illuminate\Support\Str::limit($candidate['party'], 14, '') }}
                                                                 </span>
                                                             </div>
                                                             @if ($candidate['grade'] || $candidate['section'])
                                                                 <p class="mt-1 text-[11px] text-slate-500">Grade {{ $candidate['grade'] ?? '—' }} · {{ $candidate['section'] ?? '—' }}</p>
                                                             @endif
                                                             @if ($candidate['platform'])
-                                                                <p class="mt-2 break-words text-sm leading-relaxed text-slate-300">{{ $candidate['platform'] }}</p>
+                                                                <p class="mt-2 text-sm text-slate-300 line-clamp-2">{{ $candidate['platform'] }}</p>
                                                             @endif
                                                         </div>
                                                     </div>
@@ -296,12 +296,12 @@
                                                             </button>
                                                         @else
                                                             <div class="grid grid-cols-2 gap-2" x-show="!isSelected({{ $catId }}, {{ $cid }})">
-                                                                <a href="{{ $candidate['profile_url'] }}" class="inline-flex min-h-10 items-center justify-center rounded-xl border border-cyan-500/25 px-3 py-2 text-center text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/10">
+                                                                <a href="{{ $candidate['profile_url'] }}" class="rounded-xl border border-cyan-500/25 px-3 py-2 text-center text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/10">
                                                                     View Profile
                                                                 </a>
                                                                 <button type="button"
                                                                     @click="select({{ $catId }}, {{ $cid }}, @js($candidate['name']))"
-                                                                    class="inline-flex min-h-10 items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:from-cyan-400 hover:to-sky-300"
+                                                                    class="rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:from-cyan-400 hover:to-sky-300"
                                                                     :aria-pressed="isSelected({{ $catId }}, {{ $cid }})">
                                                                     Vote
                                                                 </button>
@@ -338,10 +338,10 @@
                                     </div>
                                     <div class="mt-4 space-y-3">
                                         @foreach ($votableCategories as $category)
-                                            <div class="flex items-start justify-between gap-3">
-                                                <div class="min-w-0 flex-1">
-                                                    <p class="break-words text-sm font-semibold text-white">{{ $category['name'] }}</p>
-                                                    <p class="break-words text-xs"
+                                            <div class="flex items-center justify-between gap-3">
+                                                <div class="min-w-0">
+                                                    <p class="text-sm font-semibold text-white">{{ $category['name'] }}</p>
+                                                    <p class="truncate text-xs"
                                                        x-text="selectionName({{ $category['id'] }}) || 'Not selected'"
                                                        :class="selectionName({{ $category['id'] }}) ? 'text-cyan-300' : 'text-slate-500'"></p>
                                                 </div>
@@ -441,10 +441,10 @@
                                 </div>
                                 <div class="space-y-3">
                                     @foreach ($votableCategories as $category)
-                                        <div class="flex items-start justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/40 px-4 py-3">
-                                            <div class="min-w-0 flex-1">
-                                                <p class="break-words text-sm font-semibold text-white">{{ $category['name'] }}</p>
-                                                <p class="break-words text-xs"
+                                        <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/40 px-4 py-3">
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-semibold text-white">{{ $category['name'] }}</p>
+                                                <p class="truncate text-xs"
                                                    x-text="selectionName({{ $category['id'] }}) || 'Not selected'"
                                                    :class="selectionName({{ $category['id'] }}) ? 'text-cyan-300' : 'text-slate-500'"></p>
                                             </div>
