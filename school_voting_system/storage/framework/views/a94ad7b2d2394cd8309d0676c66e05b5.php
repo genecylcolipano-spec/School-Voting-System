@@ -116,7 +116,6 @@ unset($__defined_vars, $__key, $__value); ?>
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                     </button>
                     <div class="min-w-0">
-                        <p class="truncate text-sm text-slate-400">Welcome back, <?php echo e($user->name); ?></p>
                         <h1 class="truncate text-lg font-bold text-white sm:text-xl"><?php echo e($title); ?></h1>
                     </div>
                 </div>

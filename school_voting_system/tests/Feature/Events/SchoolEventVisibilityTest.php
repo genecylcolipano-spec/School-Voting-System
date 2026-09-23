@@ -33,7 +33,7 @@ class SchoolEventVisibilityTest extends TestCase
             ->assertOk()
             ->assertSee('Foundation Day')
             ->assertDontSee('Cancelled Fair')
-            ->assertSee('Welcome back')
+            ->assertSee('Events')
             ->assertSee('Browse upcoming and past school events')
             ->assertDontSee('Browse school events and announcements');
 
@@ -184,7 +184,6 @@ class SchoolEventVisibilityTest extends TestCase
         $this->actingAs($student)
             ->get(route('student.events.show', $event))
             ->assertOk()
-            ->assertSee('Welcome back')
             ->assertSee('Science Exhibit')
             ->assertSee($expectedSchedule)
             ->assertSee('AVR 2')

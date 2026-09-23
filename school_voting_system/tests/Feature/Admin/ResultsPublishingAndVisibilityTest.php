@@ -190,7 +190,6 @@ class ResultsPublishingAndVisibilityTest extends TestCase
         $this->actingAs($student)
             ->get(route('student.results.election.show', $closed))
             ->assertOk()
-            ->assertSee('Welcome back')
             ->assertSee('Under Review')
             ->assertSee('Results are not yet available.')
             ->assertDontSee('Voting is still ongoing.');

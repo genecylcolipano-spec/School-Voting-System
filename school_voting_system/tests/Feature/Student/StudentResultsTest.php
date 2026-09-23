@@ -24,7 +24,7 @@ class StudentResultsTest extends TestCase
         $this->actingAs($student)
             ->get(route('student.results.index'))
             ->assertOk()
-            ->assertSee('Welcome back')
+            ->assertSee('Results')
             ->assertSee('View official results of student elections and talent competitions')
             ->assertDontSee('Back to dashboard');
     }
