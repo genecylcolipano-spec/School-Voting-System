@@ -16,14 +16,14 @@
         </div>
 
         <section class="rounded-2xl border border-teal-500/15 bg-slate-900/70 p-5 sm:p-6">
-            <div class="flex flex-wrap items-start justify-between gap-4">
-                <div class="min-w-0">
-                    <h2 class="text-xl font-bold text-white sm:text-2xl">{{ $election->title }}</h2>
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0 flex-1">
+                    <h2 class="break-words text-xl font-bold text-white sm:text-2xl">{{ $election->title }}</h2>
                     @if ($election->description)
-                        <p class="mt-2 text-sm leading-relaxed text-slate-300 text-justify whitespace-pre-line">{{ $election->description }}</p>
+                        <p class="mt-2 break-words text-sm leading-relaxed text-slate-300 text-justify whitespace-pre-line">{{ $election->description }}</p>
                     @endif
                 </div>
-                <div class="text-right">
+                <div class="w-full shrink-0 sm:w-auto sm:text-right">
                     @include('faculty.elections._status-badge', ['election' => $election])
                     @if ($election->voting_starts_at)
                         <p class="mt-1 text-xs text-slate-400">Starts {{ $election->voting_starts_at->format('M d, Y g:i A') }}</p>

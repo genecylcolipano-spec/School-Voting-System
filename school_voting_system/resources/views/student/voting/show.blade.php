@@ -142,31 +142,33 @@
                     aria-label="Election ballot for {{ $election->title }}"
                 >
                     {{-- ELECTION HEADER --}}
-                    <div class="overflow-hidden rounded-2xl border border-cyan-500/15 bg-slate-900/70">
-                        <div class="flex flex-wrap items-start justify-between gap-5 p-6">
-                            <div class="flex min-w-0 items-start gap-4">
-                                <div class="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 to-violet-500/20 text-cyan-300 sm:flex">
-                                    <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                </div>
-                                <div class="min-w-0">
-                                    <h1 class="text-2xl font-bold text-white">{{ $election->title }}</h1>
-                                    @if ($election->description)
-                                    <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300 text-justify whitespace-pre-line">{{ $election->description }}</p>
-                                    @endif
-                                    <span class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-200">
-                                        <span class="relative flex h-2 w-2">
-                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                                            <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-400"></span>
+                    <div class="rounded-2xl border border-cyan-500/15 bg-slate-900/70">
+                        <div class="flex flex-col gap-5 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-start gap-4">
+                                    <div class="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 to-violet-500/20 text-cyan-300 sm:flex">
+                                        <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <h1 class="break-words text-2xl font-bold text-white">{{ $election->title }}</h1>
+                                        @if ($election->description)
+                                        <p class="mt-2 break-words text-sm leading-relaxed text-slate-300 text-justify whitespace-pre-line">{{ $election->description }}</p>
+                                        @endif
+                                        <span class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+                                            <span class="relative flex h-2 w-2">
+                                                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                                                <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-400"></span>
+                                            </span>
+                                            {{ $availability['title'] ?? 'Voting Open' }}
                                         </span>
-                                        {{ $availability['title'] ?? 'Voting Open' }}
-                                    </span>
+                                    </div>
                                 </div>
                             </div>
 
                             {{-- Live countdown boxes --}}
-                            <div class="text-right" aria-live="polite" aria-label="Time remaining until voting ends">
+                            <div class="w-full shrink-0 sm:w-auto sm:text-right" aria-live="polite" aria-label="Time remaining until voting ends">
                                 <p class="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Time Remaining</p>
-                                <div class="mt-2 flex items-center gap-2" x-show="!cd.none && !cd.closed">
+                                <div class="mt-2 flex items-center gap-2 sm:justify-end" x-show="!cd.none && !cd.closed">
                                     <template x-for="unit in [{ v: cd.h, l: 'Hrs' }, { v: cd.m, l: 'Mins' }, { v: cd.s, l: 'Secs' }]" :key="unit.l">
                                         <div class="flex items-center gap-2">
                                             <div class="min-w-[3rem] rounded-xl border border-cyan-500/20 bg-slate-950/60 px-2.5 py-1.5 text-center">
@@ -181,7 +183,7 @@
                             </div>
                         </div>
 
-                        <div class="flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-slate-800/70 px-6 py-3 text-xs text-slate-400">
+                        <div class="flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-slate-800/70 px-5 py-3 text-xs text-slate-400 sm:px-6">
                             @if ($election->voting_starts_at)
                                 <span><span class="text-slate-500">Started:</span> {{ $election->voting_starts_at->format('M d, Y g:i A') }}</span>
                             @endif
@@ -191,7 +193,7 @@
                         </div>
 
                         {{-- Ballot progress bar --}}
-                        <div class="border-t border-slate-800/70 px-6 py-4">
+                        <div class="border-t border-slate-800/70 px-5 py-4 sm:px-6">
                             <div class="flex items-center justify-between text-xs">
                                 <span class="font-semibold uppercase tracking-wide text-slate-400">Ballot Progress</span>
                                 <span class="font-semibold text-cyan-300">
