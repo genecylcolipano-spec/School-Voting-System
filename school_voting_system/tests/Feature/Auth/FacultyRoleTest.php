@@ -40,6 +40,7 @@ class FacultyRoleTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Welcome back, Faculty Tester');
+        $response->assertSee('Faculty Dashboard');
         $response->assertSee('Faculty Portal');
         $response->assertDontSee('bg-white border-b border-gray-100', false);
     }
