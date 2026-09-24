@@ -12,12 +12,14 @@
             @if ($portalAccountUrl ?? null)
                 <a href="{{ $portalAccountUrl }}" class="rounded-xl border border-sky-500/30 px-4 py-2 text-sm font-semibold text-sky-200 hover:bg-sky-500/10">View portal account</a>
             @endif
-            @include('admin.rosters._remove-form', [
-                'record' => $record,
-                'routePrefix' => $routePrefix,
-                'portalAccountUrl' => $portalAccountUrl ?? null,
-                'buttonClass' => 'rounded-xl border border-rose-500/30 px-4 py-2 text-sm font-semibold text-rose-300 hover:bg-rose-500/10',
-            ])
+            @unless ($portalAccountUrl ?? null)
+                @include('admin.rosters._remove-form', [
+                    'record' => $record,
+                    'routePrefix' => $routePrefix,
+                    'portalAccountUrl' => $portalAccountUrl ?? null,
+                    'buttonClass' => 'rounded-xl border border-rose-500/30 px-4 py-2 text-sm font-semibold text-rose-300 hover:bg-rose-500/10',
+                ])
+            @endunless
         </div>
 
         <section class="mx-auto max-w-2xl rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5 sm:p-6">

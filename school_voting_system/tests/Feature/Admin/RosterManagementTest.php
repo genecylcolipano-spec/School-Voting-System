@@ -248,13 +248,16 @@ class RosterManagementTest extends TestCase
             ->get(route('super-admin.roster.students.index'))
             ->assertOk()
             ->assertSee('Portal account')
-            ->assertSee($accountUrl, false);
+            ->assertSee('Archive')
+            ->assertSee($accountUrl, false)
+            ->assertDontSee('>Remove</button>', false);
 
         $this->actingAs($admin)
             ->get(route('super-admin.roster.students.show', $row))
             ->assertOk()
             ->assertSee('View portal account')
-            ->assertSee($accountUrl, false);
+            ->assertSee($accountUrl, false)
+            ->assertDontSee('>Remove</button>', false);
     }
 
     public function test_unregistered_row_does_not_link_to_a_portal_account(): void
@@ -318,14 +321,12 @@ class RosterManagementTest extends TestCase
         $this->actingAs($admin)
             ->get(route('super-admin.roster.students.index'))
             ->assertOk()
-            ->assertSee('Remove')
-            ->assertSee(route('super-admin.roster.students.destroy', $row), false);
+            ->assertSee('>Remove</button>', false);
 
         $this->actingAs($admin)
             ->get(route('super-admin.roster.students.show', $row))
             ->assertOk()
-            ->assertSee('Remove')
-            ->assertSee(route('super-admin.roster.students.destroy', $row), false);
+            ->assertSee('>Remove</button>', false);
     }
 
     public function test_super_admin_can_remove_an_unregistered_roster_row(): void
@@ -359,6 +360,12 @@ class RosterManagementTest extends TestCase
         ]);
 
         $this->assertNull(User::findByAccountId('STU-ORPHAN'));
+
+        $this->actingAs($admin)
+            ->get(route('super-admin.roster.students.index'))
+            ->assertOk()
+            ->assertSee('Archive')
+            ->assertSee('>Remove</button>', false);
 
         $this->actingAs($admin)
             ->from(route('super-admin.roster.students.index'))
@@ -395,7 +402,7 @@ class RosterManagementTest extends TestCase
         $this->assertSame(RosterRegistrationStatus::NotRegistered, $restored->registrationStatus());
     }
 
-    public function test_removing_a_roster_row_does_not_delete_the_portal_account(): void
+    public function test_roster_row_with_a_portal_account_cannot_be_removed(): void
     {
         $admin = User::factory()->superAdmin()->create();
         $row = AllowedStudent::query()->create([
@@ -411,13 +418,14 @@ class RosterManagementTest extends TestCase
         ]);
 
         $this->actingAs($admin)
+            ->from(route('super-admin.roster.students.index'))
             ->delete(route('super-admin.roster.students.destroy', $row), [
                 'confirm_linked' => '1',
             ])
             ->assertRedirect(route('super-admin.roster.students.index'))
-            ->assertSessionHas('success', 'Roster record removed.');
+            ->assertSessionHasErrors('record');
 
-        $this->assertNull(AllowedStudent::query()->where('account_id', 'STU-KEEP-LOGIN')->first());
+        $this->assertNotNull(AllowedStudent::query()->where('account_id', 'STU-KEEP-LOGIN')->first());
         $this->assertNotNull(User::findByAccountId('STU-KEEP-LOGIN'));
         $this->assertSame($user->id, User::findByAccountId('STU-KEEP-LOGIN')?->id);
     }

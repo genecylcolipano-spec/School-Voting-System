@@ -155,11 +155,13 @@
                                             <button type="submit" class="rounded-lg border border-amber-500/30 px-3 py-1.5 text-xs font-semibold text-amber-200 hover:bg-amber-500/10">Archive</button>
                                         </form>
                                     <?php endif; ?>
-                                    <?php echo $__env->make('admin.rosters._remove-form', [
-                                        'record' => $record,
-                                        'routePrefix' => $routePrefix,
-                                        'portalAccountUrl' => $portalAccountUrl,
-                                    ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                    <?php if (! ($portalAccountUrl)): ?>
+                                        <?php echo $__env->make('admin.rosters._remove-form', [
+                                            'record' => $record,
+                                            'routePrefix' => $routePrefix,
+                                            'portalAccountUrl' => $portalAccountUrl,
+                                        ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>

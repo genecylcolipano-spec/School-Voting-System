@@ -224,9 +224,15 @@ trait ManagesInstitutionalRoster
 
         $linked = User::query()->where('account_id', $record->account_id)->exists();
 
-        if (($record->is_registered || $linked) && ! $request->boolean('confirm_linked')) {
+        if ($linked) {
             return back()->withErrors([
-                'record' => 'This roster row is linked to a registered account. Confirm removal to continue. The user account will not be deleted.',
+                'record' => 'This roster row still has a portal account. Archive it instead of removing it.',
+            ]);
+        }
+
+        if ($record->is_registered && ! $request->boolean('confirm_linked')) {
+            return back()->withErrors([
+                'record' => 'This roster row is marked registered but has no portal account. Confirm removal to continue.',
             ]);
         }
 
