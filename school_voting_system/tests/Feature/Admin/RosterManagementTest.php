@@ -66,6 +66,19 @@ class RosterManagementTest extends TestCase
             ->assertForbidden();
 
         $this->assertNull(AllowedStudent::query()->where('account_id', '2026-90002')->first());
+
+        $row = AllowedStudent::query()->create([
+            'account_id' => '2026-90002',
+            'first_name' => 'Blocked',
+            'last_name' => 'Admin',
+            'is_registered' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('super-admin.roster.students.destroy', $row))
+            ->assertForbidden();
+
+        $this->assertNotNull(AllowedStudent::query()->where('account_id', '2026-90002')->first());
     }
 
     public function test_student_roster_search_matches_grade_and_section(): void
@@ -290,5 +303,122 @@ class RosterManagementTest extends TestCase
         $this->assertNull(User::findByAccountId('FAC-90001'));
         $this->assertNull(User::findByAccountId('EMP-90001'));
         Mail::assertNothingSent();
+    }
+
+    public function test_student_roster_pages_show_remove(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $row = AllowedStudent::query()->create([
+            'account_id' => 'STU-REMOVE-UI',
+            'first_name' => 'Remove',
+            'last_name' => 'Me',
+            'is_registered' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('super-admin.roster.students.index'))
+            ->assertOk()
+            ->assertSee('Remove')
+            ->assertSee(route('super-admin.roster.students.destroy', $row), false);
+
+        $this->actingAs($admin)
+            ->get(route('super-admin.roster.students.show', $row))
+            ->assertOk()
+            ->assertSee('Remove')
+            ->assertSee(route('super-admin.roster.students.destroy', $row), false);
+    }
+
+    public function test_super_admin_can_remove_an_unregistered_roster_row(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $row = AllowedStudent::query()->create([
+            'account_id' => 'STU-REMOVE',
+            'first_name' => 'Gone',
+            'last_name' => 'Row',
+            'is_registered' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('super-admin.roster.students.destroy', $row))
+            ->assertRedirect(route('super-admin.roster.students.index'))
+            ->assertSessionHas('success', 'Roster record removed.');
+
+        $this->assertNull(AllowedStudent::query()->where('account_id', 'STU-REMOVE')->first());
+    }
+
+    public function test_super_admin_can_remove_a_registered_row_after_the_user_deleted_their_account(): void
+    {
+        Mail::fake();
+        $admin = User::factory()->superAdmin()->create();
+        $row = AllowedStudent::query()->create([
+            'account_id' => 'STU-ORPHAN',
+            'first_name' => 'Orphan',
+            'last_name' => 'Row',
+            'is_registered' => true,
+            'registration_status' => RosterRegistrationStatus::Registered,
+        ]);
+
+        $this->assertNull(User::findByAccountId('STU-ORPHAN'));
+
+        $this->actingAs($admin)
+            ->from(route('super-admin.roster.students.index'))
+            ->delete(route('super-admin.roster.students.destroy', $row))
+            ->assertRedirect(route('super-admin.roster.students.index'))
+            ->assertSessionHasErrors('record');
+
+        $this->assertNotNull(AllowedStudent::query()->where('account_id', 'STU-ORPHAN')->first());
+
+        $this->actingAs($admin)
+            ->delete(route('super-admin.roster.students.destroy', $row), [
+                'confirm_linked' => '1',
+            ])
+            ->assertRedirect(route('super-admin.roster.students.index'))
+            ->assertSessionHas('success', 'Roster record removed.');
+
+        $this->assertNull(AllowedStudent::query()->where('account_id', 'STU-ORPHAN')->first());
+
+        $this->actingAs($admin)
+            ->post(route('super-admin.roster.students.store'), [
+                'account_id' => 'STU-ORPHAN',
+                'first_name' => 'Orphan',
+                'last_name' => 'Row',
+                'grade_level' => '10',
+                'section' => 'A',
+            ])
+            ->assertRedirect(route('super-admin.roster.students.index'));
+
+        $restored = AllowedStudent::query()->where('account_id', 'STU-ORPHAN')->first();
+
+        $this->assertNotNull($restored);
+        $this->assertFalse($restored->is_registered);
+        $this->assertFalse($restored->isFullyRegistered());
+        $this->assertSame(RosterRegistrationStatus::NotRegistered, $restored->registrationStatus());
+    }
+
+    public function test_removing_a_roster_row_does_not_delete_the_portal_account(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $row = AllowedStudent::query()->create([
+            'account_id' => 'STU-KEEP-LOGIN',
+            'first_name' => 'Keep',
+            'last_name' => 'Login',
+            'is_registered' => true,
+            'registration_status' => RosterRegistrationStatus::Registered,
+        ]);
+        $user = User::factory()->create([
+            'account_id' => 'STU-KEEP-LOGIN',
+            'name' => 'Keep Login',
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('super-admin.roster.students.destroy', $row), [
+                'confirm_linked' => '1',
+            ])
+            ->assertRedirect(route('super-admin.roster.students.index'))
+            ->assertSessionHas('success', 'Roster record removed.');
+
+        $this->assertNull(AllowedStudent::query()->where('account_id', 'STU-KEEP-LOGIN')->first());
+        $this->assertNotNull(User::findByAccountId('STU-KEEP-LOGIN'));
+        $this->assertSame($user->id, User::findByAccountId('STU-KEEP-LOGIN')?->id);
     }
 }

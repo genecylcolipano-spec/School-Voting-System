@@ -137,6 +137,11 @@
                                             <button type="submit" class="rounded-lg border border-amber-500/30 px-3 py-1.5 text-xs font-semibold text-amber-200 hover:bg-amber-500/10">Archive</button>
                                         </form>
                                     @endif
+                                    @include('admin.rosters._remove-form', [
+                                        'record' => $record,
+                                        'routePrefix' => $routePrefix,
+                                        'portalAccountUrl' => $portalAccountUrl,
+                                    ])
                                 </div>
                             </td>
                         </tr>
