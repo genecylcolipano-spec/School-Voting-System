@@ -42,7 +42,7 @@
                 <p class="mt-3 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-100">{{ session('status') }}</p>
             @endif
 
-            <form method="POST" action="{{ route('register.store') }}" class="mt-3 space-y-2.5">
+            <form id="register-validate-form" method="POST" action="{{ route('register.store') }}" class="mt-3 space-y-2.5">
                 @csrf
 
                 <div>
@@ -84,9 +84,16 @@
                     @error('email')<p class="mt-1 text-xs text-rose-300">{{ $message }}</p>@enderror
                 </div>
 
-                <button type="submit"
-                    class="w-full rounded-xl bg-cyan-500 py-2.5 text-sm font-semibold text-slate-950 hover:bg-cyan-400">
-                    Confirm &amp; Validate
+                <button
+                    id="register-validate-btn"
+                    type="submit"
+                    class="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-300/60 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    <svg id="register-validate-spinner" class="hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"></path>
+                    </svg>
+                    <span id="register-validate-label">Confirm &amp; Validate</span>
                 </button>
             </form>
 
@@ -96,5 +103,29 @@
             </p>
         </div>
     </div>
+    <script>
+        (function () {
+            const form = document.getElementById('register-validate-form');
+            const button = document.getElementById('register-validate-btn');
+            const label = document.getElementById('register-validate-label');
+            const spinner = document.getElementById('register-validate-spinner');
+
+            if (! form || ! button || ! label || ! spinner) {
+                return;
+            }
+
+            form.addEventListener('submit', function (event) {
+                if (button.disabled) {
+                    event.preventDefault();
+                    return;
+                }
+
+                button.disabled = true;
+                button.setAttribute('aria-busy', 'true');
+                label.textContent = 'Validating…';
+                spinner.classList.remove('hidden');
+            });
+        })();
+    </script>
 </body>
 </html>
