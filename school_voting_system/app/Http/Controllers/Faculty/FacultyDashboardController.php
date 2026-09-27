@@ -15,6 +15,7 @@ use App\Services\Talent\TalentJudgingService;
 use App\Support\AdminPortal;
 use App\Support\PlatformModules;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 /**
@@ -32,48 +33,46 @@ class FacultyDashboardController extends Controller
         $user = $request->user()->loadCount('passkeys');
         $showTalent = PlatformModules::talent();
         $showFundraising = PlatformModules::fundraising();
-        $hasJudgingAssignment = $showTalent && $this->judging->hasActiveAssignment($user);
+        $counts = $this->sharedCounts($showTalent, $showFundraising);
 
         $assignedCompetitionsCount = 0;
         $assignedCompetitions = collect();
         $assignments = collect();
         $progress = [];
         $pastAssignedCount = 0;
+        $hasJudgingAssignment = false;
 
-        if ($hasJudgingAssignment) {
-            $assignedCompetitionsCount = $this->judging->assignedCompetitionsQuery($user, 'current')->count();
-            $assignedCompetitions = $this->judging->assignedCompetitionsQuery($user, 'current')
+        if ($showTalent) {
+            $currentAssignments = $this->judging->assignedCompetitionsQuery($user, 'current')
                 ->withCount([
                     'entries as approved_entries_count' => fn ($q) => $q->where('status', TalentEventEntry::STATUS_APPROVED),
                 ])
-                ->limit(6)
                 ->get();
 
-            $assignments = TalentEventJudge::query()
-                ->active()
-                ->where('user_id', $user->id)
-                ->whereIn('talent_event_id', $assignedCompetitions->pluck('id'))
-                ->get()
-                ->keyBy('talent_event_id');
-
-            foreach ($assignedCompetitions as $competition) {
-                $progress[$competition->id] = $this->judging->progressFor($user, $competition);
-            }
-
+            $assignedCompetitionsCount = $currentAssignments->count();
+            $assignedCompetitions = $currentAssignments->take(6)->values();
             $pastAssignedCount = $this->judging->assignedCompetitionsQuery($user, 'past')->count();
+            $hasJudgingAssignment = $assignedCompetitionsCount > 0 || $pastAssignedCount > 0;
+
+            if ($hasJudgingAssignment && $assignedCompetitions->isNotEmpty()) {
+                $assignments = TalentEventJudge::query()
+                    ->active()
+                    ->where('user_id', $user->id)
+                    ->whereIn('talent_event_id', $assignedCompetitions->pluck('id'))
+                    ->get()
+                    ->keyBy('talent_event_id');
+
+                $progress = $this->judging->progressForMany($user, $assignedCompetitions)->all();
+            }
         }
 
         return view('faculty.dashboard', [
             'user' => $user,
             'notificationsCount' => AdminPortal::notificationCount($user),
-            'openElectionsCount' => Election::query()->visibleToCampus()->acceptingVotes()->count(),
-            'upcomingEventsCount' => Event::query()->upcoming()->count(),
-            'publishedTalentCount' => $showTalent
-                ? TalentEvent::query()->publishedToStudents()->count()
-                : 0,
-            'activeFundraisersCount' => $showFundraising
-                ? Fundraiser::query()->visibleToStudents()->acceptingDonations()->count()
-                : 0,
+            'openElectionsCount' => $counts['open_elections'],
+            'upcomingEventsCount' => $counts['upcoming_events'],
+            'publishedTalentCount' => $counts['published_talent'],
+            'activeFundraisersCount' => $counts['active_fundraisers'],
             'showTalent' => $showTalent,
             'showFundraising' => $showFundraising,
             'hasJudgingAssignment' => $hasJudgingAssignment,
@@ -91,5 +90,27 @@ class FacultyDashboardController extends Controller
                 ->limit(5)
                 ->get(),
         ]);
+    }
+
+    /**
+     * @return array{open_elections: int, upcoming_events: int, published_talent: int, active_fundraisers: int}
+     */
+    protected function sharedCounts(bool $showTalent, bool $showFundraising): array
+    {
+        $cached = Cache::remember('faculty.dashboard.shared_counts', 45, function () {
+            return [
+                'open_elections' => Election::query()->visibleToCampus()->acceptingVotes()->count(),
+                'upcoming_events' => Event::query()->upcoming()->count(),
+                'published_talent' => TalentEvent::query()->publishedToStudents()->count(),
+                'active_fundraisers' => Fundraiser::query()->visibleToStudents()->acceptingDonations()->count(),
+            ];
+        });
+
+        return [
+            'open_elections' => $cached['open_elections'],
+            'upcoming_events' => $cached['upcoming_events'],
+            'published_talent' => $showTalent ? $cached['published_talent'] : 0,
+            'active_fundraisers' => $showFundraising ? $cached['active_fundraisers'] : 0,
+        ];
     }
 }

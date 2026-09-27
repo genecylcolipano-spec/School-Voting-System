@@ -37,7 +37,25 @@
                 @if ($entry->video_path || $entry->video_url)
                     <div class="mt-5 overflow-hidden rounded-xl border border-slate-800 bg-black">
                         @if ($entry->video_path)
-                            <video controls class="aspect-video w-full" src="{{ route('talent.video.stream', $entry) }}"></video>
+                            <div
+                                class="bg-slate-950"
+                                x-data="{ playing: false, src: @js(route('talent.video.stream', $entry)) }"
+                            >
+                                <template x-if="playing">
+                                    <video controls autoplay class="aspect-video w-full" :src="src"></video>
+                                </template>
+                                <button
+                                    type="button"
+                                    x-show="!playing"
+                                    x-on:click="playing = true"
+                                    class="flex aspect-video w-full flex-col items-center justify-center gap-2 px-4 text-sm font-semibold text-teal-200 transition hover:bg-slate-900 hover:text-white"
+                                >
+                                    <span class="inline-flex h-12 w-12 items-center justify-center rounded-full border border-teal-400/50 bg-teal-500/10" aria-hidden="true">
+                                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                    </span>
+                                    Watch performance
+                                </button>
+                            </div>
                         @elseif ($entry->video_url)
                             <div class="p-4 text-sm">
                                 <a href="{{ $entry->video_url }}" target="_blank" rel="noopener" class="font-semibold text-teal-300 hover:text-teal-200">Open performance video</a>

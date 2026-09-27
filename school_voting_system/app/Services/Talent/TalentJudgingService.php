@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Services\Portal\PortalNotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -330,10 +331,10 @@ class TalentJudgingService
             ->get()
             ->groupBy('talent_event_id');
 
-        return $competitions->map(function (TalentEvent $competition) use ($faculty, $sheetsByEvent) {
-            $progress = $this->progressFor($faculty, $competition);
-            $sheets = collect($sheetsByEvent->get($competition->id, collect()))
-                ->keyBy('talent_event_entry_id');
+        return $competitions->map(function (TalentEvent $competition) use ($sheetsByEvent) {
+            $eventSheets = collect($sheetsByEvent->get($competition->id, collect()));
+            $progress = $this->summarizeProgress($competition->approvedEntries->count(), $eventSheets);
+            $sheets = $eventSheets->keyBy('talent_event_entry_id');
 
             $entries = $competition->approvedEntries
                 ->sortBy(function (TalentEventEntry $entry) use ($sheets) {
@@ -519,14 +520,64 @@ class TalentJudgingService
      */
     public function progressFor(User $faculty, TalentEvent $event): array
     {
-        $approved = $event->approvedEntries()->count();
-        $sheets = TalentJudgeScoreSheet::query()
-            ->where('talent_event_id', $event->id)
-            ->where('user_id', $faculty->id)
-            ->get();
+        return $this->progressForMany($faculty, collect([$event]))->get($event->id) ?? $this->summarizeProgress(0, collect());
+    }
 
-        $submitted = $sheets->where('status', TalentJudgeScoreStatus::Submitted)->count();
-        $drafted = $sheets->where('status', TalentJudgeScoreStatus::Draft)->count();
+    /**
+     * Progress for many competitions in two queries.
+     *
+     * @param  Collection<int, TalentEvent>  $events
+     * @return Collection<int, array{approved: int, drafted: int, submitted: int, remaining: int, percent: int, judging_status: string}>
+     */
+    public function progressForMany(User $faculty, Collection $events): Collection
+    {
+        $eventIds = $events->pluck('id')->filter()->values();
+
+        if ($eventIds->isEmpty()) {
+            return collect();
+        }
+
+        $approvedByEvent = TalentEventEntry::query()
+            ->whereIn('talent_event_id', $eventIds)
+            ->where('status', TalentEventEntry::STATUS_APPROVED)
+            ->selectRaw('talent_event_id, COUNT(*) as aggregate')
+            ->groupBy('talent_event_id')
+            ->pluck('aggregate', 'talent_event_id');
+
+        $sheetsByEvent = TalentJudgeScoreSheet::query()
+            ->where('user_id', $faculty->id)
+            ->whereIn('talent_event_id', $eventIds)
+            ->get(['talent_event_id', 'status'])
+            ->groupBy('talent_event_id');
+
+        return $events->mapWithKeys(function (TalentEvent $event) use ($approvedByEvent, $sheetsByEvent) {
+            return [
+                $event->id => $this->summarizeProgress(
+                    (int) $approvedByEvent->get($event->id, 0),
+                    collect($sheetsByEvent->get($event->id, collect())),
+                ),
+            ];
+        });
+    }
+
+    /**
+     * @param  Collection<int, TalentJudgeScoreSheet|object>  $sheets
+     * @return array{approved: int, drafted: int, submitted: int, remaining: int, percent: int, judging_status: string}
+     */
+    protected function summarizeProgress(int $approved, Collection $sheets): array
+    {
+        $submitted = $sheets->filter(function ($sheet) {
+            $status = $sheet->status ?? null;
+
+            return $status === TalentJudgeScoreStatus::Submitted
+                || $status === TalentJudgeScoreStatus::Submitted->value;
+        })->count();
+        $drafted = $sheets->filter(function ($sheet) {
+            $status = $sheet->status ?? null;
+
+            return $status === TalentJudgeScoreStatus::Draft
+                || $status === TalentJudgeScoreStatus::Draft->value;
+        })->count();
         $remaining = max(0, $approved - $submitted);
         $percent = $approved > 0 ? (int) round(($submitted / $approved) * 100) : 0;
 
@@ -560,19 +611,26 @@ class TalentJudgingService
             ->with('talentEvent')
             ->get();
 
-        return $assignments->map(function (TalentEventJudge $assignment) use ($faculty) {
+        $events = $assignments->pluck('talentEvent')->filter()->values();
+        $progressByEvent = $this->progressForMany($faculty, $events);
+        $lastSubmittedByEvent = $events->isEmpty()
+            ? collect()
+            : TalentJudgeScoreSheet::query()
+                ->where('user_id', $faculty->id)
+                ->whereIn('talent_event_id', $events->pluck('id'))
+                ->where('status', TalentJudgeScoreStatus::Submitted)
+                ->selectRaw('talent_event_id, MAX(submitted_at) as last_submitted_at')
+                ->groupBy('talent_event_id')
+                ->pluck('last_submitted_at', 'talent_event_id');
+
+        return $assignments->map(function (TalentEventJudge $assignment) use ($progressByEvent, $lastSubmittedByEvent) {
             $event = $assignment->talentEvent;
             if (! $event) {
                 return null;
             }
 
-            $progress = $this->progressFor($faculty, $event);
-            $lastSubmitted = TalentJudgeScoreSheet::query()
-                ->where('talent_event_id', $event->id)
-                ->where('user_id', $faculty->id)
-                ->where('status', TalentJudgeScoreStatus::Submitted)
-                ->orderByDesc('submitted_at')
-                ->value('submitted_at');
+            $progress = $progressByEvent->get($event->id) ?? $this->summarizeProgress(0, collect());
+            $lastSubmitted = $lastSubmittedByEvent->get($event->id);
 
             if ($progress['submitted'] === 0) {
                 return null;
@@ -585,7 +643,7 @@ class TalentJudgingService
                 'participants_judged' => $progress['submitted'],
                 'participants_total' => $progress['approved'],
                 'completion_percent' => $progress['percent'],
-                'submission_date' => $lastSubmitted,
+                'submission_date' => filled($lastSubmitted) ? Carbon::parse($lastSubmitted) : null,
                 'status' => $progress['judging_status'],
             ];
         })->filter()->values();

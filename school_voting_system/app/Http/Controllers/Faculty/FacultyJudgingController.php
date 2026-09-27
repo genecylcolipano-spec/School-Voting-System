@@ -41,10 +41,7 @@ class FacultyJudgingController extends Controller
             ->get()
             ->keyBy('talent_event_id');
 
-        $progress = [];
-        foreach ($competitions as $competition) {
-            $progress[$competition->id] = $this->judging->progressFor($user, $competition);
-        }
+        $progress = $this->judging->progressForMany($user, $competitions->getCollection())->all();
 
         return view('faculty.judging.index', [
             'user' => $user,

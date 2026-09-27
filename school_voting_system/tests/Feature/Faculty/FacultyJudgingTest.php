@@ -546,4 +546,65 @@ class FacultyJudgingTest extends TestCase
             ->get(route('faculty.judging.index'))
             ->assertForbidden();
     }
+
+    public function test_score_form_waits_for_watch_before_loading_video(): void
+    {
+        $faculty = $this->withPasskey(User::factory()->faculty()->create());
+        $admin = User::factory()->superAdmin()->create();
+        $event = $this->makeCompetition([
+            'title' => 'Video Judging Night',
+            'slug' => 'video-judging-night',
+        ]);
+        $entry = $this->makeApprovedEntry($event, [
+            'display_name' => 'Video Performer',
+            'video_path' => 'talent/videos/demo.mp4',
+        ]);
+
+        $judging = app(TalentJudgingService::class);
+        $judging->assignJudge($event, $faculty, $admin);
+        $judging->ensureDefaultCriteria($event);
+
+        $this->actingAs($faculty)
+            ->get(route('faculty.judging.score', [$event, $entry]))
+            ->assertOk()
+            ->assertSee('Watch performance')
+            ->assertSee('playing: false', false)
+            ->assertDontSee('<video controls class="aspect-video w-full" src="', false);
+    }
+
+    public function test_batched_progress_matches_single_competition_progress(): void
+    {
+        $faculty = $this->withPasskey(User::factory()->faculty()->create());
+        $admin = User::factory()->superAdmin()->create();
+        $event = $this->makeCompetition([
+            'title' => 'Progress Batch Night',
+            'slug' => 'progress-batch-night',
+        ]);
+        $this->makeApprovedEntry($event, ['display_name' => 'Pending Batch']);
+        $drafted = $this->makeApprovedEntry($event, ['display_name' => 'Draft Batch']);
+        $submitted = $this->makeApprovedEntry($event, ['display_name' => 'Submitted Batch']);
+
+        $judging = app(TalentJudgingService::class);
+        $judging->assignJudge($event, $faculty, $admin);
+        $judging->ensureDefaultCriteria($event);
+
+        $criteria = $event->fresh()->judgingCriteria()->orderBy('sort_order')->get();
+        $scores = [];
+        foreach ($criteria as $criterion) {
+            $scores[$criterion->id] = 18;
+        }
+
+        $judging->saveDraft($faculty, $event, $drafted, $scores);
+        $judging->submitScores($faculty, $event, $submitted, $scores);
+
+        $single = $judging->progressFor($faculty, $event);
+        $batched = $judging->progressForMany($faculty, collect([$event]))->get($event->id);
+
+        $this->assertSame($single, $batched);
+        $this->assertSame(3, $single['approved']);
+        $this->assertSame(1, $single['drafted']);
+        $this->assertSame(1, $single['submitted']);
+        $this->assertSame(2, $single['remaining']);
+        $this->assertSame('In Progress', $single['judging_status']);
+    }
 }
