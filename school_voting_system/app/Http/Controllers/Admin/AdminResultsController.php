@@ -92,14 +92,29 @@ class AdminResultsController extends Controller
 
     public function showElection(Request $request, Election $election): View
     {
-        $detail = $this->results->electionDetail($election, $request->user()->loadCount('passkeys'));
+        $user = $request->user()->loadCount('passkeys');
+        $showBreakdown = $request->boolean('breakdown');
+        $integrityResult = $request->session()->get('integrity_result');
+
+        $detail = $this->results->electionDetail($election, $user, [
+            'turnout' => $showBreakdown,
+            'integrity_result' => is_array($integrityResult) ? $integrityResult : null,
+        ]);
+
+        $exportQuery = $showBreakdown ? ['breakdown' => 1] : [];
 
         return view('admin.results.show', [
-            'user' => $request->user()->loadCount('passkeys'),
-            'notificationsCount' => AdminPortal::notificationCount($request->user()),
+            'user' => $user,
+            'notificationsCount' => AdminPortal::notificationCount($user),
             'detail' => $detail,
+            'showBreakdown' => $showBreakdown,
             'liveUrl' => route('admin.results.election.live', $election),
-            'exportUrls' => $this->exportUrls('election', $election),
+            'exportUrls' => [
+                'pdf' => route('admin.results.election.export', [$election, 'format' => 'pdf'] + $exportQuery),
+                'excel' => route('admin.results.election.export', [$election, 'format' => 'excel'] + $exportQuery),
+                'csv' => route('admin.results.election.export', [$election, 'format' => 'csv'] + $exportQuery),
+                'print' => route('admin.results.election.export', [$election, 'format' => 'print'] + $exportQuery),
+            ],
             'backUrl' => route('admin.results.elections'),
             'backLabel' => 'Election Results',
         ]);
@@ -157,14 +172,15 @@ class AdminResultsController extends Controller
 
         return redirect()
             ->route('admin.results.election.show', $election)
-            ->with($flashKey, $result['message']);
+            ->with($flashKey, $result['message'])
+            ->with('integrity_result', $result);
     }
 
     public function exportElectionTurnout(ExportResultsRequest $request, Election $election): StreamedResponse
     {
         $user = $request->user();
         $this->results->assertCanViewElection($user, $election);
-        $detail = $this->results->electionDetail($election, $user);
+        $sections = $this->scope->turnoutBySection($user, $election);
         $filenameBase = 'turnout-'.Str::slug($election->slug).'-'.now()->format('Y-m-d');
 
         $headers = [
@@ -172,22 +188,22 @@ class AdminResultsController extends Controller
             'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.csv"',
         ];
 
-        return response()->stream(function () use ($detail) {
+        return response()->stream(function () use ($election, $sections) {
             $handle = fopen('php://output', 'w');
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            fputcsv($handle, ['Election', $detail['name'] ?? '']);
+            fputcsv($handle, ['Election', $election->title]);
             fputcsv($handle, ['Generated', now()->toDayDateTimeString()]);
             fputcsv($handle, []);
             fputcsv($handle, ['Grade', 'Section', 'Registered', 'Voted', 'Turnout %']);
 
-            foreach ($detail['turnout_sections'] ?? [] as $row) {
+            foreach ($sections as $row) {
                 fputcsv($handle, [
                     $row['grade'] ?? '',
                     $row['section'] ?? '',
-                    $row['registered'] ?? 0,
+                    $row['registered'] ?? $row['eligible'] ?? 0,
                     $row['voted'] ?? 0,
-                    ($row['turnout_percent'] ?? 0).'%',
+                    ($row['turnout_percent'] ?? $row['turnout'] ?? 0).'%',
                 ]);
             }
 

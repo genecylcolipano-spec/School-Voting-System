@@ -183,14 +183,18 @@ class AdminResultsService
     }
 
     /**
+     * @param  array{turnout?: bool, integrity?: bool, live?: bool, integrity_result?: ?array<string, mixed>}  $options
      * @return array<string, mixed>
      */
-    public function electionDetail(Election $election, User $admin): array
+    public function electionDetail(Election $election, User $admin, array $options = []): array
     {
         $this->assertCanViewElection($admin, $election);
         $election->loadMissing('resultsPublisher');
 
-        $live = $this->liveVoting->progress($admin);
+        $includeTurnout = (bool) ($options['turnout'] ?? false);
+        $includeIntegrity = (bool) ($options['integrity'] ?? false);
+        $includeLive = (bool) ($options['live'] ?? false);
+
         $rankings = $this->electionRankings($election);
         $winners = $this->electionWinners($rankings);
         $winnerSpotlight = WinnerSpotlightBuilder::fromRankings($rankings);
@@ -245,11 +249,19 @@ class AdminResultsService
             'generated_at' => now()->format('M d, Y g:i A'),
             'can_export' => $this->scope->canExportPreliminaryResults($admin),
             'party_performance' => $this->partyPerformanceFromRankings($rankings, $winners),
-            'turnout_sections' => $this->turnoutSectionsForExport($admin, $election),
-            'integrity' => $this->integrity->verify($election),
+            'turnout_sections' => $includeTurnout
+                ? $this->turnoutSectionsForExport($admin, $election)
+                : [],
+            'integrity' => is_array($options['integrity_result'] ?? null)
+                ? $options['integrity_result']
+                : ($includeIntegrity
+                    ? $this->integrity->verify($election)
+                    : $this->integrityPreview($election)),
             'verify_integrity_url' => route('admin.results.election.verify-integrity', $election),
             'turnout_export_url' => route('admin.results.election.turnout', $election),
-            'live_payload' => $isLive && ($live['is_live'] ?? false) ? $live : null,
+            'live_payload' => $includeLive && $isLive
+                ? $this->liveVoting->progress($admin)
+                : null,
         ];
     }
 
@@ -1488,6 +1500,27 @@ class AdminResultsService
             ->sortByDesc('total_votes')
             ->values()
             ->all();
+    }
+
+    /**
+     * Stored hash only — does not load or rehash ballots.
+     *
+     * @return array{has_hash: bool, valid: bool, stored_hash: ?string, computed_hash: ?string, message: string, pending: bool}
+     */
+    protected function integrityPreview(Election $election): array
+    {
+        $stored = $election->integrity_hash;
+
+        return [
+            'has_hash' => filled($stored),
+            'valid' => false,
+            'stored_hash' => $stored,
+            'computed_hash' => null,
+            'message' => filled($stored)
+                ? 'Press Verify Integrity to compare the stored fingerprint with current vote records.'
+                : 'No integrity hash has been recorded for this election yet.',
+            'pending' => true,
+        ];
     }
 
     /**

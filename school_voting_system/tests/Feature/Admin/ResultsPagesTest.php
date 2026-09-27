@@ -2,9 +2,14 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\StudentStatus;
+use App\Enums\UserRole;
+use App\Models\Candidate;
 use App\Models\Election;
+use App\Models\ElectionCategory;
 use App\Models\PortalNotification;
 use App\Models\User;
+use App\Models\Vote;
 use App\Services\Admin\AdminScopeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -81,5 +86,48 @@ class ResultsPagesTest extends TestCase
         Election::factory()->closed()->create();
 
         $this->assertFalse(app(AdminScopeService::class)->canExportPreliminaryResults($admin));
+    }
+
+    public function test_results_dashboard_defers_integrity_and_section_turnout(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $election = Election::factory()->active()->create([
+            'title' => 'Dashboard Council',
+            'integrity_hash' => 'stored-hash-preview',
+        ]);
+        $category = ElectionCategory::factory()->create([
+            'election_id' => $election->id,
+            'name' => 'President',
+        ]);
+        $candidate = Candidate::factory()->create([
+            'election_id' => $election->id,
+            'election_category_id' => $category->id,
+            'display_name' => 'Dashboard Winner',
+        ]);
+        $voter = User::factory()->create([
+            'role' => UserRole::Student,
+            'is_active' => true,
+            'student_status' => StudentStatus::Enrolled,
+            'grade_level' => '12',
+            'section' => 'Ruby',
+        ]);
+        Vote::castBallot($voter, $candidate);
+
+        $this->actingAs($super)
+            ->get(route('admin.results.election.show', $election))
+            ->assertOk()
+            ->assertSee('Dashboard Council')
+            ->assertSee('Dashboard Winner')
+            ->assertSee('Not verified yet')
+            ->assertSee('Load participation by grade / section')
+            ->assertSee('stored-hash-preview')
+            ->assertDontSee('Ruby')
+            ->assertDontSee('Mismatch');
+
+        $this->actingAs($super)
+            ->get(route('admin.results.election.show', [$election, 'breakdown' => 1]))
+            ->assertOk()
+            ->assertSee('Ruby')
+            ->assertDontSee('Load participation by grade / section');
     }
 }

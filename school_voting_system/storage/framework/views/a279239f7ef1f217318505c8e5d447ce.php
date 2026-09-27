@@ -430,7 +430,9 @@
                     </div>
 
                     <div class="mt-5 flex flex-wrap items-center gap-3">
-                        <?php if($integrityHasHash && $integrityValid): ?>
+                        <?php if($integrity['pending'] ?? false): ?>
+                            <span class="inline-flex items-center rounded-full border border-slate-600 bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">Not verified yet</span>
+                        <?php elseif($integrityHasHash && $integrityValid): ?>
                             <span class="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">Verified</span>
                         <?php elseif($integrityHasHash): ?>
                             <span class="inline-flex items-center rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-300">Mismatch</span>
@@ -453,7 +455,18 @@
                 </section>
             <?php endif; ?>
 
-            <?php if($turnoutSections->isNotEmpty()): ?>
+            <?php if(($detail['type'] ?? '') === 'election' && $turnoutSections->isEmpty() && ! ($showBreakdown ?? false)): ?>
+                <section class="mt-6 rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5 sm:p-6">
+                    <h3 class="text-lg font-semibold text-white">Turnout Statistics</h3>
+                    <p class="mt-1 text-sm text-slate-400">This breakdown reads the full enrolled roster. Load it only when you need the table.</p>
+                    <a
+                        href="<?php echo e(route('admin.results.election.show', ['election' => $detail['slug'], 'breakdown' => 1])); ?>"
+                        class="mt-4 inline-flex rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500"
+                    >
+                        Load participation by grade / section
+                    </a>
+                </section>
+            <?php elseif($turnoutSections->isNotEmpty()): ?>
                 <section class="mt-6 rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5 sm:p-6">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
