@@ -113,6 +113,38 @@ class AdminResultsService
     }
 
     /**
+     * Rankings and party totals for Reports. Skips integrity hashing, live polling, and section turnout.
+     *
+     * @return array{
+     *     name: string,
+     *     summary: array{total_votes: int, turnout_percent: float, participants: int},
+     *     rankings: array<int, array<string, mixed>>,
+     *     party_performance: array<int, array<string, mixed>>
+     * }
+     */
+    public function electionReportOverview(Election $election, User $admin): array
+    {
+        $this->assertCanViewElection($admin, $election);
+
+        $rankings = $this->electionRankings($election);
+        $winners = $this->electionWinners($rankings);
+        $eligible = $election->eligibleVoterCount();
+        $votesCast = (int) $election->votes()->count();
+        $voted = (int) $election->votes()->distinct('user_id')->count('user_id');
+
+        return [
+            'name' => $election->title,
+            'summary' => [
+                'total_votes' => $votesCast,
+                'turnout_percent' => $eligible > 0 ? round(($voted / $eligible) * 100, 1) : 0.0,
+                'participants' => $eligible,
+            ],
+            'rankings' => $rankings,
+            'party_performance' => $this->partyPerformanceFromRankings($rankings, $winners),
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function electionDetail(Election $election, User $admin): array

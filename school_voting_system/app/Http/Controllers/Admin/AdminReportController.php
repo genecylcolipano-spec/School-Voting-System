@@ -32,33 +32,48 @@ class AdminReportController extends Controller
         $user = $request->user()->loadCount('passkeys');
         $elections = $this->scope->reportableElections($user);
         $election = $this->scope->resolveReportElection($user, $this->requestedElectionId($request));
-        $statistics = $election
-            ? $this->electionStatistics($election)
-            : $this->scope->statistics($user);
-        $turnoutSections = $this->scope->turnoutBySection($user, $election);
+        $showBreakdown = $request->boolean('breakdown');
 
         $report = null;
         $exportUrls = null;
         $winningParty = null;
+        $turnoutSections = collect();
+        $statistics = [
+            'eligible_voters' => 0,
+            'voted_students' => 0,
+            'votes_cast' => 0,
+            'turnout_percent' => 0.0,
+        ];
 
         if ($election instanceof Election) {
-            $detail = $this->results->electionDetail($election, $user);
-            $spotlight = WinnerSpotlightBuilder::fromRankings($detail['rankings'] ?? []);
-            $winningParty = collect($detail['party_performance'] ?? [])
+            $overview = $this->results->electionReportOverview($election, $user);
+            $spotlight = WinnerSpotlightBuilder::fromRankings($overview['rankings']);
+            $winningParty = collect($overview['party_performance'])
                 ->sortByDesc(fn (array $party) => [
                     (int) ($party['seats_won'] ?? 0),
                     (int) ($party['total_votes'] ?? 0),
                 ])
                 ->first();
 
+            $statistics = [
+                'eligible_voters' => $overview['summary']['participants'],
+                'voted_students' => 0,
+                'votes_cast' => $overview['summary']['total_votes'],
+                'turnout_percent' => $overview['summary']['turnout_percent'],
+            ];
+
+            if ($showBreakdown) {
+                $turnoutSections = $this->scope->turnoutBySection($user, $election);
+            }
+
             $report = [
-                'election_name' => $detail['name'],
-                'total_votes' => $detail['summary']['total_votes'] ?? 0,
-                'turnout_percent' => $detail['summary']['turnout_percent'] ?? 0,
-                'participants' => $detail['summary']['participants'] ?? 0,
+                'election_name' => $overview['name'],
+                'total_votes' => $overview['summary']['total_votes'],
+                'turnout_percent' => $overview['summary']['turnout_percent'],
+                'participants' => $overview['summary']['participants'],
                 'winners' => $spotlight,
-                'party_performance' => $detail['party_performance'] ?? [],
-                'turnout_sections' => $detail['turnout_sections'] ?? [],
+                'party_performance' => $overview['party_performance'],
+                'turnout_sections' => $showBreakdown ? $turnoutSections : [],
             ];
 
             $exportUrls = [
@@ -75,6 +90,7 @@ class AdminReportController extends Controller
             'elections' => $elections,
             'statistics' => $statistics,
             'turnoutSections' => $turnoutSections,
+            'showBreakdown' => $showBreakdown,
             'report' => $report,
             'exportUrls' => $exportUrls,
             'winningParty' => $winningParty,

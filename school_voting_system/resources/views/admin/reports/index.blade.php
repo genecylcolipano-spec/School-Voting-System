@@ -2,7 +2,7 @@
     <x-admin-portal title="Reports" :user="$user" :notifications-count="$notificationsCount">
         @include('admin.partials.page-header', [
             'title' => 'Election Reports',
-            'description' => 'Election summary, turnout, winners, party performance, and exports. Live charts are in Dashboard Analytics.',
+            'description' => 'Election summary, winners, party performance, and exports. Grade and section turnout loads only when you ask. Integrity checks and PDFs stay on Results / Export.',
         ])
 
         @include('admin.reports.partials.report-tabs', ['active' => 'election'])
@@ -76,46 +76,56 @@
 
             <section class="mt-6 rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5">
                 <h3 class="text-lg font-semibold text-white">Participation by Grade / Section</h3>
-                <div class="mt-4 overflow-x-auto">
-                    <table class="min-w-full text-sm">
-                        <thead>
-                            <tr class="border-b border-slate-800 text-left text-slate-400">
-                                <th class="px-4 py-3">Grade</th>
-                                <th class="px-4 py-3">Section</th>
-                                <th class="px-4 py-3">Registered</th>
-                                <th class="px-4 py-3">Voted</th>
-                                <th class="px-4 py-3">Turnout</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-800">
-                            @php
-                                $turnoutRows = collect($report['turnout_sections'] ?? [])->isNotEmpty()
-                                    ? collect($report['turnout_sections'])
-                                    : collect($turnoutSections ?? []);
-                            @endphp
-                            @forelse ($turnoutRows as $row)
-                                @php
-                                    $grade = $row['grade'] ?? null;
-                                    $section = $row['section'] ?? null;
-                                    if (($grade === null || $section === null) && filled($row['label'] ?? null)) {
-                                        $parts = array_map('trim', explode('·', (string) $row['label'], 2));
-                                        $grade ??= $parts[0] ?? 'All';
-                                        $section ??= $parts[1] ?? 'General';
-                                    }
-                                @endphp
-                                <tr>
-                                    <td class="px-4 py-3 text-white">{{ $grade ?: '—' }}</td>
-                                    <td class="px-4 py-3 text-white">{{ $section ?: '—' }}</td>
-                                    <td class="px-4 py-3">{{ number_format($row['registered'] ?? $row['eligible'] ?? 0) }}</td>
-                                    <td class="px-4 py-3">{{ number_format($row['voted'] ?? 0) }}</td>
-                                    <td class="px-4 py-3 font-semibold text-emerald-300">{{ number_format($row['turnout_percent'] ?? $row['turnout'] ?? 0, 1) }}%</td>
+                @if (! $showBreakdown)
+                    <p class="mt-2 text-sm text-slate-400">This breakdown reads the full enrolled roster. Load it only when you need the table.</p>
+                    <a
+                        href="{{ route('admin.reports.index', ['election' => $election->id, 'breakdown' => 1]) }}"
+                        class="mt-4 inline-flex rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500"
+                    >
+                        Load participation by grade / section
+                    </a>
+                @else
+                    <div class="mt-4 overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-left text-slate-400">
+                                    <th class="px-4 py-3">Grade</th>
+                                    <th class="px-4 py-3">Section</th>
+                                    <th class="px-4 py-3">Registered</th>
+                                    <th class="px-4 py-3">Voted</th>
+                                    <th class="px-4 py-3">Turnout</th>
                                 </tr>
-                            @empty
-                                <tr><td colspan="5" class="px-4 py-6 text-center text-slate-400">No turnout breakdown available.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800">
+                                @php
+                                    $turnoutRows = collect($report['turnout_sections'] ?? [])->isNotEmpty()
+                                        ? collect($report['turnout_sections'])
+                                        : collect($turnoutSections ?? []);
+                                @endphp
+                                @forelse ($turnoutRows as $row)
+                                    @php
+                                        $grade = $row['grade'] ?? null;
+                                        $section = $row['section'] ?? null;
+                                        if (($grade === null || $section === null) && filled($row['label'] ?? null)) {
+                                            $parts = array_map('trim', explode('·', (string) $row['label'], 2));
+                                            $grade ??= $parts[0] ?? 'All';
+                                            $section ??= $parts[1] ?? 'General';
+                                        }
+                                    @endphp
+                                    <tr>
+                                        <td class="px-4 py-3 text-white">{{ $grade ?: '—' }}</td>
+                                        <td class="px-4 py-3 text-white">{{ $section ?: '—' }}</td>
+                                        <td class="px-4 py-3">{{ number_format($row['registered'] ?? $row['eligible'] ?? 0) }}</td>
+                                        <td class="px-4 py-3">{{ number_format($row['voted'] ?? 0) }}</td>
+                                        <td class="px-4 py-3 font-semibold text-emerald-300">{{ number_format($row['turnout_percent'] ?? $row['turnout'] ?? 0, 1) }}%</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="5" class="px-4 py-6 text-center text-slate-400">No turnout breakdown available.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </section>
         @else
             <div class="rounded-2xl border border-dashed border-slate-700 bg-slate-900/50 px-6 py-12 text-center">

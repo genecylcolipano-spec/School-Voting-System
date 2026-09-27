@@ -8,8 +8,10 @@ use App\Enums\ElectionStatus;
 use App\Enums\EventStatus;
 use App\Enums\FundraiserStatus;
 use App\Enums\FundraiserVisibility;
+use App\Enums\StudentStatus;
 use App\Enums\TalentEventStatus;
 use App\Enums\TalentVotingMethod;
+use App\Enums\UserRole;
 use App\Models\Candidate;
 use App\Models\Donation;
 use App\Models\Election;
@@ -184,6 +186,46 @@ class ReportsAnalyticsTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.reports.index', ['election' => $other->id]))
             ->assertForbidden();
+    }
+
+    public function test_election_report_defers_section_turnout_until_requested(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $election = Election::factory()->active()->create([
+            'title' => 'Turnout Council',
+        ]);
+        $category = ElectionCategory::factory()->create([
+            'election_id' => $election->id,
+            'name' => 'President',
+        ]);
+        $candidate = Candidate::factory()->create([
+            'election_id' => $election->id,
+            'election_category_id' => $category->id,
+            'display_name' => 'Report Winner',
+        ]);
+        $voter = User::factory()->create([
+            'role' => UserRole::Student,
+            'is_active' => true,
+            'student_status' => StudentStatus::Enrolled,
+            'grade_level' => '12',
+            'section' => 'Ruby',
+        ]);
+        Vote::castBallot($voter, $candidate);
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.index', ['election' => $election->id]))
+            ->assertOk()
+            ->assertSee('Turnout Council')
+            ->assertSee('Report Winner')
+            ->assertSee('Load participation by grade / section')
+            ->assertDontSee('Ruby');
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.index', ['election' => $election->id, 'breakdown' => 1]))
+            ->assertOk()
+            ->assertSee('12')
+            ->assertSee('Ruby')
+            ->assertDontSee('Load participation by grade / section');
     }
 
     public function test_talent_report_lists_actual_winners_not_planned_count(): void
