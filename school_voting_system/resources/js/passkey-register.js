@@ -3,44 +3,28 @@
  * Binds once per button to avoid duplicate handlers when the script is included twice.
  */
 
-import { bufferToBase64url, base64urlToBuffer, userFacingHttpError } from './passkey-helpers.js';
+import {
+    bufferToBase64url,
+    base64urlToBuffer,
+    fetchPasskeyJson,
+    OPTIONS_REGISTER_FAILED_MESSAGE,
+    userFacingPasskeyError,
+    webAuthnPublicKeyFromPayload,
+} from './passkey-helpers.js';
 import './auto-capitalize.js';
 import { initInAppBrowserGate } from './in-app-browser.js';
 
-const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
-
 async function fetchJson(url, options = {}) {
-    const response = await fetch(url, {
-        credentials: 'same-origin',
-        headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': csrfToken(),
-        },
-        ...options,
+    return fetchPasskeyJson(url, options, {
+        fallback: (status) => status === 403
+            ? 'Enrollment session expired. Open your enrollment link again.'
+            : 'Passkey registration failed.',
+        startFailedMessage: OPTIONS_REGISTER_FAILED_MESSAGE,
     });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-        const message = userFacingHttpError(
-            response.status,
-            data.message ?? Object.values(data.errors ?? {}).flat()?.[0],
-            response.status === 403
-                ? 'Enrollment session expired. Open your enrollment link again.'
-                : 'Passkey registration failed.',
-        );
-
-        throw new Error(message);
-    }
-
-    return data;
 }
 
 function toCreationOptions(payload) {
-    const options = payload.options ?? payload;
-    const publicKey = { ...options };
+    const publicKey = webAuthnPublicKeyFromPayload(payload, OPTIONS_REGISTER_FAILED_MESSAGE);
 
     publicKey.challenge = base64urlToBuffer(publicKey.challenge, 'challenge');
     publicKey.user = {
@@ -100,7 +84,7 @@ function bindPasskeyRegistration() {
         status.textContent = 'Follow the biometric prompt on your device.';
 
         try {
-            const challenge = await fetchJson(button.dataset.optionsUrl, { method: 'GET' });
+            const challenge = await fetchJson(button.dataset.optionsUrl || '', { method: 'GET' });
             const credential = await navigator.credentials.create({
                 publicKey: toCreationOptions(challenge),
             });
@@ -128,7 +112,7 @@ function bindPasskeyRegistration() {
         } catch (error) {
             status.textContent = error?.name === 'NotAllowedError'
                 ? 'Biometric registration was cancelled.'
-                : (error?.message ?? 'Could not register passkey.');
+                : userFacingPasskeyError(error, 'Could not register passkey.', OPTIONS_REGISTER_FAILED_MESSAGE);
         } finally {
             button.disabled = false;
             spinner?.classList.add('hidden');

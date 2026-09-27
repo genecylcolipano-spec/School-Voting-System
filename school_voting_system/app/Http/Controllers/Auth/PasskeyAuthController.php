@@ -7,6 +7,7 @@ use App\Models\Passkey;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\Auth\RoleRedirectService;
+use App\Support\PasskeyCeremonyResponse;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Http\JsonResponse;
@@ -55,13 +56,13 @@ class PasskeyAuthController extends Controller
                 WebAuthn::toJson($options)
             );
 
-            return response()->json([
+            return PasskeyCeremonyResponse::json([
                 'options' => WebAuthn::toBrowserArray($options),
             ]);
         } catch (Throwable $exception) {
             report($exception);
 
-            return response()->json([
+            return PasskeyCeremonyResponse::json([
                 'message' => 'Unable to start passkey authentication. Please try again.',
             ], 500);
         }
@@ -129,13 +130,13 @@ class PasskeyAuthController extends Controller
                 WebAuthn::toJson($options)
             );
 
-            return response()->json([
+            return PasskeyCeremonyResponse::json([
                 'options' => WebAuthn::toBrowserArray($options),
             ]);
         } catch (Throwable $exception) {
             report($exception);
 
-            return response()->json([
+            return PasskeyCeremonyResponse::json([
                 'message' => 'Unable to prepare passkey registration.',
             ], 500);
         }

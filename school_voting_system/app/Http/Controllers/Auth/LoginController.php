@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\Auth\RoleRedirectService;
 use App\Services\Auth\StudentRegistrationPasskeyService;
 use App\Services\SuperAdmin\AuditLogService;
+use App\Support\PasskeyCeremonyResponse;
 use App\Enums\AuditActionType;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\StatefulGuard;
@@ -68,13 +69,13 @@ class LoginController extends Controller
                 'rp_id' => Passkeys::relyingPartyId(),
             ]);
 
-            return response()->json([
+            return PasskeyCeremonyResponse::json([
                 'options' => WebAuthn::toBrowserArray($options),
             ]);
         } catch (Throwable $exception) {
             report($exception);
 
-            return response()->json([
+            return PasskeyCeremonyResponse::json([
                 'message' => 'Unable to start passkey authentication. Please try again.',
             ], 500);
         }
@@ -204,7 +205,7 @@ class LoginController extends Controller
                     'ip' => $request->ip(),
                 ]);
 
-                return response()->json([
+                return PasskeyCeremonyResponse::json([
                     'options' => $this->studentRegistrationPasskeys->issueRegistrationOptions($request),
                 ]);
             }
@@ -224,13 +225,13 @@ class LoginController extends Controller
                 WebAuthn::toJson($options)
             );
 
-            return response()->json([
+            return PasskeyCeremonyResponse::json([
                 'options' => WebAuthn::toBrowserArray($options),
             ]);
         } catch (Throwable $exception) {
             report($exception);
 
-            return response()->json([
+            return PasskeyCeremonyResponse::json([
                 'message' => 'Unable to prepare passkey registration.',
             ], 500);
         }

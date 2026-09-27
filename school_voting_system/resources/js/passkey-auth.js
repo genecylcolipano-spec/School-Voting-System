@@ -2,10 +2,15 @@
  * Passkey login ceremony — fetches challenge options, invokes WebAuthn, posts assertion.
  */
 
-import { bufferToBase64url, base64urlToBuffer, userFacingHttpError } from './passkey-helpers.js';
+import {
+    bufferToBase64url,
+    base64urlToBuffer,
+    fetchPasskeyJson,
+    OPTIONS_START_FAILED_MESSAGE,
+    userFacingPasskeyError,
+    webAuthnPublicKeyFromPayload,
+} from './passkey-helpers.js';
 import { initInAppBrowserGate } from './in-app-browser.js';
-
-const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 
 const statusPanel = () => document.getElementById('passkey-status');
 const loginButton = () => document.getElementById('passkey-login-btn');
@@ -34,8 +39,7 @@ function setLoading(isLoading) {
 }
 
 function toPublicKeyOptions(payload) {
-    const options = payload.options ?? payload.publicKey ?? payload;
-    const publicKey = { ...options };
+    const publicKey = webAuthnPublicKeyFromPayload(payload, OPTIONS_START_FAILED_MESSAGE);
 
     publicKey.challenge = base64urlToBuffer(publicKey.challenge, 'challenge');
     publicKey.allowCredentials = publicKey.allowCredentials?.map((item) => ({
@@ -63,30 +67,10 @@ function serializeAssertion(credential) {
 }
 
 async function fetchJson(url, options = {}) {
-    const response = await fetch(url, {
-        credentials: 'same-origin',
-        headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': csrfToken(),
-            ...(options.headers ?? {}),
-        },
-        ...options,
+    return fetchPasskeyJson(url, options, {
+        fallback: 'Passkey authentication failed.',
+        startFailedMessage: OPTIONS_START_FAILED_MESSAGE,
     });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-        const message = userFacingHttpError(
-            response.status,
-            data.message ?? Object.values(data.errors ?? {}).flat()?.[0],
-            'Passkey authentication failed.',
-        );
-        throw new Error(message);
-    }
-
-    return data;
 }
 
 export async function performPasskeyLogin() {
@@ -100,14 +84,14 @@ export async function performPasskeyLogin() {
         throw new Error('This browser does not support passkeys. Use a modern browser over HTTPS (or localhost).');
     }
 
-    const challenge = await fetchJson(window.passkeyPortal.loginOptionsUrl, { method: 'GET' });
+    const challenge = await fetchJson(window.passkeyPortal?.loginOptionsUrl, { method: 'GET' });
     const credential = await navigator.credentials.get({ publicKey: toPublicKeyOptions(challenge) });
 
     if (!credential) {
         throw new Error('No passkey was provided by your device.');
     }
 
-    return fetchJson(window.passkeyPortal.loginVerifyUrl, {
+    return fetchJson(window.passkeyPortal?.loginVerifyUrl, {
         method: 'POST',
         body: JSON.stringify({ credential: serializeAssertion(credential) }),
     });
@@ -136,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setStatus(
                 cancelled
                     ? 'Passkey sign-in was cancelled.'
-                    : (error?.message ?? 'Unable to sign in with passkey.'),
+                    : userFacingPasskeyError(error, 'Unable to sign in with passkey.'),
                 cancelled ? 'info' : 'error',
             );
         } finally {

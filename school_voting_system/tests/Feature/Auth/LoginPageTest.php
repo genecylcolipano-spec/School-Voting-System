@@ -89,4 +89,19 @@ class LoginPageTest extends TestCase
             ->assertDontSee(route('login.recovery'), false)
             ->assertSee('Create one');
     }
+
+    public function test_login_options_are_uncached_json_with_a_challenge(): void
+    {
+        $response = $this->getJson(route('login.options'));
+
+        $response->assertOk()
+            ->assertHeader('Cache-Control')
+            ->assertJsonStructure(['options' => ['challenge']]);
+
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+
+        $this->assertStringContainsString('no-store', $cacheControl);
+        $this->assertNotEmpty($response->json('options.challenge'));
+        $this->assertIsString($response->json('options.challenge'));
+    }
 }
