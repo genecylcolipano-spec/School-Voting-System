@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\SafeAuditActionType;
 use App\Enums\AuditActionType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,12 +28,23 @@ class AuditLog extends Model
     {
         return [
             'metadata' => 'array',
-            'action_type' => AuditActionType::class,
+            'action_type' => SafeAuditActionType::class,
         ];
     }
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function actionTypeValue(): string
+    {
+        if ($this->action_type instanceof AuditActionType) {
+            return $this->action_type->value;
+        }
+
+        $raw = $this->getRawOriginal('action_type');
+
+        return filled($raw) ? (string) $raw : 'system';
     }
 }

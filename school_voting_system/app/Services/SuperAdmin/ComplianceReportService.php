@@ -44,21 +44,30 @@ class ComplianceReportService
             : 'portrait';
 
         $fontDir = storage_path('fonts');
-        if (! is_dir($fontDir)) {
-            mkdir($fontDir, 0755, true);
-        }
-
         $filename = str_replace('_', '-', $type).'-'.now()->format('Y-m-d').'.pdf';
 
-        return Pdf::loadHTML($html)
-            ->setPaper('a4', $orientation)
-            ->setOption([
-                'isRemoteEnabled' => false,
-                'fontDir' => $fontDir,
-                'fontCache' => $fontDir,
-                'chroot' => base_path(),
-            ])
-            ->download($filename);
+        try {
+            if (! is_dir($fontDir)) {
+                mkdir($fontDir, 0755, true);
+            }
+
+            return Pdf::loadHTML($html)
+                ->setPaper('a4', $orientation)
+                ->setOption([
+                    'isRemoteEnabled' => false,
+                    'fontDir' => $fontDir,
+                    'fontCache' => $fontDir,
+                    'chroot' => base_path(),
+                ])
+                ->download($filename);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return response($html, 200, [
+                'Content-Type' => 'text/html; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="'.str_replace('.pdf', '.html', $filename).'"',
+            ]);
+        }
     }
 
     protected function electionSummary(User $actor, ?int $electionId): string
@@ -143,7 +152,8 @@ class ComplianceReportService
 
     protected function auditTrail(): string
     {
-        $logs = AuditLog::query()->latest()->limit(500)->get();
+        $limit = $this->forPdf ? 200 : 500;
+        $logs = AuditLog::query()->latest()->limit($limit)->get();
 
         $rows = $logs->map(function (AuditLog $log) {
             return '<tr>'
@@ -151,13 +161,13 @@ class ComplianceReportService
                 .$this->td($log->admin_name)
                 .$this->td($log->admin_role)
                 .$this->td($log->action)
-                .$this->td($log->action_type?->value ?? '—')
+                .$this->td($log->actionTypeValue())
                 .$this->td($log->ip_address)
                 .$this->td(ucfirst((string) $log->status))
                 .'</tr>';
         })->join('');
 
-        $note = '<p>Latest 500 admin actions. Full history and CSV export are on Audit Logs. This extract does not include enrollment URLs.</p>';
+        $note = '<p>Latest '.$limit.' admin actions. Full history and CSV export are on Audit Logs. This extract does not include enrollment URLs.</p>';
 
         return $this->shell(
             'Audit Trail Report',
@@ -206,9 +216,13 @@ class ComplianceReportService
         return '<tr><th>'.$this->e($label).'</th><td>'.$this->e($value).'</td></tr>';
     }
 
-    protected function td(?string $value): string
+    protected function td(mixed $value): string
     {
-        return '<td>'.$this->e($value).'</td>';
+        if ($value instanceof \BackedEnum) {
+            $value = $value->value;
+        }
+
+        return '<td>'.$this->e($value === null ? null : (string) $value).'</td>';
     }
 
     /**

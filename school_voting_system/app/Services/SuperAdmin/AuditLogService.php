@@ -64,7 +64,7 @@ class AuditLogService
                 '"'.str_replace('"', '""', $log->admin_name).'"',
                 '"'.str_replace('"', '""', $log->admin_role ?? '').'"',
                 '"'.str_replace('"', '""', $log->action).'"',
-                '"'.($log->action_type?->value ?? '').'"',
+                '"'.str_replace('"', '""', $log->actionTypeValue()).'"',
                 '"'.($log->ip_address ?? '').'"',
                 '"'.str_replace('"', '""', $log->device_name ?? '').'"',
                 '"'.$log->status.'"',

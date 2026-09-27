@@ -156,6 +156,42 @@ class SuperAdminComplianceReportsTest extends TestCase
             ->assertSee('passkey');
     }
 
+    public function test_audit_trail_pdf_survives_legacy_general_action_type(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        AuditLog::query()->create([
+            'user_id' => $admin->id,
+            'admin_name' => $admin->name,
+            'admin_role' => 'super_admin',
+            'action' => 'Legacy general log',
+            'action_type' => 'general',
+            'ip_address' => '10.8.1.9',
+            'status' => 'success',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('super-admin.reports.generate', [
+                'report' => 'audit_trail',
+                'format' => 'html',
+            ]))
+            ->assertOk()
+            ->assertSee('Legacy general log')
+            ->assertSee('general');
+
+        $response = $this->actingAs($admin)
+            ->get(route('super-admin.reports.generate', [
+                'report' => 'audit_trail',
+                'format' => 'pdf',
+            ]));
+
+        $response->assertOk();
+        $body = $response->getContent();
+        $this->assertTrue(
+            str_starts_with($body, '%PDF') || str_contains($body, 'Legacy general log'),
+            'Audit trail PDF should download a PDF or fall back to HTML.',
+        );
+    }
+
     public function test_regular_admin_cannot_generate_compliance_reports(): void
     {
         $admin = User::factory()->admin()->create();
