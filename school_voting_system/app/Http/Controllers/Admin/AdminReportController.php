@@ -77,9 +77,9 @@ class AdminReportController extends Controller
             ];
 
             $exportUrls = [
-                'pdf' => route('admin.results.election.export', [$election, 'format' => 'pdf']),
-                'excel' => route('admin.results.election.export', [$election, 'format' => 'excel']),
-                'print' => route('admin.results.election.export', [$election, 'format' => 'print']),
+                'pdf' => route('admin.results.election.export', [$election, 'format' => 'pdf'] + ($showBreakdown ? ['breakdown' => 1] : [])),
+                'excel' => route('admin.results.election.export', [$election, 'format' => 'excel'] + ($showBreakdown ? ['breakdown' => 1] : [])),
+                'print' => route('admin.results.election.export', [$election, 'format' => 'print'] + ($showBreakdown ? ['breakdown' => 1] : [])),
             ];
         }
 

@@ -133,7 +133,7 @@ class AdminResultsController extends Controller
     public function exportElection(ExportResultsRequest $request, Election $election, string $format): Response|StreamedResponse
     {
         $user = $request->user();
-        $detail = $this->results->electionDetail($election, $user);
+        $detail = $this->results->electionExportPayload($election, $user, $request->boolean('breakdown'));
 
         return $this->exportResponse($detail, $format, $election->slug, $user, $election);
     }

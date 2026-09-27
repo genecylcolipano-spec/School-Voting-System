@@ -68,6 +68,11 @@ class ResultsPagesTest extends TestCase
             ->get(route('admin.results.election.export', ['election' => $election, 'format' => 'csv']))
             ->assertOk()
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+
+        $this->actingAs($super)
+            ->get(route('admin.results.election.export', ['election' => $election, 'format' => 'print']))
+            ->assertOk()
+            ->assertSee('Exportable Council');
     }
 
     public function test_regular_admin_without_assignment_cannot_export_results(): void

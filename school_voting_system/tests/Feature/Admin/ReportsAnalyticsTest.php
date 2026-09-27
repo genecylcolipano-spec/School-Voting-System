@@ -228,6 +228,53 @@ class ReportsAnalyticsTest extends TestCase
             ->assertDontSee('Load participation by grade / section');
     }
 
+    public function test_election_report_exports_skip_section_turnout_unless_requested(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $election = Election::factory()->active()->create([
+            'title' => 'Export Council',
+        ]);
+        $category = ElectionCategory::factory()->create([
+            'election_id' => $election->id,
+            'name' => 'President',
+        ]);
+        $candidate = Candidate::factory()->create([
+            'election_id' => $election->id,
+            'election_category_id' => $category->id,
+            'display_name' => 'Export Winner',
+        ]);
+        $voter = User::factory()->create([
+            'role' => UserRole::Student,
+            'is_active' => true,
+            'student_status' => StudentStatus::Enrolled,
+            'grade_level' => '12',
+            'section' => 'Ruby',
+        ]);
+        Vote::castBallot($voter, $candidate);
+
+        $this->actingAs($admin)
+            ->get(route('admin.results.election.export', [$election, 'format' => 'print']))
+            ->assertOk()
+            ->assertSee('Export Council')
+            ->assertSee('Export Winner')
+            ->assertDontSee('Ruby');
+
+        $this->actingAs($admin)
+            ->get(route('admin.results.election.export', [$election, 'format' => 'excel']))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.ms-excel; charset=UTF-8');
+
+        $this->actingAs($admin)
+            ->get(route('admin.results.election.export', [$election, 'format' => 'pdf']))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        $this->actingAs($admin)
+            ->get(route('admin.results.election.export', [$election, 'format' => 'print', 'breakdown' => 1]))
+            ->assertOk()
+            ->assertSee('Ruby');
+    }
+
     public function test_talent_report_lists_actual_winners_not_planned_count(): void
     {
         $admin = User::factory()->superAdmin()->create();

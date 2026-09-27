@@ -145,6 +145,44 @@ class AdminResultsService
     }
 
     /**
+     * Export-ready election detail without integrity hashing, live polling, or activity logs.
+     *
+     * @return array<string, mixed>
+     */
+    public function electionExportPayload(Election $election, User $admin, bool $includeSectionTurnout = false): array
+    {
+        $overview = $this->electionReportOverview($election, $admin);
+        $rankings = $overview['rankings'];
+        $winners = $this->electionWinners($rankings);
+
+        return [
+            'type' => 'election',
+            'name' => $overview['name'],
+            'category' => 'Student Election',
+            'description' => $election->description,
+            'voting_status' => $this->electionVotingStatus($election),
+            'starts_at' => $election->voting_starts_at?->format('M d, Y g:i A'),
+            'ends_at' => $election->voting_ends_at?->format('M d, Y g:i A'),
+            'is_live' => $this->isElectionLive($election),
+            'is_published' => $this->electionPublishing->isPublished($election),
+            'summary' => [
+                'total_votes' => $overview['summary']['total_votes'],
+                'turnout_percent' => $overview['summary']['turnout_percent'],
+                'winners_count' => count($winners),
+                'participants' => $overview['summary']['participants'],
+            ],
+            'winners' => $winners,
+            'rankings' => $rankings,
+            'ranking_metric_label' => 'Votes',
+            'charts' => $this->electionCharts($rankings),
+            'party_performance' => $overview['party_performance'],
+            'turnout_sections' => $includeSectionTurnout
+                ? $this->turnoutSectionsForExport($admin, $election)
+                : [],
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function electionDetail(Election $election, User $admin): array
@@ -1369,7 +1407,7 @@ class AdminResultsService
                 'total_winners' => (int) ($summary['winners_count'] ?? $winners->count()),
             ],
             'party_performance' => $this->partyPerformanceFromRankings($rankings, $winners->all()),
-            'turnout_sections' => $this->turnoutSectionsForExport($admin, $source),
+            'turnout_sections' => $detail['turnout_sections'] ?? [],
             'has_chart_data' => $this->exportHasChartData($charts),
             'winning_candidates' => $winners->map(fn (array $winner) => [
                 'name' => $winner['name'] ?? '—',
