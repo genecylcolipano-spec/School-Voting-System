@@ -42,6 +42,7 @@ class TalentCompetitionWatchToVoteTest extends TestCase
             ->assertJson([
                 'watched' => true,
                 'entry_id' => $entry->id,
+                'embed' => 'https://www.youtube.com/embed/dQw4w9WgXcQ',
             ]);
 
         $this->assertTrue(

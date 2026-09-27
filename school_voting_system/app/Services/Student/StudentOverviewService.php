@@ -3,20 +3,22 @@
 namespace App\Services\Student;
 
 use App\Models\Election;
-use App\Models\ElectionCategory;
 use App\Models\Event;
 use App\Models\Fundraiser;
 use App\Models\User;
-use App\Models\Vote;
 use App\Services\Campaign\StudentCampaignService;
 use App\Services\Talent\StudentTalentService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class StudentOverviewService
 {
+    public const SHARED_TTL_SECONDS = 45;
+
     public function __construct(
         protected StudentTalentService $talentService,
         protected StudentCampaignService $campaignService,
+        protected StudentBallotProgress $ballotProgress,
     ) {}
 
     /**
@@ -31,10 +33,11 @@ class StudentOverviewService
     {
         $elections = $this->electionOverview($student);
         $talent = $this->talentOverview($student);
-        $upcomingEvents = Event::query()->upcoming()->count();
-        $openFundraisers = Fundraiser::query()->acceptingDonations()->count();
-        $campaigns = $this->campaignService->publishedCount();
-        $votingOpen = Election::query()->acceptingVotes()->exists();
+        $counts = $this->sharedCounts();
+        $upcomingEvents = $counts['upcoming_events'];
+        $openFundraisers = $counts['open_fundraisers'];
+        $campaigns = $counts['campaigns'];
+        $votingOpen = $counts['voting_open'] || $elections['count'] > 0;
 
         return [
             'can_vote_now' => $elections['can_vote_now'],
@@ -101,12 +104,8 @@ class StudentOverviewService
      */
     protected function electionOverview(User $student): array
     {
-        $open = Election::query()
-            ->acceptingVotes()
-            ->orderBy('voting_ends_at')
-            ->get(['id', 'slug', 'voting_ends_at']);
-
-        $remaining = $this->electionsStudentCanVote($open, $student);
+        $open = $this->openElections();
+        $remaining = $this->ballotProgress->remainingElections($open, $student);
         $firstRemaining = $remaining->first();
         $indexUrl = route('student.voting.index');
         $count = $open->count();
@@ -146,43 +145,31 @@ class StudentOverviewService
     }
 
     /**
-     * @param  Collection<int, Election>  $elections
      * @return Collection<int, Election>
      */
-    protected function electionsStudentCanVote(Collection $elections, User $student): Collection
+    protected function openElections(): Collection
     {
-        if ($elections->isEmpty()) {
-            return collect();
-        }
+        return Cache::remember('student.overview.open_elections', self::SHARED_TTL_SECONDS, function () {
+            return Election::query()
+                ->acceptingVotes()
+                ->orderBy('voting_ends_at')
+                ->get(['id', 'slug', 'voting_ends_at']);
+        });
+    }
 
-        $electionIds = $elections->pluck('id');
-
-        $categoryIdsByElection = ElectionCategory::query()
-            ->whereIn('election_id', $electionIds)
-            ->whereHas('candidates', fn ($query) => $query->where('is_active', true))
-            ->get(['id', 'election_id'])
-            ->groupBy('election_id')
-            ->map(fn (Collection $rows) => $rows->pluck('id')->map(fn ($id) => (int) $id)->values());
-
-        $votedCategoryIdsByElection = Vote::query()
-            ->where('user_id', $student->id)
-            ->whereIn('election_id', $electionIds)
-            ->get(['election_id', 'election_category_id'])
-            ->groupBy('election_id')
-            ->map(fn (Collection $rows) => $rows->pluck('election_category_id')->map(fn ($id) => (int) $id)->unique()->values());
-
-        return $elections
-            ->filter(function (Election $election) use ($categoryIdsByElection, $votedCategoryIdsByElection) {
-                $categoryIds = $categoryIdsByElection->get($election->id, collect());
-                $voted = $votedCategoryIdsByElection->get($election->id, collect());
-
-                if ($categoryIds->isEmpty()) {
-                    return $voted->isEmpty();
-                }
-
-                return $voted->intersect($categoryIds)->count() < $categoryIds->count();
-            })
-            ->values();
+    /**
+     * @return array{upcoming_events: int, open_fundraisers: int, campaigns: int, voting_open: bool}
+     */
+    protected function sharedCounts(): array
+    {
+        return Cache::remember('student.overview.shared_counts', self::SHARED_TTL_SECONDS, function () {
+            return [
+                'upcoming_events' => Event::query()->upcoming()->count(),
+                'open_fundraisers' => Fundraiser::query()->acceptingDonations()->count(),
+                'campaigns' => $this->campaignService->publishedCount(),
+                'voting_open' => Election::query()->acceptingVotes()->exists(),
+            ];
+        });
     }
 
     /**

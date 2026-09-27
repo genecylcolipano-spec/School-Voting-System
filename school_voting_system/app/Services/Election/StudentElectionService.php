@@ -25,12 +25,14 @@ class StudentElectionService
      *     can_view_results: bool
      * }
      */
-    public function votingAvailability(Election $election, ?User $student = null, ?Carbon $at = null): array
+    public function votingAvailability(Election $election, ?User $student = null, ?Carbon $at = null, ?bool $completedBallot = null): array
     {
         $at ??= now();
 
         if ($election->isInActiveVotingPeriod($at)) {
-            if ($student && $election->hasStudentCompletedBallot($student)) {
+            $completed = $completedBallot ?? ($student && $election->hasStudentCompletedBallot($student));
+
+            if ($student && $completed) {
                 return [
                     'state' => 'voted',
                     'title' => 'Your vote has been successfully recorded.',

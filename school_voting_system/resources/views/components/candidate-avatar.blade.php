@@ -13,9 +13,7 @@
     ];
     $dimension = $sizes[$size] ?? $sizes['md'];
 
-    $url = \App\Support\EventImageUrl::hasUploadedImage($path)
-        ? \App\Support\EventImageUrl::resolve($path)
-        : null;
+    $url = \App\Support\EventImageUrl::uploadedUrl($path);
 
     $initials = collect(preg_split('/\s+/', trim((string) $name)))
         ->filter()

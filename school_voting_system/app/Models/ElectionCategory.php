@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Student\StudentBallotCatalog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,6 +27,16 @@ class ElectionCategory extends Model
             'sort_order' => 'integer',
             'max_selections' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        $forget = static function (ElectionCategory $category): void {
+            StudentBallotCatalog::forget($category->election_id);
+        };
+
+        static::saved($forget);
+        static::deleted($forget);
     }
 
     public function election(): BelongsTo

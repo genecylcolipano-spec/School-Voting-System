@@ -31,6 +31,7 @@ use App\Services\Election\StudentElectionService;
 use App\Services\Portal\AnnouncementService;
 use App\Services\Portal\PortalNotificationService;
 use App\Services\Payments\DonationCheckoutService;
+use App\Services\Student\StudentBallotCatalog;
 use App\Services\Student\StudentResultsService;
 use App\Services\Student\StudentStatisticsService;
 use App\Services\SuperAdmin\AuditLogService;
@@ -58,6 +59,7 @@ class StudentPortalController extends Controller
         protected AuditLogService $audit,
         protected DonationCheckoutService $donationCheckout,
         protected StudentStatisticsService $statistics,
+        protected StudentBallotCatalog $ballotCatalog,
     ) {}
 
     public function events(Request $request): View
@@ -170,20 +172,15 @@ class StudentPortalController extends Controller
 
         $sessionKey = $this->ballotSubmittedSessionKey($election);
         $justSubmitted = (bool) $request->session()->pull($sessionKey);
+        $completed = $election->hasStudentCompletedBallot($student);
 
         // Success / receipt UI is one-shot: only after a fresh submission flash.
         // Revisit or refresh without the flash must not re-show the success page.
-        if ($election->hasStudentCompletedBallot($student) && ! $justSubmitted) {
+        if ($completed && ! $justSubmitted) {
             return redirect()
                 ->route('student.voting.index')
                 ->with('error', 'You have already submitted your vote for this election.');
         }
-
-        $election->loadMissing([
-            'categories',
-            'activeCandidates',
-            'activeCandidates.user',
-        ]);
 
         // [election_category_id => candidate_id] for positions already voted.
         $existingVotes = $student->votes()
@@ -191,7 +188,7 @@ class StudentPortalController extends Controller
             ->pluck('candidate_id', 'election_category_id');
 
         $votedCategoryIds = $existingVotes->keys()->map(fn ($id) => (int) $id)->all();
-        $completed = $election->hasStudentCompletedBallot($student);
+        $ballotCategories = $this->ballotCatalog->categoriesFor($election, $existingVotes);
 
         $ballotReceipt = null;
         $submittedAt = null;
@@ -219,6 +216,7 @@ class StudentPortalController extends Controller
             'ballotReceipt' => $ballotReceipt,
             'submittedAt' => $submittedAt,
             'countdown' => $election->countdownSnapshot(),
+            'ballotCategories' => $ballotCategories,
         ]);
     }
 
@@ -328,8 +326,12 @@ class StudentPortalController extends Controller
 
         $student = $request->user()->loadCount('passkeys');
 
+        $resultsPublished = $talentEvent->hasPublishedResults();
+
         $talentEvent->load([
-            'approvedEntries' => fn ($q) => $q->withCount('votes'),
+            'approvedEntries' => fn ($q) => $resultsPublished
+                ? $q->withCount('votes')
+                : $q,
         ]);
 
         $hasVoted = $this->talentService->hasVoted($student, $talentEvent);
@@ -404,6 +406,8 @@ class StudentPortalController extends Controller
             'views' => $entry->fresh()->view_count,
             'watched' => true,
             'entry_id' => $entry->id,
+            'embed' => $entry->videoEmbedUrl(),
+            'file' => $entry->videoFileUrl(),
         ]);
     }
 

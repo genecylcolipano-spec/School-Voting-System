@@ -46,6 +46,7 @@ class StudentUpcomingActivitiesService
 
     public function __construct(
         protected StudentElectionService $electionService,
+        protected StudentBallotProgress $ballotProgress,
     ) {}
 
     /**
@@ -103,7 +104,7 @@ class StudentUpcomingActivitiesService
      */
     protected function pushElections(Collection $items, ?User $student): void
     {
-        Election::query()
+        $query = Election::query()
             ->whereNull('annulled_at')
             ->where(function ($query) {
                 $query->where('status', ElectionStatus::Active)
@@ -119,8 +120,9 @@ class StudentUpcomingActivitiesService
                     });
             })
             ->orderBy('voting_starts_at')
-            ->limit(20)
-            ->get([
+            ->limit(20);
+
+        $elections = $query->get([
                 'id',
                 'title',
                 'slug',
@@ -131,9 +133,19 @@ class StudentUpcomingActivitiesService
                 'public_results_published',
                 'results_published_at',
                 'annulled_at',
-            ])
-            ->each(function (Election $election) use ($items, $student) {
-                $availability = $this->electionService->votingAvailability($election, $student);
+            ]);
+
+        $completedIds = $student
+            ? $this->ballotProgress->completedElectionIds($elections, $student)
+            : [];
+
+        $elections
+            ->each(function (Election $election) use ($items, $student, $completedIds) {
+                $availability = $this->electionService->votingAvailability(
+                    $election,
+                    $student,
+                    completedBallot: $student ? in_array($election->id, $completedIds, true) : null,
+                );
                 $mapped = $this->mapElectionAction($election, $availability);
 
                 if ($mapped === null) {

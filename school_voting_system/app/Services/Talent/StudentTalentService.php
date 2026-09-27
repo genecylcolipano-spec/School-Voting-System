@@ -10,6 +10,7 @@ use App\Models\TalentEventVote;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class StudentTalentService
 {
@@ -281,25 +282,27 @@ class StudentTalentService
      */
     protected function openPublishedEvents(): Collection
     {
-        return TalentEvent::query()
-            ->publishedToStudents()
-            ->whereNull('results_published_at')
-            ->where('status', '!=', TalentEventStatus::ResultsPublished)
-            ->where('status', '!=', TalentEventStatus::Completed)
-            ->where('is_paused', false)
-            ->get([
-                'id',
-                'status',
-                'published_to_students',
-                'registration_starts_at',
-                'registration_ends_at',
-                'submission_deadline',
-                'registration_method',
-                'voting_starts_at',
-                'voting_ends_at',
-                'voting_method',
-                'results_published_at',
-                'is_paused',
-            ]);
+        return Cache::remember('student.overview.talent_open', 45, function () {
+            return TalentEvent::query()
+                ->publishedToStudents()
+                ->whereNull('results_published_at')
+                ->where('status', '!=', TalentEventStatus::ResultsPublished)
+                ->where('status', '!=', TalentEventStatus::Completed)
+                ->where('is_paused', false)
+                ->get([
+                    'id',
+                    'status',
+                    'published_to_students',
+                    'registration_starts_at',
+                    'registration_ends_at',
+                    'submission_deadline',
+                    'registration_method',
+                    'voting_starts_at',
+                    'voting_ends_at',
+                    'voting_method',
+                    'results_published_at',
+                    'is_paused',
+                ]);
+        });
     }
 }

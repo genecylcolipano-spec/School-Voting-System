@@ -52,8 +52,8 @@ document.addEventListener('alpine:init', () => {
                 title: data.title || '',
                 category: data.category || '',
                 grade: data.grade || '',
-                embed: data.embed || '',
-                file: data.file || '',
+                embed: '',
+                file: '',
             };
             this.watchOpen = true;
 
@@ -69,10 +69,18 @@ document.addEventListener('alpine:init', () => {
                     Accept: 'application/json',
                 },
             })
-                .then((response) => {
-                    if (response.ok) {
-                        this.markWatched(data.entryId);
+                .then((response) => response.ok ? response.json() : null)
+                .then((payload) => {
+                    if (!payload) {
+                        return;
                     }
+
+                    this.markWatched(data.entryId);
+                    this.watch = {
+                        ...this.watch,
+                        embed: payload.embed || '',
+                        file: payload.file || '',
+                    };
                 })
                 .catch(() => {});
         },

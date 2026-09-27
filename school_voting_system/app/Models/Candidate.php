@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Exceptions\VoteIntegrityException;
+use App\Services\Student\StudentBallotCatalog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,6 +43,14 @@ class Candidate extends Model
     {
         static::saving(function (Candidate $candidate) {
             $candidate->assertCategoryBelongsToElection();
+        });
+
+        static::saved(function (Candidate $candidate) {
+            StudentBallotCatalog::forget($candidate->election_id);
+        });
+
+        static::deleted(function (Candidate $candidate) {
+            StudentBallotCatalog::forget($candidate->election_id);
         });
     }
 

@@ -81,10 +81,21 @@ class EventImageUrl
 
     public static function hasUploadedImage(?string $imagePath): bool
     {
+        return self::uploadedUrl($imagePath) !== null;
+    }
+
+    public static function uploadedUrl(?string $imagePath): ?string
+    {
         if (! filled($imagePath)) {
-            return false;
+            return null;
         }
 
-        return Storage::disk('public')->exists(ltrim($imagePath, '/'));
+        $normalized = ltrim($imagePath, '/');
+
+        if (! Storage::disk('public')->exists($normalized)) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($normalized);
     }
 }

@@ -1,5 +1,14 @@
-<x-app-layout>
-    @php
+<?php if (isset($component)) { $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54 = $attributes; } ?>
+<?php $component = App\View\Components\AppLayout::resolve([] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('app-layout'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\App\View\Components\AppLayout::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+    <?php
         $studentEntry = $studentEntry ?? null;
         $heroActions = $heroActions ?? ['primary' => null, 'secondary' => null, 'phase' => 'unknown'];
         $heroPrimary = $heroActions['primary'] ?? null;
@@ -95,90 +104,109 @@
         } elseif ($resultsPublished) {
             $voteStripValue = 'Did not vote';
         }
-    @endphp
+    ?>
 
-    <div class="min-h-screen bg-slate-950 text-slate-100" x-data="talentVoteConfirm({ watchedIds: @js($watchedEntryIds ?? []) })">
+    <div class="min-h-screen bg-slate-950 text-slate-100" x-data="talentVoteConfirm({ watchedIds: <?php echo \Illuminate\Support\Js::from($watchedEntryIds ?? [])->toHtml() ?> })">
         <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
             <div class="mb-3 flex items-center justify-between gap-4">
-                <a href="{{ route('student.talent-voting.index') }}" class="text-sm font-semibold text-cyan-300 hover:text-cyan-200">&larr; Back to Talent Competitions</a>
-                <a href="{{ route('student.dashboard') }}" class="text-sm text-slate-300 hover:text-white">Dashboard</a>
+                <a href="<?php echo e(route('student.talent-voting.index')); ?>" class="text-sm font-semibold text-cyan-300 hover:text-cyan-200">&larr; Back to Talent Competitions</a>
+                <a href="<?php echo e(route('student.dashboard')); ?>" class="text-sm text-slate-300 hover:text-white">Dashboard</a>
             </div>
 
-            @if (session('success'))
-                <div class="mb-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-200">{{ session('success') }}</div>
-            @endif
-            @if (session('error'))
-                <div class="mb-3 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-200">{{ session('error') }}</div>
-            @endif
+            <?php if(session('success')): ?>
+                <div class="mb-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-200"><?php echo e(session('success')); ?></div>
+            <?php endif; ?>
+            <?php if(session('error')): ?>
+                <div class="mb-3 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-200"><?php echo e(session('error')); ?></div>
+            <?php endif; ?>
 
             <div class="space-y-3">
-                {{-- Hero --}}
+                
                 <section class="w-full overflow-hidden rounded-xl border border-cyan-500/15 bg-slate-900/80" aria-label="Competition hero">
                     <div class="relative w-full overflow-hidden rounded-xl aspect-[21/9] h-[150px] max-h-[160px] sm:h-[180px] sm:max-h-[180px] lg:aspect-video lg:h-[220px] lg:max-h-[220px]">
-                        <x-competition-detail-banner
-                            :event="$talentEvent"
-                            bare
-                            :show-warning="false"
-                            class="absolute inset-0"
-                        />
+                        <?php if (isset($component)) { $__componentOriginal320417d1f3b2a17423bd326bb6c46b6c = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal320417d1f3b2a17423bd326bb6c46b6c = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.competition-detail-banner','data' => ['event' => $talentEvent,'bare' => true,'showWarning' => false,'class' => 'absolute inset-0']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('competition-detail-banner'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['event' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($talentEvent),'bare' => true,'show-warning' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(false),'class' => 'absolute inset-0']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal320417d1f3b2a17423bd326bb6c46b6c)): ?>
+<?php $attributes = $__attributesOriginal320417d1f3b2a17423bd326bb6c46b6c; ?>
+<?php unset($__attributesOriginal320417d1f3b2a17423bd326bb6c46b6c); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal320417d1f3b2a17423bd326bb6c46b6c)): ?>
+<?php $component = $__componentOriginal320417d1f3b2a17423bd326bb6c46b6c; ?>
+<?php unset($__componentOriginal320417d1f3b2a17423bd326bb6c46b6c); ?>
+<?php endif; ?>
                         <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/25"></div>
                         <div class="absolute inset-0 z-[1] flex items-end p-4 sm:p-5">
                             <div class="flex w-full flex-wrap items-end justify-between gap-3">
                                 <div class="min-w-0 max-w-3xl">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <span class="rounded-full border border-cyan-400/30 bg-cyan-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-100">{{ $competitionCategory }}</span>
-                                        <span class="rounded-full border border-slate-500/40 bg-slate-950/55 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-100">{{ $statusLabel }}</span>
+                                        <span class="rounded-full border border-cyan-400/30 bg-cyan-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-100"><?php echo e($competitionCategory); ?></span>
+                                        <span class="rounded-full border border-slate-500/40 bg-slate-950/55 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-100"><?php echo e($statusLabel); ?></span>
                                     </div>
-                                    <h1 class="mt-2 text-xl font-bold leading-tight text-white sm:text-2xl lg:text-[1.75rem]">{{ $talentEvent->title }}</h1>
+                                    <h1 class="mt-2 text-xl font-bold leading-tight text-white sm:text-2xl lg:text-[1.75rem]"><?php echo e($talentEvent->title); ?></h1>
                                     <p class="mt-1 text-xs text-slate-300 sm:text-sm">
-                                        {{ $talentEvent->event_date?->format('M d, Y · g:i A') ?: 'Schedule TBA' }}
+                                        <?php echo e($talentEvent->event_date?->format('M d, Y · g:i A') ?: 'Schedule TBA'); ?>
+
                                         <span class="text-slate-500"> · </span>Online Competition
                                     </p>
                                 </div>
-                                @if ($heroPrimary || $heroSecondary)
+                                <?php if($heroPrimary || $heroSecondary): ?>
                                     <div class="flex shrink-0 flex-col items-end gap-2">
-                                        @if ($heroPrimary)
-                                            @if (($heroPrimary['disabled'] ?? false) || ($heroPrimary['style'] ?? '') === 'disabled')
+                                        <?php if($heroPrimary): ?>
+                                            <?php if(($heroPrimary['disabled'] ?? false) || ($heroPrimary['style'] ?? '') === 'disabled'): ?>
                                                 <span class="inline-flex items-center rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-sm font-semibold text-slate-300">
-                                                    {{ $heroPrimary['label'] }}
-                                                </span>
-                                            @else
-                                                <a href="{{ $heroPrimary['href'] }}"
-                                                    class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:from-cyan-400 hover:to-sky-300">
-                                                    {{ $heroPrimary['label'] }}
-                                                </a>
-                                            @endif
-                                        @endif
+                                                    <?php echo e($heroPrimary['label']); ?>
 
-                                        @if ($heroSecondary)
-                                            @if (($heroSecondary['style'] ?? '') === 'link')
-                                                <a href="{{ $heroSecondary['href'] }}" class="text-xs font-semibold text-cyan-300 underline decoration-cyan-500/40 hover:text-cyan-200">
-                                                    {{ $heroSecondary['label'] }}
+                                                </span>
+                                            <?php else: ?>
+                                                <a href="<?php echo e($heroPrimary['href']); ?>"
+                                                    class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:from-cyan-400 hover:to-sky-300">
+                                                    <?php echo e($heroPrimary['label']); ?>
+
                                                 </a>
-                                            @elseif (($heroSecondary['style'] ?? '') === 'secondary')
-                                                <a href="{{ $heroSecondary['href'] }}"
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+
+                                        <?php if($heroSecondary): ?>
+                                            <?php if(($heroSecondary['style'] ?? '') === 'link'): ?>
+                                                <a href="<?php echo e($heroSecondary['href']); ?>" class="text-xs font-semibold text-cyan-300 underline decoration-cyan-500/40 hover:text-cyan-200">
+                                                    <?php echo e($heroSecondary['label']); ?>
+
+                                                </a>
+                                            <?php elseif(($heroSecondary['style'] ?? '') === 'secondary'): ?>
+                                                <a href="<?php echo e($heroSecondary['href']); ?>"
                                                     class="inline-flex items-center justify-center rounded-xl border border-slate-600 bg-slate-950/50 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-800">
-                                                    {{ $heroSecondary['label'] }}
+                                                    <?php echo e($heroSecondary['label']); ?>
+
                                                 </a>
-                                            @endif
-                                        @endif
+                                            <?php endif; ?>
+                                        <?php endif; ?>
                                     </div>
-                                @endif
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {{-- Compact status --}}
+                
                 <section class="grid grid-cols-1 gap-2 sm:grid-cols-3" aria-label="Competition status">
                     <div class="rounded-xl border border-cyan-500/15 bg-slate-900/70 px-3 py-2.5">
                         <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Approved Participants</p>
-                        <p class="mt-1 text-sm font-bold text-white sm:text-base">{{ number_format($approvedCount) }}</p>
+                        <p class="mt-1 text-sm font-bold text-white sm:text-base"><?php echo e(number_format($approvedCount)); ?></p>
                     </div>
                     <div class="rounded-xl border border-cyan-500/15 bg-slate-900/70 px-3 py-2.5"
-                        @if ($timeCountdownIso)
+                        <?php if($timeCountdownIso): ?>
                             x-data="{
-                                endsAt: new Date(@js($timeCountdownIso)).getTime(),
+                                endsAt: new Date(<?php echo \Illuminate\Support\Js::from($timeCountdownIso)->toHtml() ?>).getTime(),
                                 label: '—',
                                 tick() {
                                     const diff = this.endsAt - Date.now();
@@ -190,22 +218,22 @@
                                 }
                             }"
                             x-init="tick(); setInterval(() => tick(), 1000)"
-                        @endif
+                        <?php endif; ?>
                     >
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{{ $timeHeading }}</p>
-                        @if ($timeCountdownIso)
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500"><?php echo e($timeHeading); ?></p>
+                        <?php if($timeCountdownIso): ?>
                             <p class="mt-1 text-sm font-bold text-emerald-300 sm:text-base" x-text="label">—</p>
-                        @else
-                            <p class="mt-1 truncate text-sm font-bold text-white sm:text-base">{{ $timeValue }}</p>
-                        @endif
+                        <?php else: ?>
+                            <p class="mt-1 truncate text-sm font-bold text-white sm:text-base"><?php echo e($timeValue); ?></p>
+                        <?php endif; ?>
                     </div>
                     <div class="rounded-xl border border-violet-500/20 bg-slate-900/70 px-3 py-2.5" aria-label="Your vote status">
                         <p class="text-[10px] font-semibold uppercase tracking-wide text-violet-200">Your Vote</p>
-                        <p class="mt-1 truncate text-sm font-bold {{ $voteStripClass }} sm:text-base">{{ $voteStripValue }}</p>
+                        <p class="mt-1 truncate text-sm font-bold <?php echo e($voteStripClass); ?> sm:text-base"><?php echo e($voteStripValue); ?></p>
                     </div>
                 </section>
 
-                @if ($resultsPublished)
+                <?php if($resultsPublished): ?>
                     <section class="rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-slate-900/80 to-slate-950/80 p-4 sm:p-5" aria-label="Results published notice">
                         <div class="flex flex-wrap items-start justify-between gap-4">
                             <div>
@@ -213,46 +241,46 @@
                                 <p class="mt-1 text-sm text-slate-300">The official competition results have been published.</p>
                                 <p class="mt-1 text-sm text-slate-400">View complete rankings, winners, and vote statistics.</p>
                             </div>
-                            <a href="{{ $officialResultsUrl }}"
+                            <a href="<?php echo e($officialResultsUrl); ?>"
                                 class="inline-flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-amber-500/20 transition hover:from-amber-400 hover:to-orange-300">
                                 View Official Results
                             </a>
                         </div>
                     </section>
-                @endif
+                <?php endif; ?>
 
-                @if ($showTimeline)
+                <?php if($showTimeline): ?>
                     <section class="rounded-xl border border-cyan-500/15 bg-slate-900/70 p-4 sm:p-5" aria-label="Competition progress">
                         <h2 class="text-sm font-bold uppercase tracking-wide text-white">Competition Progress</h2>
                         <ol class="mt-4 space-y-0">
-                            @foreach ($timeline as $step)
+                            <?php $__currentLoopData = $timeline; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $step): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <li class="relative flex gap-3 pb-4 last:pb-0">
-                                    @if (! $loop->last)
+                                    <?php if(! $loop->last): ?>
                                         <span class="absolute left-[0.6875rem] top-6 h-[calc(100%-0.5rem)] w-px bg-slate-700" aria-hidden="true"></span>
-                                    @endif
-                                    <span @class([
+                                    <?php endif; ?>
+                                    <span class="<?php echo \Illuminate\Support\Arr::toCssClasses([
                                         'relative z-[1] mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold',
                                         'border-emerald-400/50 bg-emerald-500/20 text-emerald-300' => $step['state'] === 'done',
                                         'border-cyan-400/60 bg-cyan-500/20 text-cyan-200 ring-2 ring-cyan-400/20' => $step['state'] === 'active',
                                         'border-slate-600 bg-slate-900 text-slate-500' => $step['state'] === 'pending',
-                                    ])>
-                                        @if ($step['state'] === 'done') ✓ @elseif ($step['state'] === 'active') ● @else ○ @endif
+                                    ]); ?>">
+                                        <?php if($step['state'] === 'done'): ?> ✓ <?php elseif($step['state'] === 'active'): ?> ● <?php else: ?> ○ <?php endif; ?>
                                     </span>
                                     <div class="min-w-0 pt-0.5">
-                                        <p @class([
+                                        <p class="<?php echo \Illuminate\Support\Arr::toCssClasses([
                                             'text-sm font-semibold',
                                             'text-emerald-200' => $step['state'] === 'done',
                                             'text-cyan-100' => $step['state'] === 'active',
                                             'text-slate-500' => $step['state'] === 'pending',
-                                        ])>{{ $step['label'] }}</p>
+                                        ]); ?>"><?php echo e($step['label']); ?></p>
                                     </div>
                                 </li>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </ol>
                     </section>
-                @endif
+                <?php endif; ?>
 
-                @if ($votingOpen && ! $hasVoted)
+                <?php if($votingOpen && ! $hasVoted): ?>
                     <div class="flex items-start gap-3 rounded-xl border border-cyan-500/15 bg-cyan-500/5 px-4 py-3">
                         <svg class="mt-0.5 h-5 w-5 shrink-0 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
                         <div>
@@ -260,13 +288,13 @@
                             <p class="mt-0.5 text-sm text-slate-400">Watch the performance first, then cast your vote. You cannot change your vote after submission.</p>
                         </div>
                     </div>
-                @endif
+                <?php endif; ?>
 
                 <section id="candidates" aria-label="Talent competition participants">
                     <h2 class="mb-3 text-lg font-bold text-white">Participants</h2>
                     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        @forelse ($talentEvent->approvedEntries as $entry)
-                            @php
+                        <?php $__empty_1 = true; $__currentLoopData = $talentEvent->approvedEntries; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $entry): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <?php
                                 $isSelected = $votedEntryId === $entry->id;
                                 $entryCategory = $entry->talentCategoryLabel() ?? $competitionCategory;
                                 $photo = $entry->photoUrl() ?: $entry->thumbnailUrl();
@@ -291,102 +319,102 @@
                                     'social' => $entry->social_media,
                                     'photo' => $entry->photoUrl(),
                                 ];
-                            @endphp
+                            ?>
                             <article
-                                class="relative flex overflow-hidden rounded-xl border bg-slate-900/70 transition {{ $isSelected ? 'border-emerald-500/70 bg-emerald-500/10 ring-1 ring-emerald-500/40' : 'border-cyan-500/15 hover:border-cyan-500/40' }}"
+                                class="relative flex overflow-hidden rounded-xl border bg-slate-900/70 transition <?php echo e($isSelected ? 'border-emerald-500/70 bg-emerald-500/10 ring-1 ring-emerald-500/40' : 'border-cyan-500/15 hover:border-cyan-500/40'); ?>"
                                 role="group"
-                                aria-label="{{ $entry->display_name }}"
+                                aria-label="<?php echo e($entry->display_name); ?>"
                             >
                                 <div class="relative w-24 shrink-0 self-stretch sm:w-28">
-                                    @if ($photo)
-                                        <img src="{{ $photo }}" loading="lazy" alt="{{ $entry->display_name }}" class="absolute inset-0 h-full w-full object-cover object-center">
-                                    @else
+                                    <?php if($photo): ?>
+                                        <img src="<?php echo e($photo); ?>" loading="lazy" alt="<?php echo e($entry->display_name); ?>" class="absolute inset-0 h-full w-full object-cover object-center">
+                                    <?php else: ?>
                                         <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-cyan-900/40 to-sky-900/20">
-                                            <span class="text-2xl font-bold text-cyan-300/60">{{ strtoupper(substr($entry->display_name, 0, 1)) }}</span>
+                                            <span class="text-2xl font-bold text-cyan-300/60"><?php echo e(strtoupper(substr($entry->display_name, 0, 1))); ?></span>
                                         </div>
-                                    @endif
+                                    <?php endif; ?>
                                 </div>
                                 <div class="flex min-w-0 flex-1 flex-col p-3">
                                     <div class="flex items-start justify-between gap-2">
                                         <div class="min-w-0">
-                                            <h3 class="truncate text-sm font-semibold text-white">{{ $entry->display_name }}</h3>
-                                            @if ($entry->grade_level)
-                                                <p class="mt-0.5 text-[11px] text-slate-400">Grade {{ $entry->grade_level }}@if($entry->section) · {{ $entry->section }}@endif</p>
-                                            @endif
+                                            <h3 class="truncate text-sm font-semibold text-white"><?php echo e($entry->display_name); ?></h3>
+                                            <?php if($entry->grade_level): ?>
+                                                <p class="mt-0.5 text-[11px] text-slate-400">Grade <?php echo e($entry->grade_level); ?><?php if($entry->section): ?> · <?php echo e($entry->section); ?><?php endif; ?></p>
+                                            <?php endif; ?>
                                         </div>
-                                        @if ($entryCategory)
-                                            <span class="shrink-0 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold text-cyan-200">{{ $entryCategory }}</span>
-                                        @endif
+                                        <?php if($entryCategory): ?>
+                                            <span class="shrink-0 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold text-cyan-200"><?php echo e($entryCategory); ?></span>
+                                        <?php endif; ?>
                                     </div>
-                                    @if ($entry->performance_title)
-                                        <p class="mt-1.5 truncate text-xs font-semibold text-cyan-300">{{ $entry->performance_title }}</p>
-                                    @endif
-                                    @if ($entry->profile_summary || $entry->performance_description)
-                                        <p class="mt-1 line-clamp-2 text-xs text-slate-400">{{ $entry->profile_summary ?: $entry->performance_description }}</p>
-                                    @endif
+                                    <?php if($entry->performance_title): ?>
+                                        <p class="mt-1.5 truncate text-xs font-semibold text-cyan-300"><?php echo e($entry->performance_title); ?></p>
+                                    <?php endif; ?>
+                                    <?php if($entry->profile_summary || $entry->performance_description): ?>
+                                        <p class="mt-1 line-clamp-2 text-xs text-slate-400"><?php echo e($entry->profile_summary ?: $entry->performance_description); ?></p>
+                                    <?php endif; ?>
 
                                     <div class="mt-auto flex flex-wrap gap-1.5 pt-2.5">
-                                        @if ($entry->hasVideo())
-                                            <button type="button" @click='openWatch(@json($watchPayload))'
+                                        <?php if($entry->hasVideo()): ?>
+                                            <button type="button" @click='openWatch(<?php echo json_encode($watchPayload, 15, 512) ?>)'
                                                 class="inline-flex items-center gap-1 rounded-lg border border-cyan-500/30 px-2.5 py-1.5 text-[11px] font-semibold text-cyan-200 hover:bg-cyan-500/10">
                                                 Watch Performance
                                             </button>
-                                        @endif
-                                        <button type="button" @click='openParticipant(@json($participantPayload))'
+                                        <?php endif; ?>
+                                        <button type="button" @click='openParticipant(<?php echo json_encode($participantPayload, 15, 512) ?>)'
                                             class="inline-flex items-center gap-1 rounded-lg border border-slate-700 px-2.5 py-1.5 text-[11px] font-semibold text-slate-300 hover:bg-slate-800">
                                             View Profile
                                         </button>
-                                        @if ($isSelected)
+                                        <?php if($isSelected): ?>
                                             <span class="inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-[11px] font-semibold text-slate-950">Selected</span>
-                                        @elseif ($votingOpen && ! $hasVoted)
-                                            @php $mustWatch = $entry->hasVideo(); @endphp
+                                        <?php elseif($votingOpen && ! $hasVoted): ?>
+                                            <?php $mustWatch = $entry->hasVideo(); ?>
                                             <div class="flex w-full flex-col gap-1">
-                                                @if ($mustWatch)
+                                                <?php if($mustWatch): ?>
                                                     <p
                                                         class="text-[10px] font-medium text-amber-200/90"
-                                                        x-show="!hasWatched({{ (int) $entry->id }})"
+                                                        x-show="!hasWatched(<?php echo e((int) $entry->id); ?>)"
                                                     >Watch the performance first</p>
-                                                @endif
+                                                <?php endif; ?>
                                                 <form
                                                     method="POST"
-                                                    action="{{ route('student.talent-voting.vote', $entry) }}"
+                                                    action="<?php echo e(route('student.talent-voting.vote', $entry)); ?>"
                                                     class="inline"
-                                                    @if ($mustWatch)
-                                                        x-show="hasWatched({{ (int) $entry->id }})"
+                                                    <?php if($mustWatch): ?>
+                                                        x-show="hasWatched(<?php echo e((int) $entry->id); ?>)"
                                                         x-cloak
-                                                    @endif
+                                                    <?php endif; ?>
                                                 >
-                                                    @csrf
+                                                    <?php echo csrf_field(); ?>
                                                     <button type="button"
-                                                        @click="openConfirm($event.target.closest('form'), @js($entry->display_name))"
+                                                        @click="openConfirm($event.target.closest('form'), <?php echo \Illuminate\Support\Js::from($entry->display_name)->toHtml() ?>)"
                                                         class="rounded-lg bg-gradient-to-r from-cyan-500 to-sky-400 px-2.5 py-1.5 text-[11px] font-semibold text-slate-950">
                                                         Vote
                                                     </button>
                                                 </form>
-                                                @if ($mustWatch)
+                                                <?php if($mustWatch): ?>
                                                     <button
                                                         type="button"
                                                         disabled
-                                                        x-show="!hasWatched({{ (int) $entry->id }})"
+                                                        x-show="!hasWatched(<?php echo e((int) $entry->id); ?>)"
                                                         class="cursor-not-allowed rounded-lg border border-slate-600 bg-slate-800/80 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500"
                                                     >
                                                         Vote
                                                     </button>
-                                                @endif
+                                                <?php endif; ?>
                                             </div>
-                                        @elseif ($votingClosed)
+                                        <?php elseif($votingClosed): ?>
                                             <span class="inline-flex items-center rounded-lg border border-slate-600 bg-slate-800/80 px-2.5 py-1.5 text-[11px] font-semibold text-slate-400">Voting Closed</span>
-                                        @endif
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </article>
-                        @empty
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <p class="text-sm text-slate-400 sm:col-span-2 lg:col-span-3">No approved participants have been published yet.</p>
-                        @endforelse
+                        <?php endif; ?>
                     </div>
                 </section>
 
-                <details class="rounded-xl border border-cyan-500/15 bg-slate-900/70" @if ($detailsDefaultOpen) open @endif>
+                <details class="rounded-xl border border-cyan-500/15 bg-slate-900/70" <?php if($detailsDefaultOpen): ?> open <?php endif; ?>>
                     <summary class="cursor-pointer list-none px-4 py-3 text-sm font-bold uppercase tracking-wide text-white sm:px-5 [&::-webkit-details-marker]:hidden">
                         <span class="flex items-center justify-between gap-3">
                             Competition details
@@ -394,44 +422,44 @@
                         </span>
                     </summary>
                     <div class="border-t border-slate-800 px-4 pb-4 pt-3 sm:px-5" aria-label="About this competition">
-                        @if ($talentEvent->description)
-                            <p class="text-sm leading-relaxed text-slate-300">{{ $talentEvent->description }}</p>
-                        @else
+                        <?php if($talentEvent->description): ?>
+                            <p class="text-sm leading-relaxed text-slate-300"><?php echo e($talentEvent->description); ?></p>
+                        <?php else: ?>
                             <p class="text-sm text-slate-500">No description provided for this competition.</p>
-                        @endif
+                        <?php endif; ?>
                         <dl class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             <div>
                                 <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Performance Duration</dt>
-                                <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->performanceDurationLabel() }}</dd>
+                                <dd class="mt-0.5 text-sm font-medium text-white"><?php echo e($talentEvent->performanceDurationLabel()); ?></dd>
                             </div>
                             <div>
                                 <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Voting Method</dt>
-                                <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->votingMethodLabel() }}</dd>
+                                <dd class="mt-0.5 text-sm font-medium text-white"><?php echo e($talentEvent->votingMethodLabel()); ?></dd>
                             </div>
                             <div>
                                 <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Voting Period</dt>
-                                <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->votingWindowLabel() }}</dd>
+                                <dd class="mt-0.5 text-sm font-medium text-white"><?php echo e($talentEvent->votingWindowLabel()); ?></dd>
                             </div>
                             <div>
                                 <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Winners</dt>
-                                <dd class="mt-0.5 text-sm font-medium text-white">{{ number_format($winnersCount) }}</dd>
+                                <dd class="mt-0.5 text-sm font-medium text-white"><?php echo e(number_format($winnersCount)); ?></dd>
                             </div>
-                            @if ($showRegistrationDetails)
+                            <?php if($showRegistrationDetails): ?>
                                 <div>
                                     <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Registration Period</dt>
-                                    <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->registrationWindowLabel() }}</dd>
+                                    <dd class="mt-0.5 text-sm font-medium text-white"><?php echo e($talentEvent->registrationWindowLabel()); ?></dd>
                                 </div>
                                 <div>
                                     <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Submission Deadline</dt>
-                                    <dd class="mt-0.5 text-sm font-medium text-white">{{ $talentEvent->submission_deadline?->format('M d, Y g:i A') ?: '—' }}</dd>
+                                    <dd class="mt-0.5 text-sm font-medium text-white"><?php echo e($talentEvent->submission_deadline?->format('M d, Y g:i A') ?: '—'); ?></dd>
                                 </div>
-                            @endif
-                            @if ($resultsPublished)
+                            <?php endif; ?>
+                            <?php if($resultsPublished): ?>
                                 <div>
                                     <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Total Votes Cast</dt>
-                                    <dd class="mt-0.5 text-sm font-medium text-white">{{ number_format($totalVotesCast) }}</dd>
+                                    <dd class="mt-0.5 text-sm font-medium text-white"><?php echo e(number_format($totalVotesCast)); ?></dd>
                                 </div>
-                            @endif
+                            <?php endif; ?>
                         </dl>
                     </div>
                 </details>
@@ -440,9 +468,9 @@
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h3 class="text-xs font-bold uppercase tracking-wide text-white">Need Help?</h3>
-                            <p class="mt-1 text-sm text-slate-400">Contact {{ \App\Support\PortalSupportSettings::teamLabel() }}</p>
+                            <p class="mt-1 text-sm text-slate-400">Contact <?php echo e(\App\Support\PortalSupportSettings::teamLabel()); ?></p>
                         </div>
-                        <a href="mailto:{{ \App\Support\PortalSupportSettings::email() }}"
+                        <a href="mailto:<?php echo e(\App\Support\PortalSupportSettings::email()); ?>"
                             class="inline-flex items-center justify-center rounded-xl border border-cyan-500/25 px-4 py-2 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/10">
                             Contact ICT Support
                         </a>
@@ -451,7 +479,7 @@
             </div>
         </div>
 
-        {{-- WATCH PERFORMANCE MODAL --}}
+        
         <div x-show="watchOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="closeWatch()"
              role="dialog" aria-modal="true" aria-labelledby="talent-watch-title">
             <div class="absolute inset-0 bg-slate-950/90" @click="closeWatch()"></div>
@@ -491,7 +519,7 @@
             </div>
         </div>
 
-        {{-- PARTICIPANT DETAIL MODAL --}}
+        
         <div x-show="viewOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="viewOpen = false"
              role="dialog" aria-modal="true" aria-labelledby="talent-participant-title">
             <div class="absolute inset-0 bg-slate-950/85" @click="viewOpen = false"></div>
@@ -543,7 +571,7 @@
             </div>
         </div>
 
-        {{-- CONFIRMATION MODAL --}}
+        
         <div x-show="confirmOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="confirmOpen = false"
              role="dialog" aria-modal="true" aria-labelledby="talent-vote-confirm-title">
             <div class="absolute inset-0 bg-slate-950/80" @click="confirmOpen = false"></div>
@@ -566,7 +594,17 @@
         </div>
     </div>
 
-    @push('scripts')
+    <?php $__env->startPush('scripts'); ?>
         <style>[x-cloak]{display:none !important;}</style>
-    @endpush
-</x-app-layout>
+    <?php $__env->stopPush(); ?>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $attributes = $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $component = $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?>
+<?php /**PATH C:\xampp\htdocs\voting system\school_voting_system\resources\views/student/talent-voting/show.blade.php ENDPATH**/ ?>
