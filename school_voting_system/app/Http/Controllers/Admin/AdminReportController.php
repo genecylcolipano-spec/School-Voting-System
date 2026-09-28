@@ -290,6 +290,7 @@ class AdminReportController extends Controller
             ->setPaper('a4', 'portrait')
             ->setOption([
                 'isRemoteEnabled' => true,
+                'defaultFont' => 'DejaVu Sans',
                 'fontDir' => $fontDir,
                 'fontCache' => $fontDir,
                 'chroot' => base_path(),

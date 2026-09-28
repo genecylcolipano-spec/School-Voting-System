@@ -339,10 +339,17 @@ class ReportsAnalyticsTest extends TestCase
             ->assertSee('Export PDF')
             ->assertDontSee('Export CSV');
 
-        $this->actingAs($admin)
+        $pdf = $this->actingAs($admin)
             ->get(route('admin.reports.fundraising.export', ['format' => 'pdf']))
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf');
+
+        $pdfBody = $pdf->getContent();
+        $this->assertNotSame('', $pdfBody);
+        $this->assertTrue(
+            str_contains($pdfBody, 'DejaVu') || str_contains($pdfBody, '₱'),
+            'Fundraising PDF should embed DejaVu so the peso sign can render.',
+        );
     }
 
     public function test_fundraising_export_lists_paid_and_anonymous_donors_only(): void

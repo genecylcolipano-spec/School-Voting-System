@@ -28,7 +28,7 @@
         body {
             margin: 0;
             color: #0f172a;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            font-family: <?php echo e($forPdf ? "'DejaVu Sans', sans-serif" : '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif'); ?>;
             font-size: 11pt;
             line-height: 1.45;
             background: #ffffff;
