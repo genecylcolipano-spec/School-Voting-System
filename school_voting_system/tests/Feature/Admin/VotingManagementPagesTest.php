@@ -170,5 +170,64 @@ class VotingManagementPagesTest extends TestCase
         $this->actingAs($admin)
             ->post(route('admin.elections.archive', $election))
             ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->post(route('admin.elections.open-voting', $election))
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->post(route('admin.elections.close-voting', $election))
+            ->assertForbidden();
+    }
+
+    public function test_admin_can_open_and_close_voting_from_the_election_page(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $election = Election::factory()->draft()->create([
+            'title' => 'Scheduled Council',
+            'voting_starts_at' => now()->addDay(),
+            'voting_ends_at' => now()->addDays(2),
+        ]);
+
+        $this->actingAs($super)
+            ->get(route('admin.elections.show', $election))
+            ->assertOk()
+            ->assertSee('Open Voting')
+            ->assertDontSee('>Close Voting<', false);
+
+        $this->actingAs($super)
+            ->from(route('admin.elections.show', $election))
+            ->post(route('admin.elections.open-voting', $election))
+            ->assertRedirect(route('admin.elections.show', $election))
+            ->assertSessionHas('success', 'Voting is open.');
+
+        $opened = $election->fresh();
+        $this->assertSame(ElectionStatus::Active, $opened->status);
+        $this->assertTrue($opened->isAcceptingVotes());
+
+        $this->actingAs($super)
+            ->get(route('admin.elections.show', $opened))
+            ->assertOk()
+            ->assertSee('Close Voting')
+            ->assertDontSee('>Open Voting<', false);
+
+        $this->actingAs($super)
+            ->from(route('admin.elections.show', $opened))
+            ->post(route('admin.elections.close-voting', $opened))
+            ->assertRedirect(route('admin.elections.show', $opened))
+            ->assertSessionHas('success', 'Voting is closed.');
+
+        $closed = $election->fresh();
+        $this->assertSame(ElectionStatus::Closed, $closed->status);
+        $this->assertFalse($closed->isAcceptingVotes());
+
+        $this->actingAs($super)
+            ->from(route('admin.elections.show', $closed))
+            ->post(route('admin.elections.open-voting', $closed))
+            ->assertRedirect(route('admin.elections.show', $closed))
+            ->assertSessionHas('success', 'Voting is open.');
+
+        $this->assertSame(ElectionStatus::Active, $election->fresh()->status);
+        $this->assertTrue($election->fresh()->isAcceptingVotes());
     }
 }

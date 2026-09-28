@@ -87,6 +87,25 @@
         <div class="mb-6 flex flex-wrap gap-2">
             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('update', $election)): ?>
                 <a href="<?php echo e(route('admin.elections.edit', $election)); ?>" class="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Edit Election</a>
+                <?php if (! ($election->status === \App\Enums\ElectionStatus::Archived)): ?>
+                    <?php if($election->is_paused): ?>
+                        <form method="POST" action="<?php echo e(route('admin.elections.open-voting', $election)); ?>" data-confirm-sensitive data-confirm-title="Resume student voting?">
+                            <?php echo csrf_field(); ?>
+                            <button type="submit" class="rounded-xl border border-emerald-500/40 px-4 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/10">Resume Voting</button>
+                        </form>
+                    <?php elseif(! $election->isAcceptingVotes()): ?>
+                        <form method="POST" action="<?php echo e(route('admin.elections.open-voting', $election)); ?>" data-confirm-sensitive data-confirm-title="Open student voting now?">
+                            <?php echo csrf_field(); ?>
+                            <button type="submit" class="rounded-xl border border-emerald-500/40 px-4 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/10">Open Voting</button>
+                        </form>
+                    <?php endif; ?>
+                    <?php if($election->status === \App\Enums\ElectionStatus::Active): ?>
+                        <form method="POST" action="<?php echo e(route('admin.elections.close-voting', $election)); ?>" data-confirm-sensitive data-confirm-title="Close student voting?">
+                            <?php echo csrf_field(); ?>
+                            <button type="submit" class="rounded-xl border border-amber-500/40 px-4 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-500/10">Close Voting</button>
+                        </form>
+                    <?php endif; ?>
+                <?php endif; ?>
             <?php endif; ?>
             <?php if($canCreateElections): ?>
                 <form method="POST" action="<?php echo e(route('admin.elections.duplicate', $election)); ?>">

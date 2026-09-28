@@ -276,4 +276,30 @@ class AdminElectionController extends Controller
 
         return back()->with('success', 'Election archived.');
     }
+
+    public function openVoting(Request $request, Election $election): RedirectResponse
+    {
+        $this->authorize('update', $election);
+
+        try {
+            $this->elections->open($election, $request->user(), immediately: true);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return back()->with('success', 'Voting is open.');
+    }
+
+    public function closeVoting(Request $request, Election $election): RedirectResponse
+    {
+        $this->authorize('update', $election);
+
+        try {
+            $this->elections->close($election, $request->user());
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return back()->with('success', 'Voting is closed.');
+    }
 }

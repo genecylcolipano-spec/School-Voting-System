@@ -17,7 +17,7 @@ class ElectionLifecycleService
         protected PortalNotificationService $notifications,
     ) {}
 
-    public function open(Election $election, User $actor): Election
+    public function open(Election $election, User $actor, bool $immediately = false): Election
     {
         // Already live but paused → resume (do not re-blast "Voting is Open").
         if ($election->status === ElectionStatus::Active && $election->is_paused) {
@@ -32,9 +32,19 @@ class ElectionLifecycleService
             throw new HttpException(422, 'An archived election cannot be opened.');
         }
 
-        // Already accepting votes — do not report success for a no-op.
-        if ($election->status === ElectionStatus::Active && ! $election->is_paused) {
+        $alreadyLive = $election->status === ElectionStatus::Active && ! $election->is_paused;
+        if ($alreadyLive && (! $immediately || $election->isAcceptingVotes())) {
             throw new HttpException(422, 'This election is already open.');
+        }
+
+        $startsAt = $election->voting_starts_at ?? now();
+        $endsAt = $election->voting_ends_at;
+
+        if ($immediately) {
+            $startsAt = now();
+            if ($endsAt && $endsAt->lte(now())) {
+                $endsAt = null;
+            }
         }
 
         // Re-opening voting must retract any previously published official
@@ -47,7 +57,9 @@ class ElectionLifecycleService
             'results_locked' => false,
             'public_results_published' => false,
             'results_published_at' => null,
-            'voting_starts_at' => $election->voting_starts_at ?? now(),
+            'voting_starts_at' => $startsAt,
+            'voting_ends_at' => $endsAt,
+            ...Election::scheduleAttributes(ElectionStatus::Active, $startsAt, $endsAt),
         ])->save();
 
         $this->audit->record($actor, "Opened election: {$election->title}", AuditActionType::Election, targetType: 'election', targetId: $election->id);
