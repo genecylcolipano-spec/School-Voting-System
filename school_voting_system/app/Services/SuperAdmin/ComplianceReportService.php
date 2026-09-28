@@ -16,12 +16,20 @@ class ComplianceReportService
 {
     protected bool $forPdf = false;
 
+    protected bool $landscape = false;
+
+    protected ?User $actor = null;
+
     public function __construct(protected AdminScopeService $scope) {}
 
     public function html(string $type, User $actor, ?int $electionId = null, bool $forPdf = false): string
     {
         $previous = $this->forPdf;
+        $previousActor = $this->actor;
+        $previousLandscape = $this->landscape;
         $this->forPdf = $forPdf;
+        $this->actor = $actor;
+        $this->landscape = in_array($type, ['audit_trail', 'passkey_inventory'], true);
 
         try {
             return match ($type) {
@@ -33,6 +41,8 @@ class ComplianceReportService
             };
         } finally {
             $this->forPdf = $previous;
+            $this->actor = $previousActor;
+            $this->landscape = $previousLandscape;
         }
     }
 
@@ -51,10 +61,17 @@ class ComplianceReportService
                 mkdir($fontDir, 0755, true);
             }
 
+            $cachedFont = $fontDir.DIRECTORY_SEPARATOR.'MonotypeCorsiva.ttf';
+            $sourceFont = public_path('fonts/MonotypeCorsiva.ttf');
+            if (! is_file($cachedFont) && is_file($sourceFont)) {
+                copy($sourceFont, $cachedFont);
+            }
+
             return Pdf::loadHTML($html)
                 ->setPaper('a4', $orientation)
                 ->setOption([
-                    'isRemoteEnabled' => false,
+                    'isRemoteEnabled' => true,
+                    'defaultFont' => 'DejaVu Sans',
                     'fontDir' => $fontDir,
                     'fontCache' => $fontDir,
                     'chroot' => base_path(),
@@ -237,49 +254,17 @@ class ComplianceReportService
 
     protected function shell(string $title, string $body): string
     {
-        $school = $this->e((string) config('app.name'));
-        $safeTitle = $this->e($title);
-        $timestamp = $this->e(now()->toDayDateTimeString());
-        $signatory = $this->e(auth()->user()?->name ?? 'Chief Super Admin');
-        $font = $this->forPdf ? 'DejaVu Sans, sans-serif' : 'Georgia, serif';
-        $intro = $this->forPdf
-            ? 'This is a snapshot for filing, not a live dashboard.'
-            : 'Print this page to save a PDF, or use Download PDF on the Super Admin dashboard.';
+        $actor = $this->actor ?? auth()->user();
 
-        return <<<HTML
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>{$safeTitle}</title>
-<style>
-body{font-family:{$font};margin:40px;color:#111;line-height:1.45}
-header{border-bottom:3px solid #4c1d95;padding-bottom:16px;margin-bottom:24px}
-h1{margin:0 0 8px;font-size:22px}
-h2{margin:0 0 8px;font-size:18px}
-p{margin:0 0 12px}
-table{border-collapse:collapse;width:100%;margin:16px 0}
-th,td{border:1px solid #ccc;padding:8px;text-align:left;vertical-align:top}
-th{background:#f4f0fb}
-footer{margin-top:40px;font-size:12px;color:#555}
-@media print{a{color:inherit;text-decoration:none}header{border-bottom-color:#000}}
-</style>
-</head>
-<body>
-<header>
-<h1>{$school}</h1>
-<h2>{$safeTitle}</h2>
-<p>Generated: {$timestamp}</p>
-<p>{$intro}</p>
-</header>
-{$body}
-<footer>
-<p>Prepared by: <strong>{$signatory}</strong></p>
-<p>System-generated. Compare sensitive actions against Audit Logs if you need the full record.</p>
-</footer>
-</body>
-</html>
-HTML;
+        return view('admin.reports.compliance-export', [
+            'title' => $title,
+            'body' => $body,
+            'forPdf' => $this->forPdf,
+            'landscape' => $this->landscape,
+            'generatedAt' => now()->toDayDateTimeString(),
+            'signatory' => $actor?->name ?? 'Chief Super Admin',
+            'signatoryRole' => $actor?->roleLabel() ?? 'Super Admin',
+        ])->render();
     }
 
     protected function e(?string $value): string

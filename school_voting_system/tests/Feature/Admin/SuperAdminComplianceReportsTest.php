@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\Election;
 use App\Models\Passkey;
 use App\Models\User;
+use App\Support\SchoolBranding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -63,6 +64,10 @@ class SuperAdminComplianceReportsTest extends TestCase
         $response->assertDontSee('<script>alert(1)</script>', false);
         $response->assertSee('&lt;script&gt;alert(1)&lt;/script&gt; Council', false);
         $response->assertSee('hash-abc');
+        $response->assertSee(SchoolBranding::schoolName());
+        $response->assertSee(SchoolBranding::systemName());
+        $response->assertSee(SchoolBranding::semester());
+        $response->assertSee('Academic Year '.SchoolBranding::academicYear());
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'Generated report: election_summary',
         ]);
@@ -153,7 +158,9 @@ class SuperAdminComplianceReportsTest extends TestCase
             ->assertOk()
             ->assertSee('Revoked passkey for 2026-4410')
             ->assertSee('10.8.1.4')
-            ->assertSee('passkey');
+            ->assertSee('passkey')
+            ->assertSee(SchoolBranding::schoolName())
+            ->assertSee(SchoolBranding::semester());
     }
 
     public function test_audit_trail_pdf_survives_legacy_general_action_type(): void
@@ -225,6 +232,10 @@ class SuperAdminComplianceReportsTest extends TestCase
         $this->assertStringContainsString('.pdf', $disposition);
         $pdf = $response->getContent();
         $this->assertStringStartsWith('%PDF', $pdf);
+        $this->assertTrue(
+            str_contains($pdf, 'DejaVu') || str_contains($pdf, SchoolBranding::schoolName()),
+            'Election summary PDF should embed the official letterhead font or school name.',
+        );
         $this->assertStringNotContainsString('<script>alert(1)</script>', $pdf);
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'Generated report: election_summary (pdf)',
