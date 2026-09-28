@@ -147,6 +147,12 @@ class AdminResultsController extends Controller
 
     public function exportElection(ExportResultsRequest $request, Election $election, string $format): Response|StreamedResponse
     {
+        abort_unless(
+            $this->scope->electionFileExportIsReady($election),
+            403,
+            'PDF, Excel, and printable reports are available after voting has ended.',
+        );
+
         $user = $request->user();
         $detail = $this->results->electionExportPayload($election, $user, $request->boolean('breakdown'));
 
@@ -155,6 +161,12 @@ class AdminResultsController extends Controller
 
     public function exportTalent(ExportResultsRequest $request, TalentEvent $talentEvent, string $format): Response|StreamedResponse
     {
+        abort_unless(
+            $this->scope->talentFileExportIsReady($talentEvent),
+            403,
+            'PDF, Excel, and printable reports are available after voting and judging have ended.',
+        );
+
         $user = $request->user();
         $detail = $this->results->talentDetail($talentEvent, $user);
 
@@ -178,6 +190,12 @@ class AdminResultsController extends Controller
 
     public function exportElectionTurnout(ExportResultsRequest $request, Election $election): StreamedResponse
     {
+        abort_unless(
+            $this->scope->electionFileExportIsReady($election),
+            403,
+            'PDF, Excel, and printable reports are available after voting has ended.',
+        );
+
         $user = $request->user();
         $this->results->assertCanViewElection($user, $election);
         $sections = $this->scope->turnoutBySection($user, $election);

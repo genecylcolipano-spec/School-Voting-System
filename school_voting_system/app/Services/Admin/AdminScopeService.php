@@ -818,17 +818,110 @@ class AdminScopeService
 
     public function canExportPreliminaryResults(User $admin): bool
     {
-        if (! $admin->hasPermission('export_reports')) {
+        if (! $this->hasExportPermission($admin)) {
             return false;
         }
 
-        // Super Admin is not assigned to a single election. Export is allowed
-        // for any result they can view, including closed elections.
+        // Live / unofficial files (dashboard HTML, live-monitoring CSV) while voting
+        // is open. Official PDF/Excel/print use canExportElectionResults() instead.
         if ($admin->isSuperAdmin()) {
             return true;
         }
 
-        return $this->assignedElection($admin) !== null;
+        if ($this->assignment($admin)?->election_id) {
+            return true;
+        }
+
+        return $this->canCreateElections($admin) || $this->canCreateTalentEvents($admin);
+    }
+
+    public function hasExportPermission(User $admin): bool
+    {
+        return $admin->hasPermission('export_reports');
+    }
+
+    /**
+     * Official PDF / Excel / print / results CSV for one election.
+     * Super Admin may export any election they can view. Operations Admins
+     * may export elections they created or are assigned to.
+     */
+    public function canExportElectionResults(User $admin, Election $election): bool
+    {
+        if (! $this->hasExportPermission($admin)) {
+            return false;
+        }
+
+        if ($admin->isSuperAdmin()) {
+            return true;
+        }
+
+        if ((int) $election->created_by === (int) $admin->id) {
+            return true;
+        }
+
+        return (int) $this->assignment($admin)?->election_id === (int) $election->id;
+    }
+
+    /**
+     * Official PDF / Excel / print / results CSV for one talent competition.
+     * Super Admin may export any competition they can view. Operations Admins
+     * may export competitions they created or that belong to their assigned election.
+     */
+    public function canExportTalentResults(User $admin, TalentEvent $event): bool
+    {
+        if (! $this->hasExportPermission($admin)) {
+            return false;
+        }
+
+        if ($admin->isSuperAdmin()) {
+            return true;
+        }
+
+        if ((int) $event->created_by === (int) $admin->id) {
+            return true;
+        }
+
+        $assignedId = $this->assignment($admin)?->election_id;
+
+        return $assignedId !== null && (int) $event->election_id === (int) $assignedId;
+    }
+
+    public function electionFileExportIsReady(Election $election): bool
+    {
+        if (in_array($election->status, [ElectionStatus::Closed, ElectionStatus::Archived], true)) {
+            return true;
+        }
+
+        return $election->voting_ends_at !== null && now()->gt($election->voting_ends_at);
+    }
+
+    public function talentFileExportIsReady(TalentEvent $event): bool
+    {
+        if ($event->isAcceptingVotes() || $event->isAcceptingJudgeScores()) {
+            return false;
+        }
+
+        if ($event->is_paused && ! $event->votingHasClosed() && ! $event->hasPublishedResults()) {
+            return false;
+        }
+
+        return $event->votingHasClosed()
+            || $event->hasPublishedResults()
+            || $event->status === TalentEventStatus::ResultsPublished
+            || $event->status === TalentEventStatus::Completed
+            || $event->isAfterVotingEnd();
+    }
+
+    public function canDownloadElectionReportFile(User $admin, Election $election): bool
+    {
+        return $this->canExportElectionResults($admin, $election)
+            && $this->electionFileExportIsReady($election);
+    }
+
+    public function canDownloadTalentReportFile(User $admin, TalentEvent $event): bool
+    {
+        return $this->canExportTalentResults($admin, $event)
+            && $this->talentFileExportIsReady($event);
     }
 
     public function canPauseElection(User $admin): bool

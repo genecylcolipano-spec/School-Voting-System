@@ -36,6 +36,7 @@ class AdminReportController extends Controller
 
         $report = null;
         $exportUrls = null;
+        $exportLockedReason = null;
         $winningParty = null;
         $turnoutSections = collect();
         $statistics = [
@@ -76,11 +77,15 @@ class AdminReportController extends Controller
                 'turnout_sections' => $showBreakdown ? $turnoutSections : [],
             ];
 
-            $exportUrls = [
-                'pdf' => route('admin.results.election.export', [$election, 'format' => 'pdf'] + ($showBreakdown ? ['breakdown' => 1] : [])),
-                'excel' => route('admin.results.election.export', [$election, 'format' => 'excel'] + ($showBreakdown ? ['breakdown' => 1] : [])),
-                'print' => route('admin.results.election.export', [$election, 'format' => 'print'] + ($showBreakdown ? ['breakdown' => 1] : [])),
-            ];
+            if ($this->scope->canDownloadElectionReportFile($user, $election)) {
+                $exportUrls = [
+                    'pdf' => route('admin.results.election.export', [$election, 'format' => 'pdf'] + ($showBreakdown ? ['breakdown' => 1] : [])),
+                    'excel' => route('admin.results.election.export', [$election, 'format' => 'excel'] + ($showBreakdown ? ['breakdown' => 1] : [])),
+                    'print' => route('admin.results.election.export', [$election, 'format' => 'print'] + ($showBreakdown ? ['breakdown' => 1] : [])),
+                ];
+            } elseif ($this->scope->canExportElectionResults($user, $election)) {
+                $exportLockedReason = 'PDF, Excel, and printable reports are available after voting has ended.';
+            }
         }
 
         return view('admin.reports.index', [
@@ -93,6 +98,7 @@ class AdminReportController extends Controller
             'showBreakdown' => $showBreakdown,
             'report' => $report,
             'exportUrls' => $exportUrls,
+            'exportLockedReason' => $exportLockedReason,
             'winningParty' => $winningParty,
         ]);
     }
@@ -102,7 +108,7 @@ class AdminReportController extends Controller
         $user = $request->user()->loadCount('passkeys');
         $events = $this->scope->talentEvents($user);
 
-        $rows = $events->map(function (TalentEvent $event) {
+        $rows = $events->map(function (TalentEvent $event) use ($user) {
             $entries = $event->entries;
             $approved = $entries->where('status', TalentEventEntry::STATUS_APPROVED)->count();
             $rejected = $entries->where('status', TalentEventEntry::STATUS_REJECTED)->count();
@@ -110,6 +116,7 @@ class AdminReportController extends Controller
             $participants = $event->entries_count ?? $entries->count();
             $votes = $event->votes_count ?? 0;
             $winners = $this->talentRanking->winners($event);
+            $canExportFiles = $this->scope->canDownloadTalentReportFile($user, $event);
 
             return [
                 'name' => $event->title,
@@ -127,8 +134,9 @@ class AdminReportController extends Controller
                 'winner_count' => count($winners),
                 'planned_winners' => (int) ($event->number_of_winners ?? 3),
                 'participation' => $participants > 0 ? (int) round(($approved / max($participants, 1)) * 100) : 0,
-                'export_pdf' => route('admin.results.talent.export', [$event, 'format' => 'pdf']),
-                'export_excel' => route('admin.results.talent.export', [$event, 'format' => 'excel']),
+                'can_export_files' => $canExportFiles,
+                'export_pdf' => $canExportFiles ? route('admin.results.talent.export', [$event, 'format' => 'pdf']) : null,
+                'export_excel' => $canExportFiles ? route('admin.results.talent.export', [$event, 'format' => 'excel']) : null,
                 'show_url' => route('admin.results.talent.show', $event),
             ];
         });

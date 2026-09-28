@@ -60,8 +60,10 @@
                             <td class="px-4 py-3">
                                 <div class="flex items-center justify-end gap-2 text-xs">
                                     <a href="{{ $row['show_url'] }}" class="font-semibold text-violet-300 hover:text-violet-200">View</a>
-                                    <a href="{{ $row['export_pdf'] }}" class="font-semibold text-cyan-300 hover:text-cyan-200">PDF</a>
-                                    <a href="{{ $row['export_excel'] }}" class="font-semibold text-cyan-300 hover:text-cyan-200">Excel</a>
+                                    @if ($row['can_export_files'] ?? false)
+                                        <a href="{{ $row['export_pdf'] }}" class="font-semibold text-cyan-300 hover:text-cyan-200">PDF</a>
+                                        <a href="{{ $row['export_excel'] }}" class="font-semibold text-cyan-300 hover:text-cyan-200">Excel</a>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

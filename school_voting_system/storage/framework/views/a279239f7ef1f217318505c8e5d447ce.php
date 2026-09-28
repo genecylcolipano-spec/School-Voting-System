@@ -66,6 +66,8 @@
                         <?php if(! empty($exportUrls['print'])): ?>
                             <a href="<?php echo e($exportUrls['print']); ?>" target="_blank" rel="noopener" class="rs-export-btn">Print Results</a>
                         <?php endif; ?>
+                    <?php elseif($detail['export_locked_reason'] ?? null): ?>
+                        <p class="max-w-xs text-right text-xs text-slate-400"><?php echo e($detail['export_locked_reason']); ?></p>
                     <?php endif; ?>
                 </div>
             </div>

@@ -13,7 +13,7 @@
         </div>
 
         <div class="mb-4 rounded-xl border border-violet-500/15 bg-slate-900/60 px-4 py-3 text-xs text-slate-400">
-            Open any result to publish/unpublish, export as PDF, Excel, CSV, or print. Students only see results after they are published.
+            Open any result to review live standings and publish when ready. PDF, Excel, CSV, and print files are available after voting has ended. Students only see results after they are published.
         </div>
 
         @if ($events->isEmpty())

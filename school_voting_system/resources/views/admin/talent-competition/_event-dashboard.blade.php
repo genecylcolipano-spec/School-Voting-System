@@ -59,6 +59,7 @@
 
     $canManageTalentVoting = $user->hasPermission('manage_talent_voting');
     $canPublishTalentResults = $user->hasPermission('publish_talent_results');
+    $canExportOfficialFiles = app(\App\Services\Admin\AdminScopeService::class)->canDownloadTalentReportFile($user, $event);
 
     $activity = collect([
         ['label' => 'Event Created', 'at' => $event->created_at, 'icon' => '📅'],
@@ -255,7 +256,7 @@
 
             <a href="{{ route('admin.results.talent.show', $event) }}" class="tc-btn tc-btn--primary">📊 View Results</a>
 
-            @if ($canViewRealtimeTalentCounts || $isPublished)
+            @if ($canExportOfficialFiles)
                 <a href="{{ route('admin.results.talent.export', ['talentEvent' => $event, 'format' => 'csv']) }}" class="tc-btn tc-btn--ghost">⬇ Export CSV</a>
                 <a href="{{ route('admin.results.talent.export', ['talentEvent' => $event, 'format' => 'excel']) }}" class="tc-btn tc-btn--ghost">⬇ Export Excel</a>
                 <a href="{{ route('admin.results.talent.export', ['talentEvent' => $event, 'format' => 'pdf']) }}" class="tc-btn tc-btn--ghost">⬇ Export PDF</a>

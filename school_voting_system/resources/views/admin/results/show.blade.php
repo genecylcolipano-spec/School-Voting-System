@@ -48,6 +48,8 @@
                         @if (! empty($exportUrls['print']))
                             <a href="{{ $exportUrls['print'] }}" target="_blank" rel="noopener" class="rs-export-btn">Print Results</a>
                         @endif
+                    @elseif ($detail['export_locked_reason'] ?? null)
+                        <p class="max-w-xs text-right text-xs text-slate-400">{{ $detail['export_locked_reason'] }}</p>
                     @endif
                 </div>
             </div>

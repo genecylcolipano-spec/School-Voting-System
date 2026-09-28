@@ -32,7 +32,7 @@
         ])>
             {{ $event['view_label'] }}
         </a>
-        @if (($canExport ?? false) && $event['total_votes'] > 0)
+        @if (($event['can_export'] ?? false) && $event['total_votes'] > 0)
             <a href="{{ $event['export_url'] }}" class="rounded-xl border border-violet-500/30 px-4 py-2 text-sm font-semibold text-violet-200 transition hover:bg-violet-500/10">
                 Export
             </a>

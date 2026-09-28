@@ -28,16 +28,18 @@
                 </div>
             </section>
 
-            @if ($exportUrls)
-                <div class="mb-6 flex flex-wrap gap-2">
+            <div class="mb-6 flex flex-wrap items-center gap-2">
+                @if ($exportUrls)
                     <a href="{{ $exportUrls['pdf'] }}" class="rs-export-btn">Export PDF</a>
                     <a href="{{ $exportUrls['excel'] }}" class="rs-export-btn">Export Excel</a>
                     <a href="{{ $exportUrls['print'] }}" class="rs-export-btn">Print Report</a>
-                    @if ($election)
-                        <a href="{{ route('admin.results.election.show', $election) }}" class="rs-export-btn">Open Results Dashboard</a>
-                    @endif
-                </div>
-            @endif
+                @elseif ($exportLockedReason ?? null)
+                    <p class="text-xs text-slate-400">{{ $exportLockedReason }}</p>
+                @endif
+                @if ($election)
+                    <a href="{{ route('admin.results.election.show', $election) }}" class="rs-export-btn">Open Results Dashboard</a>
+                @endif
+            </div>
 
             <x-winner-spotlight
                 :spotlight="$report['winners']"

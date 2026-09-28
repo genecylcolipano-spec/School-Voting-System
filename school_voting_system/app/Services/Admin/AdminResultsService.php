@@ -247,7 +247,11 @@ class AdminResultsService
             'activity' => $this->electionActivity($election),
             'updated_at' => now()->toIso8601String(),
             'generated_at' => now()->format('M d, Y g:i A'),
-            'can_export' => $this->scope->canExportPreliminaryResults($admin),
+            'can_export' => $this->scope->canDownloadElectionReportFile($admin, $election),
+            'export_locked_reason' => $this->scope->canExportElectionResults($admin, $election)
+                && ! $this->scope->electionFileExportIsReady($election)
+                ? 'PDF, Excel, and printable reports are available after voting has ended.'
+                : null,
             'party_performance' => $this->partyPerformanceFromRankings($rankings, $winners),
             'turnout_sections' => $includeTurnout
                 ? $this->turnoutSectionsForExport($admin, $election)
@@ -258,7 +262,9 @@ class AdminResultsService
                     ? $this->integrity->verify($election)
                     : $this->integrityPreview($election)),
             'verify_integrity_url' => route('admin.results.election.verify-integrity', $election),
-            'turnout_export_url' => route('admin.results.election.turnout', $election),
+            'turnout_export_url' => $this->scope->canDownloadElectionReportFile($admin, $election)
+                ? route('admin.results.election.turnout', $election)
+                : null,
             'live_payload' => $includeLive && $isLive
                 ? $this->liveVoting->progress($admin)
                 : null,
@@ -349,7 +355,11 @@ class AdminResultsService
             'activity' => $this->talentActivity($talentEvent),
             'updated_at' => now()->toIso8601String(),
             'generated_at' => now()->format('M d, Y g:i A'),
-            'can_export' => $this->scope->canExportPreliminaryResults($admin),
+            'can_export' => $this->scope->canDownloadTalentReportFile($admin, $talentEvent),
+            'export_locked_reason' => $this->scope->canExportTalentResults($admin, $talentEvent)
+                && ! $this->scope->talentFileExportIsReady($talentEvent)
+                ? 'PDF, Excel, and printable reports are available after voting and judging have ended.'
+                : null,
             'party_performance' => [],
             'turnout_sections' => $this->turnoutSectionsForExport($admin, $talentEvent),
             'live_payload' => null,
@@ -441,6 +451,7 @@ class AdminResultsService
             'view_label' => $isLive ? 'View Live Results' : 'View Results',
             'show_url' => route('admin.results.election.show', $election),
             'export_url' => route('admin.results.election.export', ['election' => $election, 'format' => 'csv']),
+            'can_export' => $this->scope->canDownloadElectionReportFile($admin, $election),
             'display_date' => $election->voting_ends_at?->format('M d, Y') ?? $election->voting_starts_at?->format('M d, Y'),
             'sort_at' => ($election->voting_starts_at ?? $election->created_at)?->toDateTimeString(),
         ];
@@ -475,6 +486,7 @@ class AdminResultsService
             'view_label' => $isLive ? 'View Live Results' : 'View Results',
             'show_url' => route('admin.results.talent.show', $talentEvent),
             'export_url' => route('admin.results.talent.export', ['talentEvent' => $talentEvent, 'format' => 'csv']),
+            'can_export' => $this->scope->canDownloadTalentReportFile($admin, $talentEvent),
             'display_date' => $talentEvent->event_date?->format('M d, Y') ?? $talentEvent->voting_ends_at?->format('M d, Y'),
             'sort_at' => ($talentEvent->voting_starts_at ?? $talentEvent->event_date ?? $talentEvent->created_at)?->toDateTimeString(),
         ];
@@ -1532,11 +1544,7 @@ class AdminResultsService
             return [];
         }
 
-        if ($this->scope->assignedElection($admin)?->id !== $source->id && ! $admin->isSuperAdmin()) {
-            return [];
-        }
-
-        return $this->scope->turnoutBySection($admin)
+        return $this->scope->turnoutBySection($admin, $source)
             ->map(function (array $row) {
                 return [
                     'grade' => (string) ($row['grade'] ?? 'All'),

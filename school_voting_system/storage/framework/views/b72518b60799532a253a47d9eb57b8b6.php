@@ -79,8 +79,10 @@
                             <td class="px-4 py-3">
                                 <div class="flex items-center justify-end gap-2 text-xs">
                                     <a href="<?php echo e($row['show_url']); ?>" class="font-semibold text-violet-300 hover:text-violet-200">View</a>
-                                    <a href="<?php echo e($row['export_pdf']); ?>" class="font-semibold text-cyan-300 hover:text-cyan-200">PDF</a>
-                                    <a href="<?php echo e($row['export_excel']); ?>" class="font-semibold text-cyan-300 hover:text-cyan-200">Excel</a>
+                                    <?php if($row['can_export_files'] ?? false): ?>
+                                        <a href="<?php echo e($row['export_pdf']); ?>" class="font-semibold text-cyan-300 hover:text-cyan-200">PDF</a>
+                                        <a href="<?php echo e($row['export_excel']); ?>" class="font-semibold text-cyan-300 hover:text-cyan-200">Excel</a>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>

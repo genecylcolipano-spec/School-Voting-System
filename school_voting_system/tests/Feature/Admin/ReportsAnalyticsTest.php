@@ -218,6 +218,8 @@ class ReportsAnalyticsTest extends TestCase
             ->assertSee('Turnout Council')
             ->assertSee('Report Winner')
             ->assertSee('Load participation by grade / section')
+            ->assertSee('Open Results Dashboard')
+            ->assertDontSee('Export PDF')
             ->assertDontSee('Ruby');
 
         $this->actingAs($admin)
@@ -251,6 +253,11 @@ class ReportsAnalyticsTest extends TestCase
             'section' => 'Ruby',
         ]);
         Vote::castBallot($voter, $candidate);
+
+        $election->update([
+            'status' => ElectionStatus::Closed,
+            'voting_ends_at' => now()->subHour(),
+        ]);
 
         $this->actingAs($admin)
             ->get(route('admin.results.election.export', [$election, 'format' => 'print']))
@@ -296,7 +303,9 @@ class ReportsAnalyticsTest extends TestCase
             ->get(route('admin.reports.talent'))
             ->assertOk()
             ->assertSee('Lakan Night')
-            ->assertSee('Ana Winner');
+            ->assertSee('Ana Winner')
+            ->assertSee('View')
+            ->assertDontSee('>Excel</a>', false);
     }
 
     public function test_fundraising_report_is_paid_only_and_scoped_to_creator(): void

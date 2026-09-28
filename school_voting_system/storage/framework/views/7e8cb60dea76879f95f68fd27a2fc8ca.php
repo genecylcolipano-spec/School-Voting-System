@@ -46,16 +46,18 @@
                 </div>
             </section>
 
-            <?php if($exportUrls): ?>
-                <div class="mb-6 flex flex-wrap gap-2">
+            <div class="mb-6 flex flex-wrap items-center gap-2">
+                <?php if($exportUrls): ?>
                     <a href="<?php echo e($exportUrls['pdf']); ?>" class="rs-export-btn">Export PDF</a>
                     <a href="<?php echo e($exportUrls['excel']); ?>" class="rs-export-btn">Export Excel</a>
                     <a href="<?php echo e($exportUrls['print']); ?>" class="rs-export-btn">Print Report</a>
-                    <?php if($election): ?>
-                        <a href="<?php echo e(route('admin.results.election.show', $election)); ?>" class="rs-export-btn">Open Results Dashboard</a>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
+                <?php elseif($exportLockedReason ?? null): ?>
+                    <p class="text-xs text-slate-400"><?php echo e($exportLockedReason); ?></p>
+                <?php endif; ?>
+                <?php if($election): ?>
+                    <a href="<?php echo e(route('admin.results.election.show', $election)); ?>" class="rs-export-btn">Open Results Dashboard</a>
+                <?php endif; ?>
+            </div>
 
             <?php if (isset($component)) { $__componentOriginal578dbf52e12dc6d3ec213f47252a1a45 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal578dbf52e12dc6d3ec213f47252a1a45 = $attributes; } ?>
