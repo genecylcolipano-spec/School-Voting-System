@@ -51,6 +51,7 @@ class AdminElectionController extends Controller
             'user' => $request->user()->loadCount('passkeys'),
             'notificationsCount' => AdminPortal::notificationCount($request->user()),
             'elections' => $query->paginate(15),
+            'canCreateElections' => $request->user()->can('create', Election::class),
         ]);
     }
 
@@ -123,6 +124,25 @@ class AdminElectionController extends Controller
         $this->announcements->generateForElectionCreated($election->fresh(), $actor);
 
         return redirect()->route('admin.elections.edit', $election)->with('success', 'Election created with positions and candidates.');
+    }
+
+    public function show(Request $request, Election $election): View
+    {
+        $this->authorize('view', $election);
+
+        $election->load([
+            'creator',
+            'partylists',
+            'categories' => fn ($query) => $query->orderBy('sort_order')->with(['candidates' => fn ($candidates) => $candidates->orderBy('display_name')]),
+        ]);
+        $election->loadCount(['categories', 'candidates', 'partylists', 'votes']);
+
+        return view('admin.elections.show', [
+            'user' => $request->user()->loadCount('passkeys'),
+            'notificationsCount' => AdminPortal::notificationCount($request->user()),
+            'election' => $election,
+            'canCreateElections' => $request->user()->can('create', Election::class),
+        ]);
     }
 
     public function edit(Request $request, Election $election): View
@@ -219,5 +239,41 @@ class AdminElectionController extends Controller
         );
 
         return redirect()->route('admin.elections.index')->with('success', 'Election deleted successfully.');
+    }
+
+    public function duplicate(Request $request, Election $election): RedirectResponse
+    {
+        $this->authorize('view', $election);
+        $this->authorize('create', Election::class);
+
+        $copy = $this->setup->duplicate($election, $request->user());
+
+        if (! $request->user()->isSuperAdmin()) {
+            $this->scope->assignElectionToAdmin($request->user(), $copy, $request->user()->id);
+        }
+
+        $this->logAdminAction(
+            "Duplicated election: {$election->title} → {$copy->title}",
+            AuditActionType::Election,
+            'election',
+            $copy->id,
+        );
+
+        return redirect()
+            ->route('admin.elections.edit', $copy)
+            ->with('success', 'Election duplicated. Review and save the copy.');
+    }
+
+    public function archive(Request $request, Election $election): RedirectResponse
+    {
+        $this->authorize('update', $election);
+
+        try {
+            $this->elections->archive($election, $request->user());
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return back()->with('success', 'Election archived.');
     }
 }

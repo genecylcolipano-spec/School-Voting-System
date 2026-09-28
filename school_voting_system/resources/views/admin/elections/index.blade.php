@@ -2,11 +2,18 @@
     <x-admin-portal title="Elections" :user="$user" :notifications-count="$notificationsCount">
         @include('admin.partials.page-header', [
             'title' => 'Elections',
-            'description' => 'Workspace for election details, positions, and candidates. Open, pause, and close voting from the dashboard or live monitoring.',
+            'description' => 'Create, configure, archive, and duplicate elections. Open, pause, and close voting from the dashboard or live monitoring.',
             'action' => route('admin.elections.create'),
             'actionLabel' => 'Create election',
             'showAction' => auth()->user()->can('create', App\Models\Election::class),
         ])
+
+        @if (session('success'))
+            <div class="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">{{ session('success') }}</div>
+        @endif
+        @if (session('error'))
+            <div class="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{{ session('error') }}</div>
+        @endif
 
         @if ($elections->isEmpty())
             <div class="rounded-2xl border border-violet-500/15 bg-slate-900/70 px-4 py-8 text-center text-sm text-slate-400">
@@ -63,16 +70,13 @@
                                 <dd class="font-semibold text-white">{{ $election->votes_count }}</dd>
                             </div>
                         </dl>
-                        <div class="mt-4 flex flex-wrap items-center gap-3">
-                            @can('update', $election)
-                                <a href="{{ route('admin.elections.edit', $election) }}" class="text-sm font-semibold text-violet-300 hover:text-violet-200">Manage</a>
-                            @endcan
-                            @can('delete', $election)
-                                <x-admin.delete-action
-                                    :action="route('admin.elections.destroy', $election)"
-                                    :warning="$deleteWarning"
-                                />
-                            @endcan
+                        <div class="mt-4">
+                            @include('admin.elections.partials.row-actions', [
+                                'election' => $election,
+                                'deleteWarning' => $deleteWarning,
+                                'canCreateElections' => $canCreateElections,
+                                'align' => 'justify-start',
+                            ])
                         </div>
                     </article>
                 @endforeach
@@ -88,7 +92,7 @@
                             <th class="px-4 py-3 font-medium">Candidates</th>
                             <th class="px-4 py-3 font-medium">Partylists</th>
                             <th class="px-4 py-3 font-medium">Votes</th>
-                            <th class="px-4 py-3 font-medium">Actions</th>
+                            <th class="px-4 py-3 text-right font-medium">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -122,16 +126,12 @@
                                 <td class="px-4 py-3">{{ $election->candidates_count }}</td>
                                 <td class="px-4 py-3">{{ $election->partylists_count }}</td>
                                 <td class="px-4 py-3">{{ $election->votes_count }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    @can('update', $election)
-                                        <a href="{{ route('admin.elections.edit', $election) }}" class="text-violet-300 hover:text-violet-200">Manage</a>
-                                    @endcan
-                                    @can('delete', $election)
-                                        <x-admin.delete-action
-                                            :action="route('admin.elections.destroy', $election)"
-                                            :warning="$deleteWarning"
-                                        />
-                                    @endcan
+                                <td class="px-4 py-3">
+                                    @include('admin.elections.partials.row-actions', [
+                                        'election' => $election,
+                                        'deleteWarning' => $deleteWarning,
+                                        'canCreateElections' => $canCreateElections,
+                                    ])
                                 </td>
                             </tr>
                         @endforeach

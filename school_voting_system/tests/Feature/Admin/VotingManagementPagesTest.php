@@ -2,11 +2,15 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\ElectionStatus;
 use App\Models\AdminAssignment;
+use App\Models\Candidate;
 use App\Models\Election;
+use App\Models\ElectionCategory;
 use App\Models\Partylist;
 use App\Models\PortalNotification;
 use App\Models\User;
+use App\Models\Vote;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -38,9 +42,13 @@ class VotingManagementPagesTest extends TestCase
             ->get(route('admin.elections.index'))
             ->assertOk()
             ->assertSee('data-initial-count="1"', false)
-            ->assertSee('Workspace for election details, positions, and candidates')
+            ->assertSee('Create, configure, archive, and duplicate elections')
             ->assertSee(route('admin.elections.edit', $election), false)
-            ->assertSee('>Manage<', false)
+            ->assertSee(route('admin.elections.show', $election), false)
+            ->assertSee('>View<', false)
+            ->assertSee('>Edit<', false)
+            ->assertSee('>Duplicate<', false)
+            ->assertSee('>Archive<', false)
             ->assertSee('Workspace Council');
 
         $this->actingAs($super)
@@ -94,5 +102,73 @@ class VotingManagementPagesTest extends TestCase
             ->assertSessionHas('success', 'Election deleted successfully.');
 
         $this->assertSoftDeleted($election);
+    }
+
+    public function test_super_admin_can_view_duplicate_and_archive_an_election(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $election = Election::factory()->active()->create(['title' => 'Source Council']);
+        $category = ElectionCategory::factory()->create([
+            'election_id' => $election->id,
+            'name' => 'President',
+        ]);
+        $candidate = Candidate::factory()->create([
+            'election_id' => $election->id,
+            'election_category_id' => $category->id,
+            'display_name' => 'Source Candidate',
+        ]);
+        Vote::castBallot(User::factory()->create(), $candidate);
+
+        $this->actingAs($super)
+            ->get(route('admin.elections.show', $election))
+            ->assertOk()
+            ->assertSee('Source Council')
+            ->assertSee('President')
+            ->assertSee('Source Candidate');
+
+        $this->actingAs($super)
+            ->post(route('admin.elections.duplicate', $election))
+            ->assertRedirect();
+
+        $copy = Election::query()->where('title', 'Source Council (Copy)')->first();
+        $this->assertNotNull($copy);
+        $this->assertSame(ElectionStatus::Draft, $copy->status);
+        $this->assertSame($super->id, $copy->created_by);
+        $this->assertSame(1, $copy->categories()->count());
+        $this->assertSame(1, $copy->candidates()->count());
+        $this->assertSame(0, $copy->votes()->count());
+        $this->assertSame(1, $election->fresh()->votes()->count());
+
+        $this->actingAs($super)
+            ->from(route('admin.elections.index'))
+            ->post(route('admin.elections.archive', $election))
+            ->assertRedirect(route('admin.elections.index'))
+            ->assertSessionHas('success', 'Election archived.');
+
+        $this->assertSame(ElectionStatus::Archived, $election->fresh()->status);
+    }
+
+    public function test_regular_admin_without_modify_permission_cannot_duplicate_or_archive(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $election = Election::factory()->create(['title' => 'Assigned Council', 'created_by' => $admin->id]);
+        AdminAssignment::query()->create([
+            'user_id' => $admin->id,
+            'election_id' => $election->id,
+            'assigned_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.elections.show', $election))
+            ->assertOk()
+            ->assertSee('Assigned Council');
+
+        $this->actingAs($admin)
+            ->post(route('admin.elections.duplicate', $election))
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->post(route('admin.elections.archive', $election))
+            ->assertForbidden();
     }
 }

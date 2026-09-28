@@ -20,11 +20,18 @@
 <?php $component->withAttributes(['title' => 'Elections','user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($user),'notifications-count' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($notificationsCount)]); ?>
         <?php echo $__env->make('admin.partials.page-header', [
             'title' => 'Elections',
-            'description' => 'Workspace for election details, positions, and candidates. Open, pause, and close voting from the dashboard or live monitoring.',
+            'description' => 'Create, configure, archive, and duplicate elections. Open, pause, and close voting from the dashboard or live monitoring.',
             'action' => route('admin.elections.create'),
             'actionLabel' => 'Create election',
             'showAction' => auth()->user()->can('create', App\Models\Election::class),
         ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
+        <?php if(session('success')): ?>
+            <div class="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200"><?php echo e(session('success')); ?></div>
+        <?php endif; ?>
+        <?php if(session('error')): ?>
+            <div class="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200"><?php echo e(session('error')); ?></div>
+        <?php endif; ?>
 
         <?php if($elections->isEmpty()): ?>
             <div class="rounded-2xl border border-violet-500/15 bg-slate-900/70 px-4 py-8 text-center text-sm text-slate-400">
@@ -100,32 +107,13 @@
                                 <dd class="font-semibold text-white"><?php echo e($election->votes_count); ?></dd>
                             </div>
                         </dl>
-                        <div class="mt-4 flex flex-wrap items-center gap-3">
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('update', $election)): ?>
-                                <a href="<?php echo e(route('admin.elections.edit', $election)); ?>" class="text-sm font-semibold text-violet-300 hover:text-violet-200">Manage</a>
-                            <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('delete', $election)): ?>
-                                <?php if (isset($component)) { $__componentOriginal469a4ba3cbb96eb4bd9792641d671d57 = $component; } ?>
-<?php if (isset($attributes)) { $__attributesOriginal469a4ba3cbb96eb4bd9792641d671d57 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin.delete-action','data' => ['action' => route('admin.elections.destroy', $election),'warning' => $deleteWarning]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
-<?php $component->withName('admin.delete-action'); ?>
-<?php if ($component->shouldRender()): ?>
-<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
-<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
-<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
-<?php endif; ?>
-<?php $component->withAttributes(['action' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('admin.elections.destroy', $election)),'warning' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($deleteWarning)]); ?>
-<?php echo $__env->renderComponent(); ?>
-<?php endif; ?>
-<?php if (isset($__attributesOriginal469a4ba3cbb96eb4bd9792641d671d57)): ?>
-<?php $attributes = $__attributesOriginal469a4ba3cbb96eb4bd9792641d671d57; ?>
-<?php unset($__attributesOriginal469a4ba3cbb96eb4bd9792641d671d57); ?>
-<?php endif; ?>
-<?php if (isset($__componentOriginal469a4ba3cbb96eb4bd9792641d671d57)): ?>
-<?php $component = $__componentOriginal469a4ba3cbb96eb4bd9792641d671d57; ?>
-<?php unset($__componentOriginal469a4ba3cbb96eb4bd9792641d671d57); ?>
-<?php endif; ?>
-                            <?php endif; ?>
+                        <div class="mt-4">
+                            <?php echo $__env->make('admin.elections.partials.row-actions', [
+                                'election' => $election,
+                                'deleteWarning' => $deleteWarning,
+                                'canCreateElections' => $canCreateElections,
+                                'align' => 'justify-start',
+                            ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                         </div>
                     </article>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -141,7 +129,7 @@
                             <th class="px-4 py-3 font-medium">Candidates</th>
                             <th class="px-4 py-3 font-medium">Partylists</th>
                             <th class="px-4 py-3 font-medium">Votes</th>
-                            <th class="px-4 py-3 font-medium">Actions</th>
+                            <th class="px-4 py-3 text-right font-medium">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -194,32 +182,12 @@
                                 <td class="px-4 py-3"><?php echo e($election->candidates_count); ?></td>
                                 <td class="px-4 py-3"><?php echo e($election->partylists_count); ?></td>
                                 <td class="px-4 py-3"><?php echo e($election->votes_count); ?></td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('update', $election)): ?>
-                                        <a href="<?php echo e(route('admin.elections.edit', $election)); ?>" class="text-violet-300 hover:text-violet-200">Manage</a>
-                                    <?php endif; ?>
-                                    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('delete', $election)): ?>
-                                        <?php if (isset($component)) { $__componentOriginal469a4ba3cbb96eb4bd9792641d671d57 = $component; } ?>
-<?php if (isset($attributes)) { $__attributesOriginal469a4ba3cbb96eb4bd9792641d671d57 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin.delete-action','data' => ['action' => route('admin.elections.destroy', $election),'warning' => $deleteWarning]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
-<?php $component->withName('admin.delete-action'); ?>
-<?php if ($component->shouldRender()): ?>
-<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
-<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
-<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
-<?php endif; ?>
-<?php $component->withAttributes(['action' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('admin.elections.destroy', $election)),'warning' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($deleteWarning)]); ?>
-<?php echo $__env->renderComponent(); ?>
-<?php endif; ?>
-<?php if (isset($__attributesOriginal469a4ba3cbb96eb4bd9792641d671d57)): ?>
-<?php $attributes = $__attributesOriginal469a4ba3cbb96eb4bd9792641d671d57; ?>
-<?php unset($__attributesOriginal469a4ba3cbb96eb4bd9792641d671d57); ?>
-<?php endif; ?>
-<?php if (isset($__componentOriginal469a4ba3cbb96eb4bd9792641d671d57)): ?>
-<?php $component = $__componentOriginal469a4ba3cbb96eb4bd9792641d671d57; ?>
-<?php unset($__componentOriginal469a4ba3cbb96eb4bd9792641d671d57); ?>
-<?php endif; ?>
-                                    <?php endif; ?>
+                                <td class="px-4 py-3">
+                                    <?php echo $__env->make('admin.elections.partials.row-actions', [
+                                        'election' => $election,
+                                        'deleteWarning' => $deleteWarning,
+                                        'canCreateElections' => $canCreateElections,
+                                    ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                                 </td>
                             </tr>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>

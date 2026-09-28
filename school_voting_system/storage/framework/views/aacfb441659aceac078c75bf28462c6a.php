@@ -37,7 +37,7 @@
     </form>
 
     <p class="mt-3 text-xs text-slate-500">
-        Each button downloads an A4 PDF (same engine as Results). Audit Trail is the latest 500 actions (landscape).
+        Each button downloads an A4 PDF (same engine as Results). Audit Trail PDF is the latest 200 actions (landscape); HTML and CSV keep more history.
         Passkey Inventory lists status only — it does not include credential IDs and cannot revoke a device.
     </p>
 

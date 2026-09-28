@@ -2,12 +2,16 @@
 
 namespace App\Services\Admin;
 
+use App\Enums\ElectionStatus;
 use App\Models\Candidate;
 use App\Models\Election;
 use App\Models\ElectionCategory;
 use App\Models\Partylist;
+use App\Models\User;
 use App\Services\Media\ImageCompressionService;
+use App\Support\SlugGenerator;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -75,6 +79,69 @@ class ElectionSetupService
             ->all();
 
         $this->createCandidates($election, $data['new_candidates'] ?? [], $categoryMap, useCategoryIds: true);
+    }
+
+    public function duplicate(Election $election, User $actor): Election
+    {
+        $election->load(['categories' => fn ($query) => $query->orderBy('sort_order'), 'candidates', 'partylists']);
+
+        return DB::transaction(function () use ($election, $actor) {
+            $copy = $election->replicate([
+                'slug',
+                'integrity_hash',
+                'public_results_published',
+                'results_published_at',
+                'results_published_by',
+                'results_locked',
+                'is_paused',
+                'annulled_at',
+                'rerun_parent_id',
+            ]);
+
+            $copy->title = $election->title.' (Copy)';
+            $copy->slug = SlugGenerator::unique($copy->title, Election::class);
+            $copy->status = ElectionStatus::Draft;
+            $copy->created_by = $actor->id;
+            $copy->is_paused = false;
+            $copy->results_locked = false;
+            $copy->integrity_hash = null;
+            $copy->public_results_published = false;
+            $copy->results_published_at = null;
+            $copy->results_published_by = null;
+            $copy->annulled_at = null;
+            $copy->rerun_parent_id = null;
+            $copy->forceFill(Election::scheduleAttributes(
+                ElectionStatus::Draft,
+                $copy->voting_starts_at,
+                $copy->voting_ends_at,
+            ));
+            $copy->save();
+
+            $copy->partylists()->sync($election->partylists->pluck('id')->all());
+
+            $categoryMap = [];
+            foreach ($election->categories as $category) {
+                $newCategory = $category->replicate();
+                $newCategory->election_id = $copy->id;
+                $newCategory->save();
+                $categoryMap[$category->id] = $newCategory->id;
+            }
+
+            foreach ($election->candidates as $candidate) {
+                $newCategoryId = $categoryMap[$candidate->election_category_id] ?? null;
+
+                if (! $newCategoryId) {
+                    continue;
+                }
+
+                $newCandidate = $candidate->replicate();
+                $newCandidate->election_id = $copy->id;
+                $newCandidate->election_category_id = $newCategoryId;
+                $newCandidate->save();
+            }
+
+            return $copy->fresh();
+        });
     }
 
     /**

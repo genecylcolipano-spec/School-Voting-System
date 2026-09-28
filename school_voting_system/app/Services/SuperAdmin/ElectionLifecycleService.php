@@ -207,6 +207,28 @@ class ElectionLifecycleService
         return $election->fresh();
     }
 
+    public function archive(Election $election, User $actor): Election
+    {
+        if ($election->status === ElectionStatus::Archived) {
+            throw new HttpException(422, 'This election is already archived.');
+        }
+
+        $election->forceFill([
+            'status' => ElectionStatus::Archived,
+            'is_paused' => false,
+        ])->save();
+
+        $this->audit->record(
+            $actor,
+            "Archived election: {$election->title}",
+            AuditActionType::Election,
+            targetType: 'election',
+            targetId: $election->id,
+        );
+
+        return $election->fresh();
+    }
+
     public function canSchedule(Election $election): bool
     {
         return $election->annulled_at === null

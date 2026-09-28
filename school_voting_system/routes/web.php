@@ -364,7 +364,9 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
         Route::delete('/talent-participants/{entry}', [AdminTalentParticipantController::class, 'destroy'])->name('talent-participants.destroy');
 
         Route::resource('candidates', AdminCandidateController::class)->except(['index', 'create']);
-        Route::resource('elections', AdminElectionController::class)->except(['show']);
+        Route::resource('elections', AdminElectionController::class);
+        Route::post('/elections/{election}/duplicate', [AdminElectionController::class, 'duplicate'])->name('elections.duplicate');
+        Route::post('/elections/{election}/archive', [AdminElectionController::class, 'archive'])->name('elections.archive');
         Route::resource('events', AdminEventController::class)->except(['show']);
         Route::get('/announcements/{announcement}/preview', [AdminAnnouncementController::class, 'preview'])->name('announcements.preview');
         Route::get('/announcements/{announcement}/attachments/{attachment}', [AdminAnnouncementController::class, 'downloadAttachment'])->name('announcements.attachments.download');

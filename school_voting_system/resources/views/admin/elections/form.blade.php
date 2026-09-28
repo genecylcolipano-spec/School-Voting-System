@@ -5,7 +5,7 @@
 @endphp
 
 <x-app-layout>
-    <x-admin-portal :title="$isEdit ? 'Manage Election' : 'Create Election'" :user="$user" :notifications-count="$notificationsCount">
+    <x-admin-portal :title="$isEdit ? 'Edit Election' : 'Create Election'" :user="$user" :notifications-count="$notificationsCount">
         <form
             id="election-setup-form"
             method="POST"
