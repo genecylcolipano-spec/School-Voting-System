@@ -184,7 +184,7 @@ class ResultsPagesTest extends TestCase
             ->assertSee('Campus Idol');
     }
 
-    public function test_operations_admin_cannot_export_another_admins_talent_after_close(): void
+    public function test_operations_admin_can_export_super_created_talent_after_voting_ends(): void
     {
         $super = User::factory()->superAdmin()->create();
         $admin = $this->makeOperationsAdmin();
@@ -195,6 +195,74 @@ class ResultsPagesTest extends TestCase
             'voting_ends_at' => now()->subHour(),
             'results_published_at' => null,
         ]);
+
+        $this->assertTrue(app(AdminScopeService::class)->canExportTalentResults($admin, $event));
+        $this->assertTrue(app(AdminScopeService::class)->talentFileExportIsReady($event));
+
+        $this->actingAs($admin)
+            ->get(route('admin.results.talent.show', $event))
+            ->assertOk()
+            ->assertSee('Review Results')
+            ->assertSee('Export PDF')
+            ->assertSee('Export Excel')
+            ->assertSee('Export CSV')
+            ->assertSee('Print Results');
+
+        $this->actingAs($admin)
+            ->get(route('admin.results.talent.export', ['talentEvent' => $event, 'format' => 'csv']))
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_talent_results_show_file_exports_after_close_voting_without_publish(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $event = $this->makeCompetition([
+            'title' => 'ROSEMONT IDOL',
+            'created_by' => $super->id,
+            'status' => TalentEventStatus::VotingOpen,
+            'voting_starts_at' => now()->subHours(2),
+            'voting_ends_at' => now()->subMinute(),
+            'results_published_at' => null,
+        ]);
+
+        $this->actingAs($super)
+            ->get(route('admin.results.talent.show', $event))
+            ->assertOk()
+            ->assertSee('ROSEMONT IDOL')
+            ->assertSee('Review Results')
+            ->assertSee('Export PDF')
+            ->assertSee('Export Excel')
+            ->assertSee('Export CSV')
+            ->assertSee('Print Results')
+            ->assertDontSee('PDF, Excel, and printable reports are available after voting and judging have ended.');
+    }
+
+    public function test_talent_results_hide_file_exports_while_voting_is_open(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $event = $this->makeCompetition([
+            'title' => 'Live Idol',
+            'created_by' => $super->id,
+        ]);
+
+        $this->actingAs($super)
+            ->get(route('admin.results.talent.show', $event))
+            ->assertOk()
+            ->assertSee('Live Idol')
+            ->assertDontSee('Export PDF')
+            ->assertSee('PDF, Excel, and printable reports are available after voting and judging have ended.');
+    }
+
+    public function test_admin_without_talent_scope_cannot_export_closed_talent(): void
+    {
+        $event = $this->makeCompetition([
+            'title' => 'Closed Idol',
+            'voting_starts_at' => now()->subDays(2),
+            'voting_ends_at' => now()->subHour(),
+            'results_published_at' => null,
+        ]);
+        $admin = $this->makeOperationsAdmin(['export_reports']);
 
         $this->actingAs($admin)
             ->get(route('admin.results.talent.export', ['talentEvent' => $event, 'format' => 'csv']))
@@ -292,9 +360,9 @@ class ResultsPagesTest extends TestCase
         ], $overrides));
     }
 
-    protected function makeOperationsAdmin(): User
+    protected function makeOperationsAdmin(array $permissionKeys = ['export_reports', 'create_talent_events', 'modify_elections']): User
     {
-        $permissions = collect(['export_reports', 'create_talent_events', 'modify_elections'])->map(
+        $permissions = collect($permissionKeys)->map(
             function (string $key) {
                 return Permission::query()->firstOrCreate(
                     ['key' => $key],

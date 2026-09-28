@@ -864,26 +864,21 @@ class AdminScopeService
 
     /**
      * Official PDF / Excel / print / results CSV for one talent competition.
-     * Super Admin may export any competition they can view. Operations Admins
-     * may export competitions they created or that belong to their assigned election.
+     * Anyone who can open Talent Results and has export permission may generate
+     * files after voting/judging have ended — including Super-created events
+     * that Operations Admins can already view.
      */
     public function canExportTalentResults(User $admin, TalentEvent $event): bool
     {
+        if ($this->isReadOnly($admin) || $this->isAuditor($admin)) {
+            return false;
+        }
+
         if (! $this->hasExportPermission($admin)) {
             return false;
         }
 
-        if ($admin->isSuperAdmin()) {
-            return true;
-        }
-
-        if ((int) $event->created_by === (int) $admin->id) {
-            return true;
-        }
-
-        $assignedId = $this->assignment($admin)?->election_id;
-
-        return $assignedId !== null && (int) $event->election_id === (int) $assignedId;
+        return $this->talentEventIsInScope($admin, $event);
     }
 
     public function electionFileExportIsReady(Election $election): bool
@@ -897,19 +892,15 @@ class AdminScopeService
 
     public function talentFileExportIsReady(TalentEvent $event): bool
     {
-        if ($event->isAcceptingVotes() || $event->isAcceptingJudgeScores()) {
-            return false;
-        }
-
-        if ($event->is_paused && ! $event->votingHasClosed() && ! $event->hasPublishedResults()) {
-            return false;
-        }
-
-        return $event->votingHasClosed()
-            || $event->hasPublishedResults()
+        if ($event->hasPublishedResults()
             || $event->status === TalentEventStatus::ResultsPublished
-            || $event->status === TalentEventStatus::Completed
-            || $event->isAfterVotingEnd();
+            || $event->status === TalentEventStatus::Completed) {
+            return true;
+        }
+
+        // Same moment as Review / Publish Official Results, including Close Voting
+        // which leaves status as voting_open and may set voting_ends_at to now().
+        return app(TalentResultsPublishingService::class)->isReadyForReview($event);
     }
 
     public function canDownloadElectionReportFile(User $admin, Election $election): bool
