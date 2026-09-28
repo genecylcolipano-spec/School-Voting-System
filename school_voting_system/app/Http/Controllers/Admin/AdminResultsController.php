@@ -10,6 +10,7 @@ use App\Services\Admin\AdminResultsService;
 use App\Services\Admin\AdminScopeService;
 use App\Services\Election\ElectionIntegrityService;
 use App\Support\AdminPortal;
+use App\Support\SchoolBranding;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -355,7 +356,18 @@ class AdminResultsController extends Controller
             echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
             echo '<Worksheet ss:Name="Results"><Table>';
 
+            $reportTitle = ($detail['type'] ?? '') === 'talent'
+                ? 'Official Talent Competition Results'
+                : 'Official Election Results';
+
             $rows = [
+                ['School', SchoolBranding::schoolName()],
+                ['System', SchoolBranding::systemName()],
+                ['Semester', SchoolBranding::semester()],
+                ['Academic year', SchoolBranding::academicYear()],
+                ['Report', $reportTitle],
+                ['Generated', now()->toDayDateTimeString()],
+                [],
                 ['Event', $detail['name'] ?? ''],
                 ['Category', $detail['category'] ?? ''],
                 ['Status', $detail['voting_status'] ?? ''],

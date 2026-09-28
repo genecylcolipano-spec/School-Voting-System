@@ -12,6 +12,7 @@ use App\Services\Admin\AdminResultsService;
 use App\Services\Admin\AdminScopeService;
 use App\Services\Talent\TalentResultsRankingService;
 use App\Support\AdminPortal;
+use App\Support\SchoolBranding;
 use App\Support\WinnerSpotlightBuilder;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -319,6 +320,13 @@ class AdminReportController extends Controller
             echo '<Worksheet ss:Name="Fundraising"><Table>';
 
             $rows = [
+                ['School', SchoolBranding::schoolName()],
+                ['System', SchoolBranding::systemName()],
+                ['Semester', SchoolBranding::semester()],
+                ['Academic year', SchoolBranding::academicYear()],
+                ['Report', 'Official Fundraising Report'],
+                ['Generated', now()->toDayDateTimeString()],
+                [],
                 ['Campaigns', $payload['summary']['campaigns']],
                 ['Total goal', $payload['summary']['total_goal']],
                 ['Total raised', $payload['summary']['total_raised']],

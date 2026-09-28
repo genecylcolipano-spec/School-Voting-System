@@ -16,6 +16,7 @@ use App\Models\TalentEvent;
 use App\Models\User;
 use App\Models\Vote;
 use App\Services\Admin\AdminScopeService;
+use App\Support\SchoolBranding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -160,6 +161,19 @@ class ResultsPagesTest extends TestCase
             ->get(route('admin.results.talent.export', ['talentEvent' => $event, 'format' => 'pdf']))
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf');
+
+        $excelBody = $this->actingAs($admin)
+            ->get(route('admin.results.talent.export', ['talentEvent' => $event, 'format' => 'excel']))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.ms-excel; charset=UTF-8')
+            ->streamedContent();
+
+        $this->assertStringContainsString(SchoolBranding::schoolName(), $excelBody);
+        $this->assertStringContainsString(SchoolBranding::systemName(), $excelBody);
+        $this->assertStringContainsString(SchoolBranding::semester(), $excelBody);
+        $this->assertStringContainsString(SchoolBranding::academicYear(), $excelBody);
+        $this->assertStringContainsString('Official Talent Competition Results', $excelBody);
+        $this->assertStringContainsString('Closed Idol', $excelBody);
     }
 
     public function test_operations_admin_sees_talent_competitions_created_by_super_admin(): void

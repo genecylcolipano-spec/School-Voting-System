@@ -26,6 +26,7 @@ use App\Models\User;
 use App\Models\Vote;
 use App\Services\Admin\AdminAnalyticsService;
 use App\Services\Admin\AdminScopeService;
+use App\Support\SchoolBranding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -266,10 +267,17 @@ class ReportsAnalyticsTest extends TestCase
             ->assertSee('Export Winner')
             ->assertDontSee('Ruby');
 
-        $this->actingAs($admin)
+        $excelBody = $this->actingAs($admin)
             ->get(route('admin.results.election.export', [$election, 'format' => 'excel']))
             ->assertOk()
-            ->assertHeader('content-type', 'application/vnd.ms-excel; charset=UTF-8');
+            ->assertHeader('content-type', 'application/vnd.ms-excel; charset=UTF-8')
+            ->streamedContent();
+
+        $this->assertStringContainsString(SchoolBranding::schoolName(), $excelBody);
+        $this->assertStringContainsString(SchoolBranding::systemName(), $excelBody);
+        $this->assertStringContainsString(SchoolBranding::semester(), $excelBody);
+        $this->assertStringContainsString(SchoolBranding::academicYear(), $excelBody);
+        $this->assertStringContainsString('Official Election Results', $excelBody);
 
         $this->actingAs($admin)
             ->get(route('admin.results.election.export', [$election, 'format' => 'pdf']))
@@ -392,6 +400,22 @@ class ReportsAnalyticsTest extends TestCase
             ->assertSee('₱80.00')
             ->assertDontSee('₱50.00')
             ->assertDontSee('₱25.00');
+
+        $excel = $this->actingAs($admin)
+            ->get(route('admin.reports.fundraising.export', ['format' => 'excel']))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.ms-excel; charset=UTF-8');
+
+        $excelBody = $excel->streamedContent();
+        $this->assertStringContainsString(SchoolBranding::schoolName(), $excelBody);
+        $this->assertStringContainsString(SchoolBranding::systemName(), $excelBody);
+        $this->assertStringContainsString(SchoolBranding::semester(), $excelBody);
+        $this->assertStringContainsString(SchoolBranding::academicYear(), $excelBody);
+        $this->assertStringContainsString('Official Fundraising Report', $excelBody);
+        $this->assertStringContainsString('Paid Donor Person', $excelBody);
+        $this->assertStringContainsString('Anonymous', $excelBody);
+        $this->assertStringNotContainsString('Pending Donor Person', $excelBody);
+        $this->assertStringNotContainsString('Cancelled Donor Person', $excelBody);
     }
 
     public function test_campaign_performance_treats_tied_candidates_as_winners(): void
