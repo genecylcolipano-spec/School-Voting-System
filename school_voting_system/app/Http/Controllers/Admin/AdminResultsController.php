@@ -65,7 +65,7 @@ class AdminResultsController extends Controller
                 'Talent Competition Results',
                 $isSuper
                     ? 'Official results for every talent competition.'
-                    : 'Official results for talent competitions you created or manage.',
+                    : 'Official results for talent competitions you can manage, including ones Super Admin created.',
             ]
             : [
                 'Election Results',

@@ -86,30 +86,7 @@ class AdminResultsService
 
     public function assertCanViewTalentEvent(User $admin, TalentEvent $talentEvent): void
     {
-        if ($admin->isSuperAdmin()) {
-            return;
-        }
-
-        // Match Live Monitoring scope: creator OR assigned election.
-        if ((int) $talentEvent->created_by === (int) $admin->id) {
-            return;
-        }
-
-        $assignedId = $this->scope->assignment($admin)?->election_id;
-
-        if ($assignedId && (int) $talentEvent->election_id === (int) $assignedId) {
-            return;
-        }
-
-        $election = $talentEvent->election()->withTrashed()->first();
-
-        if ($election) {
-            $this->assertCanViewElection($admin, $election);
-
-            return;
-        }
-
-        abort(403);
+        $this->scope->assertTalentEventInScope($admin, $talentEvent);
     }
 
     /**
@@ -405,25 +382,10 @@ class AdminResultsService
      */
     protected function visibleTalentEvents(User $admin): Collection
     {
-        $query = TalentEvent::query()
+        return $this->scope->talentEventsQuery($admin)
             ->withCount(['votes', 'entries'])
-            ->orderByDesc('event_date');
-
-        if (! $admin->isSuperAdmin()) {
-            // Match Live Monitoring: creator OR linked to assigned election
-            // (assignment may still point at a soft-deleted election id).
-            $assignedId = $this->scope->assignment($admin)?->election_id;
-
-            $query->where(function ($inner) use ($admin, $assignedId) {
-                $inner->where('created_by', $admin->id);
-
-                if ($assignedId) {
-                    $inner->orWhere('election_id', $assignedId);
-                }
-            });
-        }
-
-        return $query->get();
+            ->orderByDesc('event_date')
+            ->get();
     }
 
     /**

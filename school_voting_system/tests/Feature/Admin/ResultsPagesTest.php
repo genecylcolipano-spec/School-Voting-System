@@ -162,6 +162,56 @@ class ResultsPagesTest extends TestCase
             ->assertHeader('content-type', 'application/pdf');
     }
 
+    public function test_operations_admin_sees_talent_competitions_created_by_super_admin(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $admin = $this->makeOperationsAdmin();
+        $event = $this->makeCompetition([
+            'title' => 'Campus Idol',
+            'created_by' => $super->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.results.competitions'))
+            ->assertOk()
+            ->assertSee('Campus Idol')
+            ->assertSee('Official results for talent competitions you can manage')
+            ->assertDontSee('No Talent Competition Results');
+
+        $this->actingAs($admin)
+            ->get(route('admin.results.talent.show', $event))
+            ->assertOk()
+            ->assertSee('Campus Idol');
+    }
+
+    public function test_operations_admin_cannot_export_another_admins_talent_after_close(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $admin = $this->makeOperationsAdmin();
+        $event = $this->makeCompetition([
+            'title' => 'Closed Idol',
+            'created_by' => $super->id,
+            'voting_starts_at' => now()->subDays(2),
+            'voting_ends_at' => now()->subHour(),
+            'results_published_at' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.results.talent.export', ['talentEvent' => $event, 'format' => 'csv']))
+            ->assertForbidden();
+    }
+
+    public function test_regular_admin_without_talent_permission_does_not_see_another_admins_competition(): void
+    {
+        $this->makeCompetition(['title' => 'Hidden Idol']);
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('admin.results.competitions'))
+            ->assertOk()
+            ->assertDontSee('Hidden Idol');
+    }
+
     public function test_talent_file_export_is_forbidden_while_voting_is_open(): void
     {
         $admin = $this->makeOperationsAdmin();
