@@ -13,6 +13,7 @@ use App\Services\Admin\AdminScopeService;
 use App\Services\Talent\TalentResultsRankingService;
 use App\Support\AdminPortal;
 use App\Support\WinnerSpotlightBuilder;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
@@ -170,19 +171,23 @@ class AdminReportController extends Controller
     public function exportFundraising(Request $request): Response|StreamedResponse
     {
         $user = $request->user();
-        $format = $request->string('format')->toString() ?: 'csv';
+        $format = $request->string('format')->toString() ?: 'pdf';
         $payload = $this->fundraisingReportPayload($user);
         $filenameBase = 'fundraising-report-'.now()->format('Y-m-d');
+        $viewData = $this->fundraisingExportViewData($payload, $user);
 
         return match ($format) {
             'excel' => $this->fundraisingExcel($payload, $filenameBase),
-            'print' => response()->view('admin.reports.fundraising-export', [
-                'fundraisers' => $payload['fundraisers'],
-                'summary' => $payload['summary'],
-                'generatedAt' => now()->toDayDateTimeString(),
-                'signatory' => $user->name,
+            'print' => response(view('admin.reports.fundraising-export', array_merge($viewData, [
+                'forPrint' => true,
+            ]))->render(), 200, [
+                'Content-Type' => 'text/html; charset=UTF-8',
+                'Content-Disposition' => 'inline',
             ]),
-            default => $this->fundraisingCsv($payload, $filenameBase),
+            'pdf' => $this->downloadFundraisingPdf(array_merge($viewData, [
+                'forPdf' => true,
+            ]), $filenameBase.'.pdf'),
+            default => abort(404),
         };
     }
 
@@ -192,24 +197,47 @@ class AdminReportController extends Controller
     protected function fundraisingReportPayload($user): array
     {
         $campaigns = $this->scope->fundraisersForReports($user)
+            ->with([
+                'paidDonations' => fn ($query) => $query
+                    ->with('donor')
+                    ->orderByDesc('paid_at')
+                    ->orderByDesc('id'),
+            ])
             ->withCount(['donations as paid_donations_count' => fn ($query) => $query->paid()])
             ->orderByDesc('created_at')
             ->get();
 
-        $ids = $campaigns->modelKeys();
-        $paidQuery = Donation::query()->paid()->whereIn('fundraiser_id', $ids ?: [0]);
-
         $rows = $campaigns->map(function (Fundraiser $fundraiser) {
-            $paidCount = (int) ($fundraiser->paid_donations_count ?? 0);
-            $raised = (float) $fundraiser->amount_raised;
+            $donors = $fundraiser->paidDonations
+                ->map(function (Donation $donation) {
+                    return [
+                        'name' => $donation->is_anonymous
+                            ? 'Anonymous'
+                            : ($donation->donor?->name ?? '—'),
+                        'is_anonymous' => (bool) $donation->is_anonymous,
+                        'role' => $donation->is_anonymous ? '—' : ($donation->donor?->roleLabel() ?? '—'),
+                        'amount' => (float) $donation->amount,
+                        'method' => $donation->payment_method?->label() ?? '—',
+                        'donated_at' => ($donation->paid_at ?? $donation->donated_at)?->format('M d, Y g:i A') ?? '—',
+                    ];
+                })
+                ->values()
+                ->all();
 
             return [
                 'title' => $fundraiser->title,
                 'status' => $fundraiser->displayStatusLabel(),
-                'donations' => $paidCount,
+                'category' => $fundraiser->category?->label() ?? '—',
+                'period' => trim(
+                    ($fundraiser->starts_on?->format('M d, Y') ?? '—')
+                    .' — '
+                    .($fundraiser->ends_on?->format('M d, Y') ?? '—')
+                ),
+                'donations' => (int) ($fundraiser->paid_donations_count ?? count($donors)),
                 'goal' => (float) $fundraiser->goal_amount,
-                'raised' => $raised,
+                'raised' => (float) $fundraiser->amount_raised,
                 'progress' => $fundraiser->progressPercent(),
+                'donors' => $donors,
             ];
         });
 
@@ -219,44 +247,54 @@ class AdminReportController extends Controller
                 'campaigns' => $rows->count(),
                 'total_goal' => (float) $rows->sum('goal'),
                 'total_raised' => (float) $rows->sum('raised'),
-                'total_donations' => (int) $paidQuery->count(),
+                'total_donations' => (int) $rows->sum('donations'),
             ],
         ];
     }
 
     /**
      * @param  array{fundraisers: Collection<int, array<string, mixed>>, summary: array<string, int|float>}  $payload
+     * @return array<string, mixed>
      */
-    protected function fundraisingCsv(array $payload, string $filenameBase): StreamedResponse
+    protected function fundraisingExportViewData(array $payload, $user): array
     {
-        $headers = [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.csv"',
+        return [
+            'fundraisers' => $payload['fundraisers'],
+            'summary' => $payload['summary'],
+            'generatedAt' => now()->toDayDateTimeString(),
+            'signatory' => $user->name,
+            'signatoryRole' => $user->roleLabel(),
+            'reportId' => 'RPT-FR-'.now()->format('YmdHis'),
+            'forPdf' => false,
+            'forPrint' => false,
         ];
+    }
 
-        return response()->stream(function () use ($payload) {
-            $handle = fopen('php://output', 'w');
-            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($handle, ['Campaigns', $payload['summary']['campaigns']]);
-            fputcsv($handle, ['Total goal', $payload['summary']['total_goal']]);
-            fputcsv($handle, ['Total raised', $payload['summary']['total_raised']]);
-            fputcsv($handle, ['Paid donations', $payload['summary']['total_donations']]);
-            fputcsv($handle, []);
-            fputcsv($handle, ['Campaign', 'Status', 'Paid donations', 'Goal', 'Raised', 'Progress %']);
+    /**
+     * @param  array<string, mixed>  $viewData
+     */
+    protected function downloadFundraisingPdf(array $viewData, string $filename): Response
+    {
+        $fontDir = storage_path('fonts');
+        if (! is_dir($fontDir)) {
+            mkdir($fontDir, 0755, true);
+        }
 
-            foreach ($payload['fundraisers'] as $row) {
-                fputcsv($handle, [
-                    $row['title'],
-                    $row['status'],
-                    $row['donations'],
-                    $row['goal'],
-                    $row['raised'],
-                    round((float) $row['progress'], 1),
-                ]);
-            }
+        $cachedFont = $fontDir.DIRECTORY_SEPARATOR.'MonotypeCorsiva.ttf';
+        $sourceFont = public_path('fonts/MonotypeCorsiva.ttf');
+        if (! is_file($cachedFont) && is_file($sourceFont)) {
+            copy($sourceFont, $cachedFont);
+        }
 
-            fclose($handle);
-        }, 200, $headers);
+        return Pdf::loadView('admin.reports.fundraising-export', $viewData)
+            ->setPaper('a4', 'portrait')
+            ->setOption([
+                'isRemoteEnabled' => true,
+                'fontDir' => $fontDir,
+                'fontCache' => $fontDir,
+                'chroot' => base_path(),
+            ])
+            ->download($filename);
     }
 
     /**
@@ -297,6 +335,29 @@ class AdminReportController extends Controller
                     $row['raised'],
                     round((float) $row['progress'], 1),
                 ];
+            }
+
+            $rows[] = [];
+            $rows[] = ['Successful donors (paid only; pending and cancelled are excluded)'];
+            $rows[] = ['Campaign', 'Donor', 'Role', 'Amount', 'Method', 'Date'];
+
+            foreach ($payload['fundraisers'] as $row) {
+                if (($row['donors'] ?? []) === []) {
+                    $rows[] = [$row['title'], 'No successful donations', '', '', '', ''];
+
+                    continue;
+                }
+
+                foreach ($row['donors'] as $donor) {
+                    $rows[] = [
+                        $row['title'],
+                        $donor['name'],
+                        $donor['role'],
+                        $donor['amount'],
+                        $donor['method'],
+                        $donor['donated_at'],
+                    ];
+                }
             }
 
             foreach ($rows as $cells) {

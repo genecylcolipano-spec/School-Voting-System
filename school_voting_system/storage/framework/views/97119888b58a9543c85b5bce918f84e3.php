@@ -29,7 +29,7 @@
         <?php echo $__env->make('admin.reports.partials.report-tabs', ['active' => 'fundraising'], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
         <div class="mb-6 flex flex-wrap gap-2">
-            <a href="<?php echo e(route('admin.reports.fundraising.export', ['format' => 'csv'])); ?>" class="rs-export-btn">Export CSV</a>
+            <a href="<?php echo e(route('admin.reports.fundraising.export', ['format' => 'pdf'])); ?>" class="rs-export-btn">Export PDF</a>
             <a href="<?php echo e(route('admin.reports.fundraising.export', ['format' => 'excel'])); ?>" class="rs-export-btn">Export Excel</a>
             <a href="<?php echo e(route('admin.reports.fundraising.export', ['format' => 'print'])); ?>" class="rs-export-btn">Print Report</a>
         </div>

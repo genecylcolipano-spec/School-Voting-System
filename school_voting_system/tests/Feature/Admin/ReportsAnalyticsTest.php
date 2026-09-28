@@ -335,12 +335,56 @@ class ReportsAnalyticsTest extends TestCase
             ->assertSee('My Drive')
             ->assertDontSee('Other Drive')
             ->assertSee('₱100.00')
-            ->assertDontSee('₱999.00');
+            ->assertDontSee('₱999.00')
+            ->assertSee('Export PDF')
+            ->assertDontSee('Export CSV');
 
         $this->actingAs($admin)
-            ->get(route('admin.reports.fundraising.export', ['format' => 'csv']))
+            ->get(route('admin.reports.fundraising.export', ['format' => 'pdf']))
             ->assertOk()
-            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_fundraising_export_lists_paid_and_anonymous_donors_only(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $campaign = $this->makeFundraiser($admin, 'Campus Drive');
+
+        Donation::record(User::factory()->create(['name' => 'Paid Donor Person']), $campaign, 100, [
+            'payment_method' => DonationPaymentMethod::Cash,
+        ])->markPaid();
+
+        Donation::record(User::factory()->create(['name' => 'Secret Anonymous Donor']), $campaign, 80, [
+            'payment_method' => DonationPaymentMethod::Cash,
+            'is_anonymous' => true,
+        ])->markPaid();
+
+        Donation::record(User::factory()->create(['name' => 'Pending Donor Person']), $campaign, 50, [
+            'payment_method' => DonationPaymentMethod::Cash,
+            'status' => DonationStatus::Pending,
+        ]);
+
+        Donation::record(User::factory()->create(['name' => 'Cancelled Donor Person']), $campaign, 25, [
+            'payment_method' => DonationPaymentMethod::Cash,
+        ])->markCancelled();
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.fundraising.export', ['format' => 'print']))
+            ->assertOk()
+            ->assertSee('OFFICIAL FUNDRAISING REPORT')
+            ->assertSee('Rosemont Hills Montessori College')
+            ->assertSee('School Voting System')
+            ->assertSee('1st Semester')
+            ->assertSee('Campus Drive')
+            ->assertSee('Paid Donor Person')
+            ->assertSee('Anonymous')
+            ->assertDontSee('Secret Anonymous Donor')
+            ->assertDontSee('Pending Donor Person')
+            ->assertDontSee('Cancelled Donor Person')
+            ->assertSee('₱100.00')
+            ->assertSee('₱80.00')
+            ->assertDontSee('₱50.00')
+            ->assertDontSee('₱25.00');
     }
 
     public function test_campaign_performance_treats_tied_candidates_as_winners(): void

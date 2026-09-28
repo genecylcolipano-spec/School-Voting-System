@@ -11,7 +11,7 @@
         @include('admin.reports.partials.report-tabs', ['active' => 'fundraising'])
 
         <div class="mb-6 flex flex-wrap gap-2">
-            <a href="{{ route('admin.reports.fundraising.export', ['format' => 'csv']) }}" class="rs-export-btn">Export CSV</a>
+            <a href="{{ route('admin.reports.fundraising.export', ['format' => 'pdf']) }}" class="rs-export-btn">Export PDF</a>
             <a href="{{ route('admin.reports.fundraising.export', ['format' => 'excel']) }}" class="rs-export-btn">Export Excel</a>
             <a href="{{ route('admin.reports.fundraising.export', ['format' => 'print']) }}" class="rs-export-btn">Print Report</a>
         </div>
