@@ -85,13 +85,7 @@ class TalentCompetitionStatusResolver
 
     protected function registrationHasClosed(TalentEvent $event, Carbon $at): bool
     {
-        if ($event->registration_ends_at && $at->gt($event->registration_ends_at)) {
-            return true;
-        }
-
-        $deadline = $event->submission_deadline;
-
-        return $deadline !== null && $at->gt($deadline);
+        return $event->registrationHasClosed($at);
     }
 
     /**

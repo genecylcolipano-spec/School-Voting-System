@@ -37,6 +37,37 @@ class TalentCompetitionStatusResolverTest extends TestCase
         $this->assertTrue($event->isRegistrationOpen($at));
     }
 
+    public function test_registration_closes_at_the_exact_end_time(): void
+    {
+        $at = Carbon::parse('2026-07-25 22:18:00');
+        $event = $this->makeEvent([
+            'published_to_students' => true,
+            'registration_starts_at' => Carbon::parse('2026-07-25 21:18:00'),
+            'registration_ends_at' => Carbon::parse('2026-07-25 22:18:00'),
+            'status' => TalentEventStatus::Scheduled,
+        ]);
+
+        $this->assertFalse($event->isRegistrationOpen($at));
+        $this->assertTrue($event->registrationHasClosed($at));
+        $this->assertSame('registration_closed', $this->resolver->key($event, $at));
+    }
+
+    public function test_submission_deadline_closes_student_registration(): void
+    {
+        $at = Carbon::parse('2026-07-25 21:30:00');
+        $event = $this->makeEvent([
+            'published_to_students' => true,
+            'registration_starts_at' => Carbon::parse('2026-07-25 21:18:00'),
+            'registration_ends_at' => Carbon::parse('2026-07-26 22:18:00'),
+            'submission_deadline' => Carbon::parse('2026-07-25 21:20:00'),
+            'status' => TalentEventStatus::Scheduled,
+        ]);
+
+        $this->assertFalse($event->isRegistrationOpen($at));
+        $this->assertTrue($event->registrationHasClosed($at));
+        $this->assertSame('registration_closed', $this->resolver->key($event, $at));
+    }
+
     public function test_voting_end_alone_does_not_open_voting(): void
     {
         $at = Carbon::parse('2026-07-25 21:30:00');

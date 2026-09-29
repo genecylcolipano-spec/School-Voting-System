@@ -40,18 +40,7 @@ class ConfirmTalentEntryRequest extends FormRequest
                 return;
             }
 
-            $action = $flow->registrationAction($event, $user);
-
-            if (! $action['can_register']) {
-                $validator->errors()->add('confirm', match ($action['state']) {
-                    'already_registered' => 'You have already submitted an entry for this competition.',
-                    'closed' => 'Registration for this competition is closed.',
-                    'finished' => 'This competition has finished.',
-                    'not_eligible' => 'You are not eligible to register for this competition.',
-                    'slots_full' => 'This competition has reached its maximum number of participants.',
-                    default => 'Registration is not available for this competition.',
-                });
-            }
+            $flow->assertCanAccessRegisterForm($event, $user);
 
             if (! $flow->getDraft($event, $user)) {
                 $validator->errors()->add('confirm', 'Please complete the registration form and review your entry before submitting.');

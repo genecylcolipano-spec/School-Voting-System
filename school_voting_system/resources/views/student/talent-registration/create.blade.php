@@ -39,7 +39,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('student.talent-registration.review.store', $talentEvent) }}" enctype="multipart/form-data" class="mt-6 space-y-5">
+        <form id="student-talent-registration-form" method="POST" action="{{ route('student.talent-registration.review.store', $talentEvent) }}" enctype="multipart/form-data" class="mt-6 space-y-5">
             @csrf
 
             <div class="grid gap-4 sm:grid-cols-2">
@@ -91,8 +91,9 @@
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Profile Photo (optional)</label>
-                    <input type="file" name="photo" accept="image/*" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-1.5 file:text-slate-200">
-                    <p class="mt-1 text-xs text-slate-500">Recommended: 600 × 600 px · Square (1:1) · Max 2MB</p>
+                    <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-1.5 file:text-slate-200">
+                    <p class="mt-1 text-xs text-slate-500">Recommended: 600 × 600 px · Square (1:1). Large photos are compressed automatically.</p>
+                    <p id="talent-photo-status" class="mt-1 text-xs text-slate-500"></p>
                     @if (! empty($draft['files']['photo']['name']))
                         <p class="mt-1 text-xs text-cyan-300">Previously selected: {{ $draft['files']['photo']['name'] }} — re-upload to replace.</p>
                     @endif
@@ -130,7 +131,9 @@
 
                 <div class="mt-3">
                     <label class="block text-sm font-medium text-slate-300">Video Thumbnail (optional)</label>
-                    <input type="file" name="thumbnail" accept="image/*" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-1.5 file:text-slate-200">
+                    <input type="file" name="thumbnail" accept="image/jpeg,image/png,image/webp" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-1.5 file:text-slate-200">
+                    <p class="mt-1 text-xs text-slate-500">Large thumbnails are compressed automatically before upload.</p>
+                    <p id="talent-thumbnail-status" class="mt-1 text-xs text-slate-500"></p>
                 </div>
             </div>
 
@@ -143,5 +146,6 @@
 
     @push('scripts')
         <style>[x-cloak]{display:none !important;}</style>
+        @vite('resources/js/student-talent-registration.js')
     @endpush
 </x-app-layout>

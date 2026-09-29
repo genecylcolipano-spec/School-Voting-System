@@ -5,6 +5,7 @@ namespace App\Http\Requests\Student;
 use App\Enums\TalentCategory;
 use App\Models\TalentEvent;
 use App\Models\TalentEventEntry;
+use App\Services\Media\ImageCompressionService;
 use App\Services\Talent\StudentTalentRegistrationFlowService;
 use App\Services\Talent\VideoInspectionService;
 use Illuminate\Contracts\Validation\Validator;
@@ -53,8 +54,8 @@ class SubmitTalentEntryRequest extends FormRequest
             'profile_summary' => ['nullable', 'string', 'max:500'],
             'performance_description' => ['required', 'string', 'max:1000'],
             'social_media' => ['nullable', 'string', 'max:255'],
-            'photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
-            'thumbnail' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.ImageCompressionService::MAX_UPLOAD_KILOBYTES],
+            'thumbnail' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.ImageCompressionService::MAX_UPLOAD_KILOBYTES],
             'video' => $videoRules,
             'video_url' => $videoUrlRules,
         ];
@@ -73,18 +74,7 @@ class SubmitTalentEntryRequest extends FormRequest
                 return;
             }
 
-            $action = $flow->registrationAction($event, $user);
-
-            if (! $action['can_register']) {
-                $validator->errors()->add('display_name', match ($action['state']) {
-                    'already_registered' => 'You have already submitted an entry for this competition.',
-                    'closed' => 'Registration for this competition is not open.',
-                    'finished' => 'This competition has finished.',
-                    'not_eligible' => 'You are not eligible to register for this competition.',
-                    'slots_full' => 'This competition has reached its maximum number of participants.',
-                    default => 'Registration is not available for this competition.',
-                });
-            }
+            $flow->assertCanAccessRegisterForm($event, $user);
 
             $studentId = trim((string) $this->input('student_id_number'));
 
@@ -128,11 +118,19 @@ class SubmitTalentEntryRequest extends FormRequest
 
     public function messages(): array
     {
+        $uploadMb = (int) (ImageCompressionService::MAX_UPLOAD_KILOBYTES / 1024);
+
         return [
             'video.required_without' => 'Upload a performance video or provide a video URL.',
             'video_url.required_without' => 'Provide a video URL or upload a performance video.',
             'video.mimes' => 'The uploaded video format is not accepted for this competition.',
             'video.max' => 'The uploaded video exceeds the maximum allowed size.',
+            'photo.image' => 'The profile photo must be a JPG, PNG, or WEBP image.',
+            'photo.mimes' => 'The profile photo must be a JPG, PNG, or WEBP image.',
+            'photo.max' => "This photo is too large to upload. Choose a JPG, PNG, or WEBP up to {$uploadMb} MB. It will be compressed automatically.",
+            'thumbnail.image' => 'The video thumbnail must be a JPG, PNG, or WEBP image.',
+            'thumbnail.mimes' => 'The video thumbnail must be a JPG, PNG, or WEBP image.',
+            'thumbnail.max' => "This thumbnail is too large to upload. Choose a JPG, PNG, or WEBP up to {$uploadMb} MB. It will be compressed automatically.",
         ];
     }
 }

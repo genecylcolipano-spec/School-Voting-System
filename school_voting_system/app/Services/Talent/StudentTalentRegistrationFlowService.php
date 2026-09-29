@@ -7,6 +7,7 @@ use App\Enums\TalentRegistrationMethod;
 use App\Models\TalentEvent;
 use App\Models\TalentEventEntry;
 use App\Models\User;
+use App\Services\Media\ImageCompressionService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,11 @@ class StudentTalentRegistrationFlowService
     public const DRAFT_SESSION_PREFIX = 'talent_registration_draft.';
 
     public const SUCCESS_SESSION_PREFIX = 'talent_registration_success.';
+
+    public function __construct(
+        protected ImageCompressionService $images,
+    ) {
+    }
 
     /**
      * @return array{
@@ -247,7 +253,9 @@ class StudentTalentRegistrationFlowService
             }
 
             $disk = $field === 'video' ? 'local' : 'public';
-            $path = $file->store($base, $disk);
+            $path = $field === 'video'
+                ? $file->store($base, $disk)
+                : $this->images->storeOptimizedSet($file, $base, false)['path'];
             $storedFiles[$field] = [
                 'path' => $path,
                 'disk' => $disk,

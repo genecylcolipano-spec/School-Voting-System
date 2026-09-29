@@ -434,11 +434,18 @@ class AdminTalentCompetitionController extends Controller
 
         // Opening registration must take effect immediately. Preserve a future
         // registration_ends_at when still valid; otherwise default to +7 days.
+        $endsAt = $talentEvent->registration_ends_at && $talentEvent->registration_ends_at->gt(now())
+            ? $talentEvent->registration_ends_at
+            : now()->addDays(7);
+        $deadline = $talentEvent->submission_deadline;
+        if ($deadline !== null && $deadline->lte(now())) {
+            $deadline = $endsAt;
+        }
+
         $talentEvent->forceFill([
             'registration_starts_at' => now(),
-            'registration_ends_at' => $talentEvent->registration_ends_at && $talentEvent->registration_ends_at->gt(now())
-                ? $talentEvent->registration_ends_at
-                : now()->addDays(7),
+            'registration_ends_at' => $endsAt,
+            'submission_deadline' => $deadline,
             'status' => TalentEventStatus::EntriesOpen,
             'published_to_students' => true,
             'published_at' => $talentEvent->published_at ?? now(),

@@ -32,6 +32,7 @@ export default defineConfig({
                 'resources/js/event-image-preview.js',
                 'resources/js/campaign-poster-preview.js',
                 'resources/js/student-talent-voting.js',
+                'resources/js/student-talent-registration.js',
                 'resources/js/notification-center.js',
                 'resources/js/admin-confirm.js',
                 'resources/js/admin-live-monitoring.js',

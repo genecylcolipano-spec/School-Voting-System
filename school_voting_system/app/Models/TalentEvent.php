@@ -239,7 +239,7 @@ class TalentEvent extends Model
             return 'Registration Open';
         }
 
-        if ($this->registration_ends_at && now()->greaterThan($this->registration_ends_at)) {
+        if ($this->registrationHasClosed()) {
             return 'Registration Closed';
         }
 
@@ -729,8 +729,6 @@ class TalentEvent extends Model
             return false;
         }
 
-        // Student registration visibility uses the registration window only.
-        // submission_deadline governs video/upload cutoffs, not list visibility.
         if (! $this->registration_starts_at && ! $this->registration_ends_at) {
             return false;
         }
@@ -739,11 +737,21 @@ class TalentEvent extends Model
             return false;
         }
 
-        if ($this->registration_ends_at && $at->gt($this->registration_ends_at)) {
-            return false;
+        return ! $this->registrationHasClosed($at);
+    }
+
+    /**
+     * Closed at the exact end time, after Close Registration, or when the submission deadline has passed.
+     */
+    public function registrationHasClosed(?\Illuminate\Support\Carbon $at = null): bool
+    {
+        $at ??= now();
+
+        if ($this->registration_ends_at && $at->gte($this->registration_ends_at)) {
+            return true;
         }
 
-        return true;
+        return $this->submission_deadline !== null && $at->gte($this->submission_deadline);
     }
 
     public function registrationWindowLabel(): string

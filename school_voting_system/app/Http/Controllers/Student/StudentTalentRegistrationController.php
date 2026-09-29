@@ -179,6 +179,7 @@ class StudentTalentRegistrationController extends Controller
     public function store(ConfirmTalentEntryRequest $request, TalentEvent $talentEvent): RedirectResponse
     {
         $user = $request->user();
+        $this->flow->assertCanAccessRegisterForm($talentEvent, $user);
         $draft = $this->flow->getDraft($talentEvent, $user);
 
         if (! $draft) {
