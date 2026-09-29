@@ -434,7 +434,7 @@ class BackupService
     {
         return User::query()
             ->where('role', UserRole::Student)
-            ->get(['id', 'account_id', 'name', 'email', 'grade_level', 'section', 'student_status', 'is_active'])
+            ->get(['id', 'account_id', 'name', 'email', 'grade_level', 'section', 'course', 'student_status', 'is_active'])
             ->all();
     }
 

@@ -26,7 +26,7 @@
                 <p class="mt-1 text-sm text-slate-400">
                     Existing roster entries are matched by account ID and updated. Import never creates login accounts or sends enrollment emails. Records that have already registered cannot be overwritten.
                     @if ($supportsYearlySync ?? false)
-                        For year-end grade, section, and graduate updates, use
+                        For year-end grade, section, course, and graduate updates, use
                         <a href="{{ route($routePrefix.'.year-sync') }}" class="font-semibold text-violet-300 hover:text-violet-200">Yearly sync</a>.
                     @endif
                 </p>

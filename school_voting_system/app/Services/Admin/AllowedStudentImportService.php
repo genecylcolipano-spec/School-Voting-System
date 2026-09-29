@@ -19,6 +19,7 @@ class AllowedStudentImportService
         'last_name',
         'grade_level',
         'section',
+        'course',
     ];
 
     /**
@@ -78,6 +79,7 @@ class AllowedStudentImportService
                 'last_name' => $lastName,
                 'grade_level' => $this->nullableString($row['grade_level'] ?? null),
                 'section' => $this->nullableString($row['section'] ?? null),
+                'course' => $this->nullableString($row['course'] ?? null),
             ];
 
             $existing = AllowedStudent::query()->where('account_id', $accountId)->first();
@@ -158,6 +160,8 @@ class AllowedStudentImportService
             'lastname' => 'last_name',
             'last' => 'last_name',
             'grade' => 'grade_level',
+            'strand' => 'course',
+            'course_strand' => 'course',
         ];
 
         $normalized = [];

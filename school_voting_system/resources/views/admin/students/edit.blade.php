@@ -83,6 +83,14 @@
                     </div>
 
                     <div>
+                        <label for="course" class="block text-sm font-medium text-slate-300">Course</label>
+                        <input id="course" name="course" type="text" value="{{ old('course', $student->course) }}"
+                            class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2.5 text-white focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                            placeholder="e.g. STEM / BSIT">
+                        @error('course')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
+                    </div>
+
+                    <div>
                         <label for="school_year" class="block text-sm font-medium text-slate-300">School year</label>
                         <input id="school_year" name="school_year" type="text" value="{{ old('school_year', $student->school_year) }}"
                             class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2.5 text-white focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20"

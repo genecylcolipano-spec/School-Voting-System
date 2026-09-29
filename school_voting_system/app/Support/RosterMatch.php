@@ -19,6 +19,7 @@ final class RosterMatch
         public readonly string $lastName,
         public readonly ?string $gradeLevel = null,
         public readonly ?string $section = null,
+        public readonly ?string $course = null,
         public readonly ?string $department = null,
         public readonly ?string $position = null,
     ) {}
@@ -34,6 +35,7 @@ final class RosterMatch
             lastName: $record->last_name,
             gradeLevel: $record->grade_level,
             section: $record->section,
+            course: $record->course,
         );
     }
 
@@ -80,6 +82,7 @@ final class RosterMatch
             'email' => $email,
             'grade_level' => $this->gradeLevel,
             'section' => $this->section,
+            'course' => $this->course,
             'department' => $this->department,
             'position' => $this->position,
             // Backward-compatible key used by older pending sessions.

@@ -127,6 +127,7 @@ class StudentRosterYearlySyncService
                     'last_name' => $row['last_name'],
                     'grade_level' => $row['grade_level'],
                     'section' => $row['section'],
+                    'course' => $row['course'] ?? null,
                     'school_year' => $schoolYear,
                     'archived_at' => null,
                 ]);
@@ -176,6 +177,7 @@ class StudentRosterYearlySyncService
             'name' => $fullName !== '' ? $fullName : $user->name,
             'grade_level' => $roster->grade_level,
             'section' => $roster->section,
+            'course' => $roster->course,
             'school_year' => $roster->school_year,
         ]);
 
@@ -188,11 +190,11 @@ class StudentRosterYearlySyncService
     }
 
     /**
-     * @return array<string, array{first_name: string, last_name: string, grade_level: ?string, section: ?string}>
+     * @return array<string, array{first_name: string, last_name: string, grade_level: ?string, section: ?string, course: ?string}>
      */
     protected function incomingRows(UploadedFile $file): array
     {
-        $rows = $this->import->parseRosterRows($file, ['account_id', 'first_name', 'last_name', 'grade_level', 'section']);
+        $rows = $this->import->parseRosterRows($file, ['account_id', 'first_name', 'last_name', 'grade_level', 'section', 'course']);
 
         if ($rows === []) {
             throw new InvalidArgumentException('The CSV file is empty or has no data rows.');
@@ -229,6 +231,7 @@ class StudentRosterYearlySyncService
                 'last_name' => $lastName,
                 'grade_level' => $this->import->nullableString($row['grade_level'] ?? null),
                 'section' => $this->import->nullableString($row['section'] ?? null),
+                'course' => $this->import->nullableString($row['course'] ?? null),
             ];
         }
 
@@ -289,6 +292,7 @@ class StudentRosterYearlySyncService
                     'last_name' => $roster->last_name,
                     'grade_level' => $roster->grade_level,
                     'section' => $roster->section,
+                    'course' => $roster->course,
                 ], $roster, $roster->school_year);
             }
         }
@@ -322,8 +326,8 @@ class StudentRosterYearlySyncService
         return [
             'account_id' => $accountId,
             'name' => trim(($row['first_name'] ?? '').' '.($row['last_name'] ?? '')),
-            'from' => $roster ? $this->classLabel($roster->grade_level, $roster->section, $roster->school_year) : '—',
-            'to' => $this->classLabel($row['grade_level'] ?? null, $row['section'] ?? null, $schoolYear),
+            'from' => $roster ? $this->classLabel($roster->grade_level, $roster->section, $roster->course, $roster->school_year) : '—',
+            'to' => $this->classLabel($row['grade_level'] ?? null, $row['section'] ?? null, $row['course'] ?? null, $schoolYear),
             'has_account' => $user instanceof User && $user->isStudent(),
         ];
     }
@@ -337,15 +341,17 @@ class StudentRosterYearlySyncService
             || $roster->last_name !== $row['last_name']
             || (string) $roster->grade_level !== (string) $row['grade_level']
             || (string) $roster->section !== (string) $row['section']
+            || (string) $roster->course !== (string) ($row['course'] ?? null)
             || (string) $roster->school_year !== $schoolYear;
     }
 
-    protected function classLabel(?string $grade, ?string $section, ?string $schoolYear): string
+    protected function classLabel(?string $grade, ?string $section, ?string $course, ?string $schoolYear): string
     {
         $parts = array_values(array_filter([
             $schoolYear ? 'SY '.$schoolYear : null,
             filled($grade) ? 'Grade '.$grade : null,
             filled($section) ? 'Section '.$section : null,
+            filled($course) ? $course : null,
         ]));
 
         return $parts === [] ? 'Unassigned' : implode(' · ', $parts);

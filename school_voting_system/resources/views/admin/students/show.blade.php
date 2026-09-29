@@ -30,7 +30,7 @@
                     <h2 class="mt-1 text-2xl font-bold text-white">{{ $account->name }}</h2>
                     @include('admin.partials.profile-contact', ['account' => $account])
                     <p class="mt-1 text-sm text-slate-400">
-                        Grade {{ $account->grade_level ?: '—' }} · Section {{ $account->section ?: '—' }}
+                        Grade {{ $account->grade_level ?: '—' }} · Section {{ $account->section ?: '—' }}@if ($account->course) · {{ $account->course }}@endif
                     </p>
                 </div>
                 <div class="text-right">

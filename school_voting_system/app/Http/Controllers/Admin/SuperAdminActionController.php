@@ -276,6 +276,7 @@ class SuperAdminActionController extends Controller
                 'student_status',
                 'grade_level',
                 'section',
+                'course',
             ]);
 
             foreach ($users as $user) {
@@ -290,6 +291,7 @@ class SuperAdminActionController extends Controller
                     $user->student_status?->value,
                     $user->grade_level,
                     $user->section,
+                    $user->course,
                 ]);
             }
 

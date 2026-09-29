@@ -159,7 +159,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-300">Course</label>
-                                    <input type="text" value="—" readonly class="mt-1 w-full cursor-not-allowed rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-2 text-slate-400" />
+                                    <input type="text" value="{{ $user->course ?: '—' }}" readonly class="mt-1 w-full cursor-not-allowed rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-2 text-slate-400" />
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-300">Grade</label>

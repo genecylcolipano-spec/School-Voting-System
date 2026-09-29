@@ -76,7 +76,7 @@
 
                 <div class="mt-4 space-y-3 text-sm text-slate-300">
                     <p><span class="font-medium text-white">Required columns:</span> account_id, first_name, last_name</p>
-                    <p><span class="font-medium text-white">Optional columns:</span> grade_level, section</p>
+                    <p><span class="font-medium text-white">Optional columns:</span> grade_level, section, course</p>
                     <p class="text-slate-400">Registration matches account ID plus first and last name (case-insensitive).</p>
                 </div>
 
@@ -84,8 +84,8 @@
                     Download template CSV
                 </a>
 
-                <pre class="mt-4 overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/80 p-3 text-xs text-slate-400">account_id,first_name,last_name,grade_level,section
-2026-00002,Maria,Santos,10,A</pre>
+                <pre class="mt-4 overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/80 p-3 text-xs text-slate-400">account_id,first_name,last_name,grade_level,section,course
+2026-00002,Maria,Santos,10,A,STEM</pre>
             </section>
         </div>
     </x-admin-portal>

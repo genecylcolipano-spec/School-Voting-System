@@ -34,6 +34,7 @@ class RosterManagementTest extends TestCase
                 'last_name' => 'Santos',
                 'grade_level' => '10',
                 'section' => 'A',
+                'course' => 'STEM',
             ])
             ->assertRedirect(route('super-admin.roster.students.index'))
             ->assertSessionHas('success');
@@ -41,6 +42,7 @@ class RosterManagementTest extends TestCase
         $row = AllowedStudent::query()->where('account_id', '2026-90001')->first();
 
         $this->assertNotNull($row);
+        $this->assertSame('STEM', $row->course);
         $this->assertFalse($row->is_registered);
         $this->assertFalse($row->isFullyRegistered());
         $this->assertSame(RosterRegistrationStatus::NotRegistered, $row->registrationStatus());
@@ -103,7 +105,7 @@ class RosterManagementTest extends TestCase
         $this->actingAs($admin)
             ->get(route('super-admin.roster.students.index'))
             ->assertOk()
-            ->assertSee('Search Student ID, name, grade, section, or school year', false)
+            ->assertSee('Search Student ID, name, grade, section, course, or school year', false)
             ->assertDontSee('>Clear</a>', false);
 
         $this->actingAs($admin)
@@ -118,6 +120,34 @@ class RosterManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Grade Match')
             ->assertDontSee('Other Student');
+    }
+
+    public function test_student_roster_search_matches_course(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+
+        AllowedStudent::query()->create([
+            'account_id' => 'STU-STEM',
+            'first_name' => 'Stem',
+            'last_name' => 'Student',
+            'grade_level' => '11',
+            'section' => 'A',
+            'course' => 'STEM',
+        ]);
+        AllowedStudent::query()->create([
+            'account_id' => 'STU-ABM',
+            'first_name' => 'Abm',
+            'last_name' => 'Student',
+            'grade_level' => '11',
+            'section' => 'B',
+            'course' => 'ABM',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('super-admin.roster.students.index', ['q' => 'STEM']))
+            ->assertOk()
+            ->assertSee('Stem Student')
+            ->assertDontSee('Abm Student');
     }
 
     public function test_faculty_roster_search_matches_department_and_position(): void
@@ -184,6 +214,7 @@ class RosterManagementTest extends TestCase
                 'last_name' => 'Name',
                 'grade_level' => '11',
                 'section' => 'B',
+                'course' => 'ABM',
             ])
             ->assertRedirect(route('super-admin.roster.students.index'));
 
@@ -194,8 +225,10 @@ class RosterManagementTest extends TestCase
         $this->assertSame('Name', $row->last_name);
         $this->assertSame('11', $row->grade_level);
         $this->assertSame('B', $row->section);
+        $this->assertSame('ABM', $row->course);
         $this->assertSame('11', User::findByAccountId('STU-LOCKED')?->grade_level);
         $this->assertSame('B', User::findByAccountId('STU-LOCKED')?->section);
+        $this->assertSame('ABM', User::findByAccountId('STU-LOCKED')?->course);
         $this->assertNotNull(User::findByAccountId('STU-LOCKED'));
         $this->assertNull(User::findByAccountId('STU-TAMPERED'));
         $this->assertSame($user->id, User::findByAccountId('STU-LOCKED')?->id);

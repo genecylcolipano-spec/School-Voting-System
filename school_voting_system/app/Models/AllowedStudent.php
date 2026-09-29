@@ -18,6 +18,7 @@ class AllowedStudent extends Model
         'last_name',
         'grade_level',
         'section',
+        'course',
         'school_year',
         'is_registered',
         'registration_status',

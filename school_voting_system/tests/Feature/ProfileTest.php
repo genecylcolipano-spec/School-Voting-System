@@ -71,6 +71,22 @@ class ProfileTest extends TestCase
         $this->assertNull($user->email_verified_at);
     }
 
+    public function test_student_settings_show_roster_course_as_read_only(): void
+    {
+        $user = User::factory()->create([
+            'role' => UserRole::Student,
+            'grade_level' => '11',
+            'section' => 'A',
+            'course' => 'STEM',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('profile.edit', ['section' => 'profile']))
+            ->assertOk()
+            ->assertSee('STEM')
+            ->assertSee('Student ID, grade, section, and course are managed by the school administration.', false);
+    }
+
     public function test_student_can_save_phone_number_on_settings(): void
     {
         $user = User::factory()->create([

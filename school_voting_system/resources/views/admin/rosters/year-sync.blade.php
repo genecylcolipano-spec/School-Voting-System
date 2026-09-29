@@ -27,7 +27,7 @@
             <section class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-5 sm:p-6 lg:col-span-2">
                 <h2 class="text-lg font-semibold text-white">Upload next school year CSV</h2>
                 <p class="mt-1 text-sm text-slate-400">
-                    Use the same columns as the regular roster import: account_id, first_name, last_name, grade_level, section.
+                    Use the same columns as the regular roster import: account_id, first_name, last_name, grade_level, section, course.
                     This does not create login accounts.
                 </p>
 
@@ -64,7 +64,7 @@
                 <h2 class="text-lg font-semibold text-white">What this does</h2>
                 <ul class="mt-3 list-disc space-y-2 pl-5">
                     <li>Same Student ID keeps the same account and passkey.</li>
-                    <li>Grade and section are updated on the roster and the login record.</li>
+                    <li>Grade, section, and course are updated on the roster and the login record.</li>
                     <li>New IDs are added to the roster only. They still register once.</li>
                     <li>Regular Import CSV still refuses to overwrite registered rows. Use this page for year-end updates.</li>
                 </ul>

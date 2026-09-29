@@ -135,6 +135,8 @@ class InstitutionalRosterImportService
             'firstname' => 'first_name',
             'lastname' => 'last_name',
             'grade' => 'grade_level',
+            'strand' => 'course',
+            'course_strand' => 'course',
             'office' => 'department',
             'office_department' => 'department',
             'job_title' => 'position',

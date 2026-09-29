@@ -43,12 +43,12 @@ class AllowedStudentController extends Controller
 
     protected function rosterColumns(): array
     {
-        return ['account_id', 'first_name', 'last_name', 'grade_level', 'section'];
+        return ['account_id', 'first_name', 'last_name', 'grade_level', 'section', 'course'];
     }
 
     protected function templateSampleRow(): array
     {
-        return ['2026-00002', 'Maria', 'Santos', '10', 'A'];
+        return ['2026-00002', 'Maria', 'Santos', '10', 'A', 'STEM'];
     }
 
     protected function extraFieldDefinitions(): array
@@ -56,6 +56,7 @@ class AllowedStudentController extends Controller
         return [
             ['name' => 'grade_level', 'label' => 'Grade', 'required' => false],
             ['name' => 'section', 'label' => 'Section', 'required' => false],
+            ['name' => 'course', 'label' => 'Course', 'required' => false],
             ['name' => 'school_year', 'label' => 'School year', 'required' => false],
         ];
     }
@@ -68,6 +69,7 @@ class AllowedStudentController extends Controller
             'last_name' => ['required', 'string', 'max:100'],
             'grade_level' => ['nullable', 'string', 'max:50'],
             'section' => ['nullable', 'string', 'max:50'],
+            'course' => ['nullable', 'string', 'max:120'],
             'school_year' => ['nullable', 'string', 'max:20', 'regex:/^(\d{4}-\d{4})?$/'],
         ];
     }
@@ -81,6 +83,7 @@ class AllowedStudentController extends Controller
             'last_name' => trim((string) ($row['last_name'] ?? '')),
             'grade_level' => $service->nullableString($row['grade_level'] ?? null),
             'section' => $service->nullableString($row['section'] ?? null),
+            'course' => $service->nullableString($row['course'] ?? null),
         ];
     }
 

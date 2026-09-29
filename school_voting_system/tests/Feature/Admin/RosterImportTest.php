@@ -28,8 +28,8 @@ class RosterImportTest extends TestCase
         $csv = $template->streamedContent();
 
         $this->assertStringStartsWith("\xEF\xBB\xBF", $csv);
-        $this->assertStringContainsString('account_id,first_name,last_name,grade_level,section', $csv);
-        $this->assertStringContainsString('2026-00002,Maria,Santos,10,A', $csv);
+        $this->assertStringContainsString('account_id,first_name,last_name,grade_level,section,course', $csv);
+        $this->assertStringContainsString('2026-00002,Maria,Santos,10,A,STEM', $csv);
 
         $this->actingAs($admin)
             ->post(route('super-admin.roster.students.import.store'), [
@@ -45,6 +45,7 @@ class RosterImportTest extends TestCase
         $this->assertSame('Santos', $row->last_name);
         $this->assertSame('10', $row->grade_level);
         $this->assertSame('A', $row->section);
+        $this->assertSame('STEM', $row->course);
         $this->assertFalse($row->is_registered);
         $this->assertNull(User::findByAccountId('2026-00002'));
         Mail::assertNothingSent();
@@ -88,7 +89,7 @@ class RosterImportTest extends TestCase
     public function test_import_accepts_header_aliases_without_a_bom(): void
     {
         $admin = User::factory()->superAdmin()->create();
-        $csv = "student_id,firstname,lastname,grade,section\nSTU-ALIAS,Alex,Rivera,11,B\n";
+        $csv = "student_id,firstname,lastname,grade,section,strand\nSTU-ALIAS,Alex,Rivera,11,B,HUMSS\n";
 
         $this->actingAs($admin)
             ->post(route('super-admin.roster.students.import.store'), [
@@ -101,6 +102,7 @@ class RosterImportTest extends TestCase
         $this->assertSame('Alex', $row?->first_name);
         $this->assertSame('11', $row?->grade_level);
         $this->assertSame('B', $row?->section);
+        $this->assertSame('HUMSS', $row?->course);
     }
 
     public function test_import_does_not_overwrite_a_registered_row(): void

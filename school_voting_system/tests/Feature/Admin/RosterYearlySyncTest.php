@@ -85,9 +85,9 @@ class RosterYearlySyncTest extends TestCase
             'student_status' => StudentStatus::Enrolled,
         ]);
 
-        $csv = "account_id,first_name,last_name,grade_level,section\n"
-            ."STU-KEEP,Returning,Student,11,B\n"
-            ."STU-FRESH,New,Enrollee,7,C\n";
+        $csv = "account_id,first_name,last_name,grade_level,section,course\n"
+            ."STU-KEEP,Returning,Student,11,B,STEM\n"
+            ."STU-FRESH,New,Enrollee,7,C,HUMSS\n";
 
         $this->actingAs($admin)
             ->post(route('super-admin.roster.students.year-sync.preview'), [
@@ -112,6 +112,7 @@ class RosterYearlySyncTest extends TestCase
         $keepRoster = AllowedStudent::query()->where('account_id', 'STU-KEEP')->first();
         $this->assertSame('11', $keepRoster?->grade_level);
         $this->assertSame('B', $keepRoster?->section);
+        $this->assertSame('STEM', $keepRoster?->course);
         $this->assertSame('2026-2027', $keepRoster?->school_year);
         $this->assertNull($keepRoster?->archived_at);
         $this->assertTrue($keepRoster?->is_registered);
@@ -121,6 +122,7 @@ class RosterYearlySyncTest extends TestCase
         $this->assertSame('returning@example.com', $keepUser?->email);
         $this->assertSame('11', $keepUser?->grade_level);
         $this->assertSame('B', $keepUser?->section);
+        $this->assertSame('STEM', $keepUser?->course);
         $this->assertSame('2026-2027', $keepUser?->school_year);
         $this->assertTrue($keepUser?->is_active);
         $this->assertNull($keepUser?->archived_at);
@@ -135,6 +137,7 @@ class RosterYearlySyncTest extends TestCase
         $this->assertNotNull($fresh);
         $this->assertFalse($fresh->is_registered);
         $this->assertSame('7', $fresh->grade_level);
+        $this->assertSame('HUMSS', $fresh->course);
         $this->assertSame('2026-2027', $fresh->school_year);
         $this->assertNull(User::findByAccountId('STU-FRESH'));
     }
