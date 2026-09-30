@@ -447,7 +447,45 @@ class UserManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Phone Match Student')
             ->assertDontSee('Other Student')
-            ->assertSee('Search by Student ID, name, email, or phone', false);
+            ->assertSee('Search by Student ID, name, email, phone, or course', false);
+    }
+
+    public function test_super_admin_can_see_and_filter_students_by_course(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        User::factory()->create([
+            'name' => 'Bsit Student',
+            'grade_level' => '3rd year',
+            'section' => '3A',
+            'course' => 'BSIT',
+        ]);
+        User::factory()->create([
+            'name' => 'Abm Student',
+            'grade_level' => '11',
+            'section' => 'B',
+            'course' => 'ABM',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.students.index'))
+            ->assertOk()
+            ->assertSee('Course')
+            ->assertSee('All courses')
+            ->assertSee('Bsit Student')
+            ->assertSee('BSIT')
+            ->assertSee('Abm Student');
+
+        $this->actingAs($admin)
+            ->get(route('admin.students.index', ['course' => 'BSIT']))
+            ->assertOk()
+            ->assertSee('Bsit Student')
+            ->assertDontSee('Abm Student');
+
+        $this->actingAs($admin)
+            ->get(route('admin.students.index', ['q' => 'ABM']))
+            ->assertOk()
+            ->assertSee('Abm Student')
+            ->assertDontSee('Bsit Student');
     }
 
     public function test_regular_admin_cannot_open_faculty_management(): void

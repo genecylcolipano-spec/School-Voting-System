@@ -28,7 +28,7 @@
                 name="q"
                 type="search"
                 value="{{ request('q') }}"
-                placeholder="Search by Student ID, name, email, or phone"
+                placeholder="Search by Student ID, name, email, phone, or course"
                 class="w-full min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 sm:min-w-[16rem]"
             />
             <select name="status" class="w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-100 sm:w-auto">
@@ -53,6 +53,14 @@
                     @endforeach
                 </select>
             @endif
+            @if (count($courses ?? []) > 0)
+                <select name="course" class="w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-100 sm:w-auto">
+                    <option value="">All courses</option>
+                    @foreach ($courses as $courseOption)
+                        <option value="{{ $courseOption }}" @selected(request('course') === $courseOption)>{{ $courseOption }}</option>
+                    @endforeach
+                </select>
+            @endif
             <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white sm:w-auto">Search</button>
             @if ($hasFilters ?? false)
                 <a href="{{ route('admin.students.index') }}" class="w-full rounded-xl border border-slate-700 px-4 py-2 text-center text-sm font-semibold text-slate-300 hover:bg-slate-800 sm:w-auto">Clear</a>
@@ -66,6 +74,7 @@
                         <th class="px-4 py-3 font-medium">Student ID</th>
                         <th class="px-4 py-3 font-medium">Student Name</th>
                         <th class="px-4 py-3 font-medium">Grade</th>
+                        <th class="px-4 py-3 font-medium">Course</th>
                         <th class="px-4 py-3 font-medium">Section</th>
                         <th class="hidden px-4 py-3 font-medium lg:table-cell">Email Address</th>
                         <th class="px-4 py-3 font-medium">Account Status</th>
@@ -92,6 +101,7 @@
                                     <span class="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-200">Unassigned</span>
                                 @endif
                             </td>
+                            <td class="px-4 py-3">{{ $student->course ?: '—' }}</td>
                             <td class="px-4 py-3">{{ $student->section ?: '—' }}</td>
                             <td class="hidden px-4 py-3 text-slate-400 lg:table-cell">{{ $student->email }}</td>
                             <td class="px-4 py-3">
@@ -117,7 +127,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-4 py-10 text-center text-slate-400">
+                            <td colspan="10" class="px-4 py-10 text-center text-slate-400">
                                 @if ($hasFilters ?? false)
                                     <p>No registered student accounts match your filters.</p>
                                 @else

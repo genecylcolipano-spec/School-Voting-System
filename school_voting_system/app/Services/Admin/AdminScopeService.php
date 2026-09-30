@@ -348,6 +348,23 @@ class AdminScopeService
             ->all();
     }
 
+    /**
+     * Course options for the Students list filter.
+     *
+     * @return list<string>
+     */
+    public function studentFilterCourses(User $admin): array
+    {
+        return $this->manageableStudentsQuery($admin)
+            ->whereNotNull('course')
+            ->where('course', '!=', '')
+            ->distinct()
+            ->orderBy('course')
+            ->pluck('course')
+            ->map(fn ($course) => (string) $course)
+            ->all();
+    }
+
     public function statistics(User $admin): array
     {
         $election = $this->assignedElection($admin);

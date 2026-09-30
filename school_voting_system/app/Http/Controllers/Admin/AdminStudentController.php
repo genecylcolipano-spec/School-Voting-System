@@ -48,11 +48,13 @@ class AdminStudentController extends Controller
                     $query->where('name', 'like', $term)
                         ->orWhere('email', 'like', $term)
                         ->orWhere('phone', 'like', $term)
-                        ->orWhere('account_id', 'like', $term);
+                        ->orWhere('account_id', 'like', $term)
+                        ->orWhere('course', 'like', $term);
                 });
             })
             ->when($request->filled('grade_level'), fn ($query) => $query->where('grade_level', $request->string('grade_level')))
             ->when($request->filled('section'), fn ($query) => $query->where('section', $request->string('section')))
+            ->when($request->filled('course'), fn ($query) => $query->where('course', $request->string('course')))
             ->when($status === 'active', fn ($q) => $q->where('is_active', true)->whereNull('archived_at'))
             ->when(in_array($status, ['suspended', 'inactive'], true), fn ($q) => $q->where('is_active', false)->whereNull('archived_at'))
             ->when(in_array($status, ['deactivated', 'archived'], true), fn ($q) => $q->whereNotNull('archived_at'))
@@ -67,11 +69,13 @@ class AdminStudentController extends Controller
             'isScoped' => ! $request->user()->isSuperAdmin(),
             'gradeLevels' => $this->scope->studentFilterGradeLevels($request->user()),
             'sections' => $this->scope->studentFilterSections($request->user()),
+            'courses' => $this->scope->studentFilterCourses($request->user()),
             'statusFilter' => $status,
             'hasFilters' => $request->filled('q')
                 || $request->filled('status')
                 || $request->filled('grade_level')
-                || $request->filled('section'),
+                || $request->filled('section')
+                || $request->filled('course'),
         ]);
     }
 
