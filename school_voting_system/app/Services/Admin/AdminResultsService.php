@@ -1392,13 +1392,17 @@ class AdminResultsService
                 'invalid_votes' => 0,
                 'total_winners' => (int) ($summary['winners_count'] ?? $winners->count()),
             ],
-            'party_performance' => $this->partyPerformanceFromRankings($rankings, $winners->all()),
+            'party_performance' => ($detail['type'] ?? '') === 'election'
+                ? $this->partyPerformanceFromRankings($rankings, $winners->all())
+                : [],
             'turnout_sections' => $detail['turnout_sections'] ?? [],
             'has_chart_data' => $this->exportHasChartData($charts),
             'winning_candidates' => $winners->map(fn (array $winner) => [
                 'name' => $winner['name'] ?? '—',
                 'position' => $winner['label'] ?? '—',
-                'party' => $winner['party'] ?? 'Independent',
+                'party' => ($detail['type'] ?? '') === 'election'
+                    ? ($winner['party'] ?? 'Independent')
+                    : null,
                 'votes' => (int) ($winner['votes'] ?? 0),
                 'percent' => (float) ($winner['percent'] ?? 0),
             ])->all(),

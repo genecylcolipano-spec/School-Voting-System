@@ -196,7 +196,9 @@
                                 @include('student.results._ranking-row', [
                                     'rank' => $row['rank'] ?? null,
                                     'name' => $row['name'] ?? '—',
-                                    'meta' => $row['party'] ?? null,
+                                    'meta' => (($row['party'] ?? '') !== '' && ($row['party'] ?? '') !== '—')
+                                        ? $row['party']
+                                        : null,
                                     'votes' => $row['votes'] ?? null,
                                     'percent' => $row['percent'] ?? 0,
                                     'accent' => $accent,

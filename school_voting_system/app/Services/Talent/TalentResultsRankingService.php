@@ -57,7 +57,7 @@ class TalentResultsRankingService
                 'category' => $entry->talentCategoryLabel()
                     ?? $event->talent_category?->label()
                     ?? '—',
-                'party' => '—',
+                'party' => null,
                 'student_votes' => $studentVotes,
                 'judge_score' => round($judgeScore, 2),
                 'votes' => $metric,

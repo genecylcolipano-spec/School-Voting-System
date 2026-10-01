@@ -9,6 +9,7 @@
     $winnersTopTen = collect($detail['winners'] ?? [])->filter(fn ($w) => ($w['group'] ?? null) === 'top_ten');
     $partyPerformance = collect($detail['party_performance'] ?? []);
     $turnoutSections = collect($detail['turnout_sections'] ?? []);
+    $showPartyColumn = ($detail['type'] ?? '') === 'election';
 ?>
 
 <?php if (isset($component)) { $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54 = $component; } ?>
@@ -257,7 +258,7 @@
                         <article class="rs-winner-card rounded-xl border border-violet-500/15 bg-slate-950/50 p-4">
                             <p class="text-[10px] font-semibold uppercase tracking-wide text-violet-300"><?php echo e($winner['label']); ?></p>
                             <p class="mt-2 text-lg font-bold text-white"><?php echo e($winner['name']); ?></p>
-                            <?php if(! empty($winner['party']) && $winner['party'] !== '—'): ?>
+                            <?php if($showPartyColumn && ! empty($winner['party']) && $winner['party'] !== '—'): ?>
                                 <p class="mt-1 text-xs text-slate-400"><?php echo e($winner['party']); ?></p>
                             <?php endif; ?>
                             <p class="mt-3 text-sm text-slate-300"><?php echo e(number_format($winner['votes'] ?? 0)); ?> votes · <?php echo e(number_format($winner['percent'] ?? 0, 1)); ?>%</p>
@@ -300,13 +301,15 @@
                 </div>
 
                 <div class="overflow-x-auto rounded-xl border border-slate-800">
-                    <table class="min-w-full text-sm" id="results-rankings-table">
+                    <table class="min-w-full text-sm" id="results-rankings-table" data-show-party="<?php echo e($showPartyColumn ? '1' : '0'); ?>">
                         <thead>
                             <tr class="border-b border-slate-800 text-left text-slate-400">
                                 <th class="cursor-pointer px-4 py-3 font-medium" data-sort="rank">Rank</th>
                                 <th class="cursor-pointer px-4 py-3 font-medium" data-sort="name">Contestant / Candidate</th>
                                 <th class="cursor-pointer px-4 py-3 font-medium" data-sort="position">Position</th>
-                                <th class="cursor-pointer px-4 py-3 font-medium" data-sort="party">Party</th>
+                                <?php if($showPartyColumn): ?>
+                                    <th class="cursor-pointer px-4 py-3 font-medium" data-sort="party">Party</th>
+                                <?php endif; ?>
                                 <th class="cursor-pointer px-4 py-3 font-medium" data-sort="votes"><?php echo e($detail['ranking_metric_label'] ?? 'Votes'); ?></th>
                                 <th class="cursor-pointer px-4 py-3 font-medium" data-sort="percent">Percentage</th>
                                 <th class="cursor-pointer px-4 py-3 font-medium" data-sort="status">Status</th>
@@ -318,7 +321,9 @@
                                     <td class="px-4 py-3"><?php echo e($row['rank']); ?></td>
                                     <td class="px-4 py-3 font-medium text-white"><?php echo e($row['name']); ?></td>
                                     <td class="px-4 py-3"><?php echo e($row['position']); ?></td>
-                                    <td class="px-4 py-3"><?php echo e($row['party']); ?></td>
+                                    <?php if($showPartyColumn): ?>
+                                        <td class="px-4 py-3"><?php echo e($row['party']); ?></td>
+                                    <?php endif; ?>
                                     <td class="px-4 py-3"><?php echo e(number_format($row['votes'], (floor((float) $row['votes']) == (float) $row['votes']) ? 0 : 2)); ?></td>
                                     <td class="px-4 py-3"><?php echo e(number_format($row['percent'], 1)); ?>%</td>
                                     <td class="px-4 py-3">

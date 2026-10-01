@@ -320,18 +320,10 @@ class AdminResultsController extends Controller
             fputcsv($handle, ['Category', $detail['category'] ?? '']);
             fputcsv($handle, ['Status', $detail['voting_status'] ?? '']);
             fputcsv($handle, []);
-            fputcsv($handle, ['Rank', 'Name', 'Position', 'Party', $metricLabel, 'Percentage', 'Status']);
+            fputcsv($handle, $this->rankingExportHeader($detail, $metricLabel));
 
             foreach ($detail['rankings'] ?? [] as $row) {
-                fputcsv($handle, [
-                    $row['rank'] ?? '',
-                    $row['name'] ?? '',
-                    $row['position'] ?? '',
-                    $row['party'] ?? '',
-                    $row['votes'] ?? 0,
-                    ($row['percent'] ?? 0).'%',
-                    $row['status'] ?? '',
-                ]);
+                fputcsv($handle, $this->rankingExportRow($detail, $row));
             }
 
             fclose($handle);
@@ -372,19 +364,11 @@ class AdminResultsController extends Controller
                 ['Category', $detail['category'] ?? ''],
                 ['Status', $detail['voting_status'] ?? ''],
                 [],
-                ['Rank', 'Name', 'Position', 'Party', $metricLabel, 'Percentage', 'Status'],
+                $this->rankingExportHeader($detail, $metricLabel),
             ];
 
             foreach ($detail['rankings'] ?? [] as $row) {
-                $rows[] = [
-                    $row['rank'] ?? '',
-                    $row['name'] ?? '',
-                    $row['position'] ?? '',
-                    $row['party'] ?? '',
-                    $row['votes'] ?? 0,
-                    ($row['percent'] ?? 0).'%',
-                    $row['status'] ?? '',
-                ];
+                $rows[] = $this->rankingExportRow($detail, $row);
             }
 
             foreach ($rows as $cells) {
@@ -399,5 +383,51 @@ class AdminResultsController extends Controller
 
             echo '</Table></Worksheet></Workbook>';
         }, 200, $headers);
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function rankingExportHeader(array $detail, string $metricLabel): array
+    {
+        $header = ['Rank', 'Name', 'Position'];
+
+        if ($this->rankingShowsParty($detail)) {
+            $header[] = 'Party';
+        }
+
+        $header[] = $metricLabel;
+        $header[] = 'Percentage';
+        $header[] = 'Status';
+
+        return $header;
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return list<mixed>
+     */
+    protected function rankingExportRow(array $detail, array $row): array
+    {
+        $cells = [
+            $row['rank'] ?? '',
+            $row['name'] ?? '',
+            $row['position'] ?? '',
+        ];
+
+        if ($this->rankingShowsParty($detail)) {
+            $cells[] = $row['party'] ?? '';
+        }
+
+        $cells[] = $row['votes'] ?? 0;
+        $cells[] = ($row['percent'] ?? 0).'%';
+        $cells[] = $row['status'] ?? '';
+
+        return $cells;
+    }
+
+    protected function rankingShowsParty(array $detail): bool
+    {
+        return ($detail['type'] ?? '') === 'election';
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\ElectionStatus;
 use App\Enums\StudentStatus;
 use App\Enums\TalentEventStatus;
 use App\Enums\TalentVotingMethod;
@@ -13,6 +14,7 @@ use App\Models\Permission;
 use App\Models\PortalNotification;
 use App\Models\StaffRole;
 use App\Models\TalentEvent;
+use App\Models\TalentEventEntry;
 use App\Models\User;
 use App\Models\Vote;
 use App\Services\Admin\AdminScopeService;
@@ -268,6 +270,106 @@ class ResultsPagesTest extends TestCase
             ->assertSee('PDF, Excel, and printable reports are available after voting and judging have ended.');
     }
 
+    public function test_talent_results_rankings_and_exports_omit_party(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $event = $this->makeCompetition([
+            'title' => 'Campus Voice',
+            'created_by' => $super->id,
+            'status' => TalentEventStatus::VotingOpen,
+            'voting_starts_at' => now()->subDays(2),
+            'voting_ends_at' => now()->subHour(),
+            'results_published_at' => null,
+        ]);
+        TalentEventEntry::query()->create([
+            'talent_event_id' => $event->id,
+            'display_name' => 'Aria Cruz',
+            'performance_title' => 'Aria Cruz Act',
+            'status' => TalentEventEntry::STATUS_APPROVED,
+            'source' => TalentEventEntry::SOURCE_ADMIN,
+        ]);
+
+        $this->actingAs($super)
+            ->get(route('admin.results.talent.show', $event))
+            ->assertOk()
+            ->assertSee('Campus Voice')
+            ->assertSee('Aria Cruz')
+            ->assertSee('data-show-party="0"', false)
+            ->assertDontSee('data-sort="party"', false)
+            ->assertDontSee('Party Performance');
+
+        $csv = $this->actingAs($super)
+            ->get(route('admin.results.talent.export', ['talentEvent' => $event, 'format' => 'csv']))
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertSame(
+            'Rank,Name,Position,Votes,Percentage,Status',
+            $this->rankingCsvHeader($csv),
+        );
+
+        $this->actingAs($super)
+            ->get(route('admin.results.talent.export', ['talentEvent' => $event, 'format' => 'print']))
+            ->assertOk()
+            ->assertSee('Campus Voice')
+            ->assertSee('Aria Cruz')
+            ->assertDontSee('Partylist:')
+            ->assertDontSee('<th>Party</th>', false)
+            ->assertDontSee('Party Performance');
+    }
+
+    public function test_election_results_rankings_and_exports_include_party(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $election = Election::factory()->active()->create(['title' => 'Exportable Council']);
+        $category = ElectionCategory::factory()->create([
+            'election_id' => $election->id,
+            'name' => 'President',
+        ]);
+        $candidate = Candidate::factory()->create([
+            'election_id' => $election->id,
+            'election_category_id' => $category->id,
+            'display_name' => 'Dashboard Winner',
+            'party_or_group' => 'Unity Alliance',
+        ]);
+        $voter = User::factory()->create([
+            'role' => UserRole::Student,
+            'is_active' => true,
+            'student_status' => StudentStatus::Enrolled,
+        ]);
+        Vote::castBallot($voter, $candidate);
+        $election->update([
+            'status' => ElectionStatus::Closed,
+            'voting_ends_at' => now()->subHour(),
+        ]);
+
+        $this->actingAs($super)
+            ->get(route('admin.results.election.show', $election))
+            ->assertOk()
+            ->assertSee('Exportable Council')
+            ->assertSee('data-show-party="1"', false)
+            ->assertSee('data-sort="party"', false)
+            ->assertSee('Unity Alliance');
+
+        $csv = $this->actingAs($super)
+            ->get(route('admin.results.election.export', ['election' => $election, 'format' => 'csv']))
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertSame(
+            'Rank,Name,Position,Party,Votes,Percentage,Status',
+            $this->rankingCsvHeader($csv),
+        );
+        $this->assertStringContainsString('Unity Alliance', str_replace('"', '', $csv));
+
+        $this->actingAs($super)
+            ->get(route('admin.results.election.export', ['election' => $election, 'format' => 'print']))
+            ->assertOk()
+            ->assertSee('Partylist:')
+            ->assertSee('<th>Party</th>', false)
+            ->assertSee('Unity Alliance');
+    }
+
     public function test_admin_without_talent_scope_cannot_export_closed_talent(): void
     {
         $event = $this->makeCompetition([
@@ -396,5 +498,19 @@ class ResultsPagesTest extends TestCase
         return User::factory()->admin()->create([
             'staff_role_id' => $role->id,
         ]);
+    }
+
+    protected function rankingCsvHeader(string $csv): string
+    {
+        $csv = preg_replace('/^\xEF\xBB\xBF/', '', $csv) ?? $csv;
+
+        foreach (preg_split('/\r\n|\n|\r/', $csv) as $line) {
+            $plain = str_replace('"', '', $line);
+            if (str_starts_with($plain, 'Rank,')) {
+                return $plain;
+            }
+        }
+
+        $this->fail('Rankings header not found in CSV export.');
     }
 }

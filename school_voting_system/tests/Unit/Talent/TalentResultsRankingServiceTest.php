@@ -35,6 +35,7 @@ class TalentResultsRankingServiceTest extends TestCase
         $this->assertSame(1, $rankings[0]['rank']);
         $this->assertSame('Winner', $rankings[0]['status']);
         $this->assertSame(3.0, (float) $rankings[0]['votes']);
+        $this->assertNull($rankings[0]['party']);
         $this->assertSame('Vote Runner', $rankings[1]['name']);
         $this->assertSame(2, $rankings[1]['rank']);
     }

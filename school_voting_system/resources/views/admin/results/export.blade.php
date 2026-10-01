@@ -15,7 +15,7 @@
         ->map(fn ($w) => [
             'name' => $w['name'] ?? '—',
             'position' => $w['label'] ?? '—',
-            'party' => $w['party'] ?? 'Independent',
+            'party' => ($detail['type'] ?? '') === 'election' ? ($w['party'] ?? 'Independent') : null,
             'votes' => $w['votes'] ?? 0,
             'percent' => $w['percent'] ?? 0,
         ])
@@ -28,6 +28,7 @@
     $isOfficial = $presentation['is_official'] ?? false;
     $isUnofficial = ($detail['is_live'] ?? false) || ! $isOfficial;
     $reportTitle = ($detail['type'] ?? '') === 'election' ? 'OFFICIAL ELECTION RESULTS' : 'OFFICIAL EVENT RESULTS';
+    $showPartyColumn = ($detail['type'] ?? '') === 'election';
     $barChart = $charts['bar'] ?? ['labels' => [], 'values' => [], 'yMax' => 10];
     $pieChart = $charts['pie'] ?? ['labels' => [], 'values' => []];
     $doughnutChart = $charts['doughnut'] ?? ['labels' => [], 'values' => []];
@@ -607,7 +608,9 @@
                             <p class="position">{{ $winner['position'] }}</p>
                             <p class="name">{{ $winner['name'] }}</p>
                             <p class="meta">
-                                Partylist: {{ $winner['party'] ?? 'Independent' }}<br>
+                                @if ($showPartyColumn)
+                                    Partylist: {{ $winner['party'] ?? 'Independent' }}<br>
+                                @endif
                                 Votes: {{ number_format($winner['votes'] ?? 0) }} · {{ number_format($winner['percent'] ?? 0, 1) }}%
                             </p>
                         </article>
@@ -624,7 +627,9 @@
                         <th>Rank</th>
                         <th>Contestant / Candidate</th>
                         <th>Position</th>
-                        <th>Party</th>
+                        @if ($showPartyColumn)
+                            <th>Party</th>
+                        @endif
                         <th>{{ $detail['ranking_metric_label'] ?? 'Votes' }}</th>
                         <th>Percentage</th>
                         <th>Status</th>
@@ -636,7 +641,9 @@
                             <td>{{ $row['rank'] }}</td>
                             <td>{{ $row['name'] }}</td>
                             <td>{{ $row['position'] }}</td>
-                            <td>{{ $row['party'] }}</td>
+                            @if ($showPartyColumn)
+                                <td>{{ $row['party'] }}</td>
+                            @endif
                             <td>{{ number_format($row['votes'], (floor((float) ($row['votes'] ?? 0)) == (float) ($row['votes'] ?? 0)) ? 0 : 2) }}</td>
                             <td>{{ number_format($row['percent'], 1) }}%</td>
                             <td>
@@ -648,7 +655,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" style="text-align:center;color:#64748b;">No ranking data available.</td></tr>
+                        <tr><td colspan="{{ $showPartyColumn ? 7 : 6 }}" style="text-align:center;color:#64748b;">No ranking data available.</td></tr>
                     @endforelse
                 </tbody>
             </table>

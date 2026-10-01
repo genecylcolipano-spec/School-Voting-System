@@ -9,6 +9,7 @@ let tableState = {
     sortKey: 'rank',
     sortDir: 'asc',
     page: 1,
+    showParty: true,
 };
 
 function readInitialPayload() {
@@ -115,7 +116,7 @@ function applySummary(summary = {}) {
 }
 
 function winnerCardHtml(winner) {
-    const party = winner.party && winner.party !== '—'
+    const party = tableState.showParty && winner.party && winner.party !== '—'
         ? `<p class="mt-1 text-xs text-slate-400">${escapeHtml(winner.party)}</p>`
         : '';
 
@@ -201,18 +202,23 @@ function renderTableBody() {
                 ? 'bg-violet-500/15 text-violet-300'
                 : 'bg-slate-700/50 text-slate-400';
 
+        const partyCell = tableState.showParty
+            ? `<td class="px-4 py-3">${escapeHtml(row.party ?? '')}</td>`
+            : '';
+        const emptyColspan = tableState.showParty ? 7 : 6;
+
         return `
             <tr class="border-b border-slate-800/80 text-slate-200">
                 <td class="px-4 py-3">${row.rank ?? ''}</td>
                 <td class="px-4 py-3 font-medium text-white">${escapeHtml(row.name ?? '')}</td>
                 <td class="px-4 py-3">${escapeHtml(row.position ?? '')}</td>
-                <td class="px-4 py-3">${escapeHtml(row.party ?? '')}</td>
+                ${partyCell}
                 <td class="px-4 py-3">${formatNumber(row.votes ?? 0)}</td>
                 <td class="px-4 py-3">${Number(row.percent ?? 0).toFixed(1)}%</td>
                 <td class="px-4 py-3"><span class="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${statusClass}">${escapeHtml(row.status ?? '')}</span></td>
             </tr>
         `;
-    }).join('') || '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-400">No matching rows.</td></tr>';
+    }).join('') || `<tr><td colspan="${emptyColspan}" class="px-4 py-6 text-center text-slate-400">No matching rows.</td></tr>`;
 
     if (meta) {
         meta.textContent = total
@@ -235,7 +241,7 @@ function filterAndSortRows() {
 
     tableState.filtered = tableState.rows.filter((row) => {
         const matchesStatus = !status || row.status === status;
-        const haystack = `${row.name} ${row.position} ${row.party}`.toLowerCase();
+        const haystack = `${row.name} ${row.position} ${tableState.showParty ? (row.party ?? '') : ''}`.toLowerCase();
         const matchesSearch = !search || haystack.includes(search);
 
         return matchesStatus && matchesSearch;
@@ -253,6 +259,8 @@ function filterAndSortRows() {
 let tableInitialized = false;
 
 function initRankingsTable(rows = []) {
+    const table = document.getElementById('results-rankings-table');
+    tableState.showParty = table?.dataset.showParty !== '0';
     tableState.rows = rows;
     tableState.filtered = [...rows];
 

@@ -52,7 +52,7 @@
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide {{ $accent }}">{{ $primary['label'] ?? $primary['position'] ?? 'Winner' }}</p>
                         <h3 class="mt-1 text-2xl font-bold text-white">{{ $primary['name'] }}</h3>
-                        @if (! empty($primary['party']))
+                        @if (! empty($primary['party']) && $primary['party'] !== '—')
                             <p class="mt-1 text-sm text-slate-400">{{ $primary['party'] }}</p>
                         @endif
                         <dl class="mt-4 grid gap-3 sm:grid-cols-3">
@@ -88,7 +88,7 @@
                         <div class="min-w-0 flex-1">
                             <p class="text-[10px] font-semibold uppercase tracking-wide {{ $accent }}">{{ $winner['label'] ?? $winner['position'] }}</p>
                             <p class="truncate font-semibold text-white">{{ $winner['name'] }}</p>
-                            @if (! empty($winner['party']))
+                            @if (! empty($winner['party']) && $winner['party'] !== '—')
                                 <p class="truncate text-xs text-slate-400">{{ $winner['party'] }}</p>
                             @endif
                             <p class="mt-2 text-xs text-slate-300">{{ number_format($winner['votes'] ?? 0) }} votes · {{ number_format($winner['percent'] ?? 0, 1) }}% · +{{ number_format($winner['margin_votes'] ?? 0) }} margin</p>
