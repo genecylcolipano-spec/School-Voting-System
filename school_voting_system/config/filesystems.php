@@ -1,5 +1,18 @@
 <?php
 
+$objectStorage = [
+    'driver' => 's3',
+    'key' => env('AWS_ACCESS_KEY_ID'),
+    'secret' => env('AWS_SECRET_ACCESS_KEY'),
+    'region' => env('AWS_DEFAULT_REGION'),
+    'bucket' => env('AWS_BUCKET'),
+    'url' => env('AWS_URL'),
+    'endpoint' => env('AWS_ENDPOINT'),
+    'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+    'throw' => false,
+    'report' => false,
+];
+
 return [
 
     /*
@@ -46,18 +59,7 @@ return [
          * bucket itself public and set AWS_URL.
          */
         'public' => filled(env('AWS_BUCKET'))
-            ? [
-                'driver' => 's3',
-                'key' => env('AWS_ACCESS_KEY_ID'),
-                'secret' => env('AWS_SECRET_ACCESS_KEY'),
-                'region' => env('AWS_DEFAULT_REGION'),
-                'bucket' => env('AWS_BUCKET'),
-                'url' => env('AWS_URL'),
-                'endpoint' => env('AWS_ENDPOINT'),
-                'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
-                'throw' => false,
-                'report' => false,
-            ]
+            ? $objectStorage
             : [
                 'driver' => 'local',
                 'root' => storage_path('app/public'),
@@ -67,18 +69,23 @@ return [
                 'report' => false,
             ],
 
-        's3' => [
-            'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION'),
-            'bucket' => env('AWS_BUCKET'),
-            'url' => env('AWS_URL'),
-            'endpoint' => env('AWS_ENDPOINT'),
-            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
-            'throw' => false,
-            'report' => false,
-        ],
+        /*
+         * Talent videos and other non-public uploads. On Cloud this is the same
+         * bucket as "public", under a private/ prefix, so files survive deploys.
+         * They are served only through authorized routes (never Storage::url()).
+         * Local XAMPP uses storage/app/private — the same root as "local".
+         */
+        'private' => filled(env('AWS_BUCKET'))
+            ? array_merge($objectStorage, ['root' => 'private'])
+            : [
+                'driver' => 'local',
+                'root' => storage_path('app/private'),
+                'serve' => true,
+                'throw' => false,
+                'report' => false,
+            ],
+
+        's3' => $objectStorage,
 
     ],
 

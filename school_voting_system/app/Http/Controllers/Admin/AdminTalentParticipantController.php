@@ -12,6 +12,7 @@ use App\Models\TalentEvent;
 use App\Models\TalentEventEntry;
 use App\Services\Admin\AdminScopeService;
 use App\Services\Media\ImageCompressionService;
+use App\Services\Media\TalentVideoStorage;
 use App\Services\Portal\PortalNotificationService;
 use App\Services\SuperAdmin\AuditLogService;
 use App\Services\Talent\TalentEventPublishingService;
@@ -28,6 +29,7 @@ class AdminTalentParticipantController extends Controller
         protected AdminScopeService $scope,
         protected AuditLogService $audit,
         protected ImageCompressionService $images,
+        protected TalentVideoStorage $videos,
         protected TalentEventPublishingService $publishing,
         protected PortalNotificationService $notifications,
     ) {}
@@ -297,11 +299,7 @@ class AdminTalentParticipantController extends Controller
 
     protected function storePrivateVideo(?UploadedFile $file): ?string
     {
-        if ($file === null) {
-            return null;
-        }
-
-        return $file->store('talent/videos', 'local');
+        return $this->videos->store($file);
     }
 
     protected function deletePublicPath(?string $path): void
@@ -313,8 +311,6 @@ class AdminTalentParticipantController extends Controller
 
     protected function deletePrivatePath(?string $path): void
     {
-        if ($path && ! str_starts_with($path, 'http')) {
-            Storage::disk('local')->delete($path);
-        }
+        $this->videos->delete($path);
     }
 }

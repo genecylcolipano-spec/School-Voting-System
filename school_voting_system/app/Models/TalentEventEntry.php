@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\TalentCategory;
 use App\Enums\TalentEntryStatus;
+use App\Services\Media\TalentVideoStorage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -72,7 +73,7 @@ class TalentEventEntry extends Model
             }
 
             if ($entry->video_path && ! str_starts_with($entry->video_path, 'http')) {
-                Storage::disk('local')->delete($entry->video_path);
+                app(TalentVideoStorage::class)->delete($entry->video_path);
             }
         });
     }

@@ -8,6 +8,7 @@ use App\Models\TalentEvent;
 use App\Models\TalentEventEntry;
 use App\Models\User;
 use App\Services\Media\ImageCompressionService;
+use App\Services\Media\TalentVideoStorage;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -252,7 +253,7 @@ class StudentTalentRegistrationFlowService
                     ->delete($previousFiles[$field]['path']);
             }
 
-            $disk = $field === 'video' ? 'local' : 'public';
+            $disk = $field === 'video' ? TalentVideoStorage::DISK : 'public';
             $path = $field === 'video'
                 ? $file->store($base, $disk)
                 : $this->images->storeOptimizedSet($file, $base, false)['path'];
@@ -266,7 +267,7 @@ class StudentTalentRegistrationFlowService
         // Switching to a URL submission clears a previously drafted upload.
         if (filled($fields['video_url'] ?? null) && empty($uploadedFiles['video'])) {
             if (! empty($storedFiles['video']['path'])) {
-                Storage::disk($storedFiles['video']['disk'] ?? 'local')
+                Storage::disk($storedFiles['video']['disk'] ?? TalentVideoStorage::DISK)
                     ->delete($storedFiles['video']['path']);
             }
             unset($storedFiles['video']);
@@ -325,6 +326,7 @@ class StudentTalentRegistrationFlowService
 
         $base = "talent/drafts/{$student->id}/{$event->id}";
         Storage::disk('public')->deleteDirectory($base);
+        Storage::disk(TalentVideoStorage::DISK)->deleteDirectory($base);
         Storage::disk('local')->deleteDirectory($base);
     }
 
@@ -365,7 +367,7 @@ class StudentTalentRegistrationFlowService
         $map = [
             'photo' => ['photo_path', 'talent/photos', 'public'],
             'thumbnail' => ['thumbnail_path', 'talent/thumbnails', 'public'],
-            'video' => ['video_path', 'talent/videos', 'local'],
+            'video' => ['video_path', TalentVideoStorage::DIRECTORY, TalentVideoStorage::DISK],
         ];
 
         foreach ($map as $field => [$column, $directory, $targetDisk]) {

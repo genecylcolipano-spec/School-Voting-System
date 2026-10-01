@@ -71,7 +71,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Course / Strand</label>
-                    <input type="text" name="course_strand" value="<?php echo e($old('course_strand')); ?>" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    <input type="text" name="course_strand" value="<?php echo e($old('course_strand', auth()->user()->course ?? '')); ?>" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Talent Category</label>

@@ -66,7 +66,7 @@ Uploads (school logo, campaign images, candidate photos, avatars, announcements)
 2. Make the bucket **public**.
 3. Cloud injects AWS / S3 variables. If `AWS_URL` is shown on the bucket page but not injected, copy it into custom env vars.
 
-When `AWS_BUCKET` is set, uploads on the `public` disk go to that bucket. Add `AWS_URL` if Cloud shows it but does not inject it. Make the bucket **public**. Leave `AWS_BUCKET` empty on local XAMPP. Do not add `storage:link` as a deploy command.
+When `AWS_BUCKET` is set, uploads on the `public` disk go to that bucket, and talent videos go to the same bucket on the `private` disk (`private/` prefix). Videos are still streamed only through `/media/talent-video/{entry}` after login. Add `AWS_URL` if Cloud shows it but does not inject it. Make the bucket **public**. Leave `AWS_BUCKET` empty on local XAMPP. Do not add `storage:link` as a deploy command.
 
 ## 5. Environment variables
 
