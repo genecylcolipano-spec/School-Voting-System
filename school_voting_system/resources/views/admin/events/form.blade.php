@@ -10,7 +10,7 @@
             @include('admin.partials.form-input', ['label' => 'Title', 'name' => 'title', 'value' => optional($event)->title, 'required' => true])
             <div>
                 <label class="block text-sm font-medium text-slate-300">Description</label>
-                <textarea name="description" rows="4" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('description', optional($event)->description) }}</textarea>
+                <textarea name="description" rows="4" autocapitalize="sentences" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('description', optional($event)->description) }}</textarea>
             </div>
             <x-event-image-field
                 :src="$isEdit ? $event->image_url : \App\Support\EventImageUrl::placeholder()"

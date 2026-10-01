@@ -8,7 +8,7 @@
     <title>Register — {{ \App\Support\SchoolBranding::systemName() }}</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet">
-    @vite(['resources/css/app.css', 'resources/js/auto-capitalize.js'])
+    @vite(['resources/css/app.css'])
 </head>
 <body class="h-dvh overflow-hidden bg-slate-950 font-[Instrument_Sans] text-slate-100 antialiased">
     <div class="flex h-dvh items-center justify-center px-4 py-3 sm:py-4">

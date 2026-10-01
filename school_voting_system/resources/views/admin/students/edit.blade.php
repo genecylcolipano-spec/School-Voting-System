@@ -26,7 +26,7 @@
 
                     <div>
                         <label for="name" class="block text-sm font-medium text-slate-300">Full Name</label>
-                        <input id="name" name="name" type="text" value="{{ old('name', $student->name) }}" required
+                        <input id="name" name="name" type="text" value="{{ old('name', $student->name) }}" required autocapitalize="words"
                             class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2.5 text-white focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20">
                         @error('name')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
                     </div>

@@ -201,11 +201,11 @@ function addCandidateRow() {
     row.dataset.index = String(index);
     row.innerHTML = `
         ${photoFieldMarkup(prefix, index)}
-        <input type="text" name="${prefix}[${index}][display_name]" placeholder="Display name" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" />
+        <input type="text" name="${prefix}[${index}][display_name]" placeholder="Display name" autocapitalize="words" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" />
         ${buildCategorySelect(prefix, index, categories, isEdit)}
         ${buildCampaignSelect(prefix, index)}
         <button type="button" data-remove-row class="rounded-lg border border-rose-500/30 px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/10">Remove</button>
-        <textarea name="${prefix}[${index}][platform]" rows="2" placeholder="Platform" class="md:col-span-2 rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100"></textarea>
+        <textarea name="${prefix}[${index}][platform]" rows="2" placeholder="Platform" autocapitalize="sentences" class="md:col-span-2 rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100"></textarea>
     `;
 
     list.appendChild(row);

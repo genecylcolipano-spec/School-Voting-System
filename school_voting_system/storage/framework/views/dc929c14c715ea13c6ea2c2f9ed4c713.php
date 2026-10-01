@@ -34,6 +34,10 @@ unset($__defined_vars, $__key, $__value); ?>
     if (in_array($type, ['datetime-local', 'date', 'time'], true)) {
         $inputClass .= ' [color-scheme:dark]';
     }
+
+    $personName = in_array($name, ['display_name', 'first_name', 'last_name', 'leader'], true);
+    $sensitiveType = in_array($type, ['email', 'password', 'url', 'number', 'tel', 'hidden'], true);
+    $defaultAutocapitalize = ($sensitiveType || ! $personName) ? 'none' : 'words';
 ?>
 
 <div>
@@ -43,10 +47,10 @@ unset($__defined_vars, $__key, $__value); ?>
         name="<?php echo e($name); ?>"
         type="<?php echo e($type); ?>"
         value="<?php echo e(old($name, $value)); ?>"
+        autocapitalize="<?php echo e($defaultAutocapitalize); ?>"
         <?php if($required): ?> required <?php endif; ?>
         <?php if($maxlength): ?> maxlength="<?php echo e($maxlength); ?>" <?php endif; ?>
-        <?php echo e($attributes->merge(['class' => $inputClass])); ?>
-
+        class="<?php echo e($inputClass); ?>"
     />
     <?php $__errorArgs = [$name];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');

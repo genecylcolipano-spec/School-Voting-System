@@ -19,11 +19,11 @@
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <label class="block text-sm font-medium text-slate-300">First Name</label>
-                        <input name="first_name" value="{{ old('first_name', $record->first_name) }}" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2.5 text-white">
+                        <input name="first_name" value="{{ old('first_name', $record->first_name) }}" required autocapitalize="words" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2.5 text-white">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-300">Last Name</label>
-                        <input name="last_name" value="{{ old('last_name', $record->last_name) }}" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2.5 text-white">
+                        <input name="last_name" value="{{ old('last_name', $record->last_name) }}" required autocapitalize="words" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2.5 text-white">
                     </div>
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">

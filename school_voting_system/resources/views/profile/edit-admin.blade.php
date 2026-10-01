@@ -78,7 +78,7 @@
 
                         <div>
                             <label for="name" class="block text-sm font-medium text-slate-300">Name</label>
-                            <input id="name" name="name" type="text" value="{{ old('name', $user->name) }}" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" />
+                            <input id="name" name="name" type="text" value="{{ old('name', $user->name) }}" required autocapitalize="words" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" />
                             @error('name')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
                         </div>
 

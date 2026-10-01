@@ -84,13 +84,13 @@
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
                     <div class="sm:col-span-2">
                         <label class="block text-sm font-medium text-slate-300">Campaign Title</label>
-                        <input type="text" name="title" required value="{{ old('title', $fundraiser?->title) }}"
+                        <input type="text" name="title" required value="{{ old('title', $fundraiser?->title) }}" autocapitalize="none"
                             class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30">
                         @error('title')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
                     </div>
                     <div class="sm:col-span-2">
                         <label class="block text-sm font-medium text-slate-300">Description</label>
-                        <textarea name="description" rows="5" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('description', $fundraiser?->description) }}</textarea>
+                        <textarea name="description" rows="5" autocapitalize="sentences" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('description', $fundraiser?->description) }}</textarea>
                         @error('description')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
                     </div>
                     <div>

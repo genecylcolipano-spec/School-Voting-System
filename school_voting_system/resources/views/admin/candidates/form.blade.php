@@ -120,17 +120,17 @@
 
             <div>
                 <label class="block text-sm font-medium text-slate-300">Platform</label>
-                <textarea name="platform" rows="4" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('platform', optional($candidate)->platform) }}</textarea>
+                <textarea name="platform" rows="4" autocapitalize="sentences" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('platform', optional($candidate)->platform) }}</textarea>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-slate-300">Biography</label>
-                <textarea name="biography" rows="4" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('biography', optional($candidate)->biography) }}</textarea>
+                <textarea name="biography" rows="4" autocapitalize="sentences" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('biography', optional($candidate)->biography) }}</textarea>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-slate-300">Campaign promises</label>
-                <textarea name="campaign_promises" rows="4" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('campaign_promises', optional($candidate)->campaign_promises) }}</textarea>
+                <textarea name="campaign_promises" rows="4" autocapitalize="sentences" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('campaign_promises', optional($candidate)->campaign_promises) }}</textarea>
             </div>
 
             <label class="flex items-center gap-2 text-sm text-slate-300">

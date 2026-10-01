@@ -52,11 +52,11 @@
                     </div>
                     <div class="sm:col-span-2">
                         <label class="block text-sm font-medium text-slate-300">Summary</label>
-                        <textarea name="summary" rows="2" maxlength="500" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('summary', optional($announcement)->summary) }}</textarea>
+                        <textarea name="summary" rows="2" maxlength="500" autocapitalize="sentences" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('summary', optional($announcement)->summary) }}</textarea>
                     </div>
                     <div class="sm:col-span-2">
                         <label class="block text-sm font-medium text-slate-300">Body</label>
-                        <textarea name="body" rows="8" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('body', optional($announcement)->body) }}</textarea>
+                        <textarea name="body" rows="8" autocapitalize="sentences" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('body', optional($announcement)->body) }}</textarea>
                     </div>
                 </div>
             </section>

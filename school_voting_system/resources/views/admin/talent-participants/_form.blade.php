@@ -39,7 +39,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-slate-300">Full Name</label>
-                <input type="text" name="display_name" value="{{ old('display_name', $entry->display_name ?? '') }}" required
+                <input type="text" name="display_name" value="{{ old('display_name', $entry->display_name ?? '') }}" required autocapitalize="words"
                     class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
                 @error('display_name')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
             </div>
@@ -83,19 +83,19 @@
 
             <div class="sm:col-span-2">
                 <label class="block text-sm font-medium text-slate-300">Performance Title</label>
-                <input type="text" name="performance_title" value="{{ old('performance_title', $entry->performance_title ?? '') }}"
+                <input type="text" name="performance_title" value="{{ old('performance_title', $entry->performance_title ?? '') }}" autocapitalize="none"
                     class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
             </div>
 
             <div class="sm:col-span-2">
                 <label class="block text-sm font-medium text-slate-300">Short Profile</label>
-                <input type="text" name="profile_summary" value="{{ old('profile_summary', $entry->profile_summary ?? '') }}"
+                <input type="text" name="profile_summary" value="{{ old('profile_summary', $entry->profile_summary ?? '') }}" autocapitalize="none"
                     class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
             </div>
 
             <div class="sm:col-span-2">
                 <label class="block text-sm font-medium text-slate-300">Performance Description</label>
-                <textarea name="performance_description" rows="3" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('performance_description', $entry->performance_description ?? '') }}</textarea>
+                <textarea name="performance_description" rows="3" autocapitalize="sentences" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('performance_description', $entry->performance_description ?? '') }}</textarea>
             </div>
 
             <div class="sm:col-span-2">

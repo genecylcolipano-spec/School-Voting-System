@@ -3,7 +3,6 @@ import './student-ballot';
 import './student-talent-vote';
 import './notification-center';
 import './admin-confirm';
-import './auto-capitalize';
 
 import Alpine from 'alpinejs';
 import { responsivePopover } from './responsive-popover';

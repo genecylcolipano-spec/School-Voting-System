@@ -45,7 +45,7 @@
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Full Name</label>
-                    <input type="text" name="display_name" value="{{ $old('display_name', auth()->user()->name ?? '') }}" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    <input type="text" name="display_name" value="{{ $old('display_name', auth()->user()->name ?? '') }}" required autocapitalize="words" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Student ID</label>
@@ -75,17 +75,17 @@
 
             <div>
                 <label class="block text-sm font-medium text-slate-300">Performance Title</label>
-                <input type="text" name="performance_title" value="{{ $old('performance_title') }}" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                <input type="text" name="performance_title" value="{{ $old('performance_title') }}" required autocapitalize="none" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-slate-300">Short Bio (optional)</label>
-                <input type="text" name="profile_summary" value="{{ $old('profile_summary') }}" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                <input type="text" name="profile_summary" value="{{ $old('profile_summary') }}" autocapitalize="none" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-slate-300">Performance Description</label>
-                <textarea name="performance_description" rows="3" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ $old('performance_description') }}</textarea>
+                <textarea name="performance_description" rows="3" required autocapitalize="sentences" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ $old('performance_description') }}</textarea>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">

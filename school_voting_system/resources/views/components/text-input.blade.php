@@ -5,7 +5,8 @@
     $fieldName = (string) $attributes->get('name', $attributes->get('id', ''));
     $sensitiveType = in_array($inputType, ['email', 'password', 'url', 'hidden', 'number', 'tel'], true);
     $sensitiveName = (bool) preg_match('/account[_-]?id|email|password|username|token|otp|pin|code|slug/i', $fieldName);
-    $defaultAutocapitalize = ($sensitiveType || $sensitiveName) ? 'none' : 'words';
+    $personName = (bool) preg_match('/^(name|first_name|last_name|display_name|leader)$/i', $fieldName);
+    $defaultAutocapitalize = ($sensitiveType || $sensitiveName || ! $personName) ? 'none' : 'words';
 @endphp
 
 <input

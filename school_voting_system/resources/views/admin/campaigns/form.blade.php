@@ -37,13 +37,13 @@
 
             <div>
                 <label class="block text-sm font-medium text-slate-300">Platform</label>
-                <textarea name="platform" rows="4" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('platform', optional($partylist)->platform) }}</textarea>
+                <textarea name="platform" rows="4" autocapitalize="sentences" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('platform', optional($partylist)->platform) }}</textarea>
                 @error('platform')<p class="mt-1 text-sm text-rose-400">{{ $message }}</p>@enderror
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-slate-300">Description</label>
-                <textarea name="description" rows="3" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('description', optional($partylist)->description) }}</textarea>
+                <textarea name="description" rows="3" autocapitalize="sentences" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('description', optional($partylist)->description) }}</textarea>
                 @error('description')<p class="mt-1 text-sm text-rose-400">{{ $message }}</p>@enderror
             </div>
 

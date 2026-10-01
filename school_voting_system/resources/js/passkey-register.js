@@ -11,7 +11,6 @@ import {
     userFacingPasskeyError,
     webAuthnPublicKeyFromPayload,
 } from './passkey-helpers.js';
-import './auto-capitalize.js';
 import { initInAppBrowserGate } from './in-app-browser.js';
 
 async function fetchJson(url, options = {}) {

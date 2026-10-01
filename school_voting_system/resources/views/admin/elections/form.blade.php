@@ -32,7 +32,7 @@
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-slate-300">Description</label>
-                        <textarea name="description" rows="3" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('description', optional($election)->description) }}</textarea>
+                        <textarea name="description" rows="3" autocapitalize="sentences" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old('description', optional($election)->description) }}</textarea>
                     </div>
                     @include('admin.partials.form-input', ['label' => 'Voting starts', 'name' => 'voting_starts_at', 'type' => 'datetime-local', 'value' => optional(optional($election)->voting_starts_at)->format('Y-m-d\TH:i')])
                     @include('admin.partials.form-input', ['label' => 'Voting ends', 'name' => 'voting_ends_at', 'type' => 'datetime-local', 'value' => optional(optional($election)->voting_ends_at)->format('Y-m-d\TH:i')])
@@ -184,7 +184,7 @@
                                     'removeName' => "existing_candidates[{$candidate->id}][remove_photo]",
                                     'photoUrl' => $existingPhotoUrl,
                                 ])
-                                <input type="text" name="existing_candidates[{{ $candidate->id }}][display_name]" value="{{ old("existing_candidates.{$candidate->id}.display_name", $candidate->display_name) }}" placeholder="Display name" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" />
+                                <input type="text" name="existing_candidates[{{ $candidate->id }}][display_name]" value="{{ old("existing_candidates.{$candidate->id}.display_name", $candidate->display_name) }}" placeholder="Display name" autocapitalize="words" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" />
                                 <select name="existing_candidates[{{ $candidate->id }}][election_category_id]" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
                                     @foreach ($election->categories as $category)
                                         <option value="{{ $category->id }}" @selected(old("existing_candidates.{$candidate->id}.election_category_id", $candidate->election_category_id) == $category->id)>{{ $category->name }}</option>
@@ -200,7 +200,7 @@
                                     <input type="checkbox" name="existing_candidates[{{ $candidate->id }}][is_active]" value="1" @checked(old("existing_candidates.{$candidate->id}.is_active", $candidate->is_active)) class="rounded border-slate-700 bg-slate-950/50 text-violet-500" />
                                     Active
                                 </label>
-                                <textarea name="existing_candidates[{{ $candidate->id }}][platform]" rows="2" placeholder="Platform" class="md:col-span-2 rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old("existing_candidates.{$candidate->id}.platform", $candidate->platform) }}</textarea>
+                                <textarea name="existing_candidates[{{ $candidate->id }}][platform]" rows="2" placeholder="Platform" autocapitalize="sentences" class="md:col-span-2 rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">{{ old("existing_candidates.{$candidate->id}.platform", $candidate->platform) }}</textarea>
                             </div>
                         @endforeach
                     </div>

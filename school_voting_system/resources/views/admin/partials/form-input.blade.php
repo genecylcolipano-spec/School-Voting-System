@@ -6,6 +6,10 @@
     if (in_array($type, ['datetime-local', 'date', 'time'], true)) {
         $inputClass .= ' [color-scheme:dark]';
     }
+
+    $personName = in_array($name, ['display_name', 'first_name', 'last_name', 'leader'], true);
+    $sensitiveType = in_array($type, ['email', 'password', 'url', 'number', 'tel', 'hidden'], true);
+    $defaultAutocapitalize = ($sensitiveType || ! $personName) ? 'none' : 'words';
 @endphp
 
 <div>
@@ -15,9 +19,10 @@
         name="{{ $name }}"
         type="{{ $type }}"
         value="{{ old($name, $value) }}"
+        autocapitalize="{{ $defaultAutocapitalize }}"
         @if ($required) required @endif
         @if ($maxlength) maxlength="{{ $maxlength }}" @endif
-        {{ $attributes->merge(['class' => $inputClass]) }}
+        class="{{ $inputClass }}"
     />
     @error($name)
         <p class="mt-1 text-sm text-rose-300">{{ $message }}</p>
