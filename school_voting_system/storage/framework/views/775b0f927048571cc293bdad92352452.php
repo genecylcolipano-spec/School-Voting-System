@@ -19,7 +19,6 @@
 <body class="h-dvh overflow-hidden bg-slate-950 font-[Instrument_Sans] text-slate-100 antialiased">
     <?php
         $periodLabel = \App\Support\SchoolBranding::periodLabel();
-        $poweredBy = \App\Support\SchoolBranding::poweredBy();
         $registrationEnabled = $registrationEnabled ?? true;
         $recoveryEnabled = $recoveryEnabled ?? true;
         $inAppBrowser = \App\Support\InAppBrowser::detect(request()->userAgent());
@@ -45,9 +44,26 @@
                     </div>
                 <?php endif; ?>
                 <p class="mt-3 text-xs font-semibold uppercase tracking-[0.35em] text-cyan-300/80"><?php echo e(\App\Support\SchoolBranding::systemName()); ?></p>
-                <?php if($poweredBy !== ''): ?>
-                    <p class="mt-1 text-xs text-slate-500"><?php echo e($poweredBy); ?></p>
-                <?php endif; ?>
+                <?php if (isset($component)) { $__componentOriginalda9bc475b825242b18c29bb41b6b2e85 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalda9bc475b825242b18c29bb41b6b2e85 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.powered-by','data' => ['class' => 'mt-1 text-xs leading-snug text-slate-400']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('powered-by'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['class' => 'mt-1 text-xs leading-snug text-slate-400']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalda9bc475b825242b18c29bb41b6b2e85)): ?>
+<?php $attributes = $__attributesOriginalda9bc475b825242b18c29bb41b6b2e85; ?>
+<?php unset($__attributesOriginalda9bc475b825242b18c29bb41b6b2e85); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalda9bc475b825242b18c29bb41b6b2e85)): ?>
+<?php $component = $__componentOriginalda9bc475b825242b18c29bb41b6b2e85; ?>
+<?php unset($__componentOriginalda9bc475b825242b18c29bb41b6b2e85); ?>
+<?php endif; ?>
                 <h1 class="mt-2 text-2xl font-bold text-white sm:text-3xl">Secure Passkey Portal</h1>
                 <?php if($periodLabel !== ''): ?>
                     <p class="mt-2 text-sm text-slate-400"><?php echo e($periodLabel); ?></p>

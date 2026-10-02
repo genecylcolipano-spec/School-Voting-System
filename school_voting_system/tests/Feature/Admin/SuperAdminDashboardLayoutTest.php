@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Election;
 use App\Models\User;
+use App\Support\SchoolBranding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -29,6 +30,10 @@ class SuperAdminDashboardLayoutTest extends TestCase
             ->get(route('super-admin.dashboard'))
             ->assertOk()
             ->assertSee('Chief Super Administrator')
+            ->assertSee('Powered by', false)
+            ->assertSee(SchoolBranding::schoolName(), false)
+            ->assertSee('school-name', false)
+            ->assertSee('MonotypeCorsiva.ttf', false)
             ->assertDontSee('2xl:grid-cols-9', false)
             ->assertSee('xl:grid-cols-5', false)
             ->assertSee('md:grid-cols-2 lg:grid-cols-3', false)

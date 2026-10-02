@@ -19,7 +19,6 @@
 <body class="h-dvh overflow-hidden bg-slate-950 font-[Instrument_Sans] text-slate-100 antialiased">
     @php
         $periodLabel = \App\Support\SchoolBranding::periodLabel();
-        $poweredBy = \App\Support\SchoolBranding::poweredBy();
         $registrationEnabled = $registrationEnabled ?? true;
         $recoveryEnabled = $recoveryEnabled ?? true;
         $inAppBrowser = \App\Support\InAppBrowser::detect(request()->userAgent());
@@ -45,9 +44,7 @@
                     </div>
                 @endif
                 <p class="mt-3 text-xs font-semibold uppercase tracking-[0.35em] text-cyan-300/80">{{ \App\Support\SchoolBranding::systemName() }}</p>
-                @if ($poweredBy !== '')
-                    <p class="mt-1 text-xs text-slate-500">{{ $poweredBy }}</p>
-                @endif
+                <x-powered-by class="mt-1 text-xs leading-snug text-slate-400" />
                 <h1 class="mt-2 text-2xl font-bold text-white sm:text-3xl">Secure Passkey Portal</h1>
                 @if ($periodLabel !== '')
                     <p class="mt-2 text-sm text-slate-400">{{ $periodLabel }}</p>

@@ -9,7 +9,6 @@
 @php
     $systemName = \App\Support\SchoolBranding::systemName();
     $schoolName = \App\Support\SchoolBranding::schoolName();
-    $poweredBy = \App\Support\SchoolBranding::poweredBy();
     // Custom upload only — otherwise use the purple book icon (not the Rosemont crest).
     $logoUrl = \App\Support\SchoolBranding::logoUrl(withFallback: false);
 @endphp
@@ -40,8 +39,8 @@
         @if (filled($subtitle))
             <p class="truncate text-xs text-slate-500">{{ $subtitle }}</p>
         @endif
-        @if (filled($poweredBy))
-            <p class="truncate text-[10px] text-slate-500">{{ $poweredBy }}</p>
+        @if (filled($schoolName))
+            <x-powered-by class="text-[10px] leading-snug text-slate-500" />
         @endif
     </div>
 </div>

@@ -15,9 +15,7 @@
             </svg>
         </div>
         <p class="text-xs font-semibold uppercase tracking-wide text-amber-300">{{ \App\Support\SchoolBranding::systemName() }}</p>
-        @if ($poweredBy = \App\Support\SchoolBranding::poweredBy())
-            <p class="mt-1 text-xs text-slate-500">{{ $poweredBy }}</p>
-        @endif
+        <x-powered-by class="mt-1 text-xs leading-snug text-slate-500" />
         <p class="mt-2 text-xs font-semibold uppercase tracking-wide text-amber-300/70">Maintenance Mode</p>
         <h1 class="mt-3 text-2xl font-bold text-white sm:text-3xl">We'll be right back</h1>
         <p class="mt-4 text-sm leading-relaxed text-slate-400">{{ $message }}</p>

@@ -43,7 +43,6 @@ unset($__defined_vars, $__key, $__value); ?>
 <?php
     $systemName = \App\Support\SchoolBranding::systemName();
     $schoolName = \App\Support\SchoolBranding::schoolName();
-    $poweredBy = \App\Support\SchoolBranding::poweredBy();
     // Custom upload only — otherwise use the purple book icon (not the Rosemont crest).
     $logoUrl = \App\Support\SchoolBranding::logoUrl(withFallback: false);
 ?>
@@ -74,8 +73,27 @@ unset($__defined_vars, $__key, $__value); ?>
         <?php if(filled($subtitle)): ?>
             <p class="truncate text-xs text-slate-500"><?php echo e($subtitle); ?></p>
         <?php endif; ?>
-        <?php if(filled($poweredBy)): ?>
-            <p class="truncate text-[10px] text-slate-500"><?php echo e($poweredBy); ?></p>
+        <?php if(filled($schoolName)): ?>
+            <?php if (isset($component)) { $__componentOriginalda9bc475b825242b18c29bb41b6b2e85 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalda9bc475b825242b18c29bb41b6b2e85 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.powered-by','data' => ['class' => 'text-[10px] leading-snug text-slate-500']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('powered-by'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['class' => 'text-[10px] leading-snug text-slate-500']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalda9bc475b825242b18c29bb41b6b2e85)): ?>
+<?php $attributes = $__attributesOriginalda9bc475b825242b18c29bb41b6b2e85; ?>
+<?php unset($__attributesOriginalda9bc475b825242b18c29bb41b6b2e85); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalda9bc475b825242b18c29bb41b6b2e85)): ?>
+<?php $component = $__componentOriginalda9bc475b825242b18c29bb41b6b2e85; ?>
+<?php unset($__componentOriginalda9bc475b825242b18c29bb41b6b2e85); ?>
+<?php endif; ?>
         <?php endif; ?>
     </div>
 </div>

@@ -29,9 +29,7 @@
                     </div>
                 @endif
                 <p class="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300/80">{{ \App\Support\SchoolBranding::systemName() }}</p>
-                @if ($poweredBy = \App\Support\SchoolBranding::poweredBy())
-                    <p class="mt-1 text-xs text-slate-500">{{ $poweredBy }}</p>
-                @endif
+                <x-powered-by class="mt-1 text-xs leading-snug text-slate-400" />
                 <h1 class="mt-2 text-xl font-bold text-white sm:text-2xl">Create portal account</h1>
                 <p class="mx-auto mt-1 max-w-sm text-sm text-slate-400">
                     {{ \App\Support\SchoolBranding::periodLabel() }} · Confirm your roster details first. A secure passkey setup link (valid {{ $expirationHours ?? 24 }} hours) is sent only after verification.

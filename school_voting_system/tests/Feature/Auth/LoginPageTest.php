@@ -23,7 +23,10 @@ class LoginPageTest extends TestCase
             ->assertSee(route('register'), false)
             ->assertSee(route('login.recovery'), false)
             ->assertSee(\App\Support\SchoolBranding::periodLabel(), false)
-            ->assertSee(\App\Support\SchoolBranding::poweredBy(), false)
+            ->assertSee('Powered by', false)
+            ->assertSee(\App\Support\SchoolBranding::schoolName(), false)
+            ->assertSee('school-name', false)
+            ->assertSee('MonotypeCorsiva.ttf', false)
             ->assertSee('favicon-svs.png', false)
             ->assertSee('theme-color', false);
     }

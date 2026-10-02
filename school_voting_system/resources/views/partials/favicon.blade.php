@@ -2,3 +2,4 @@
 <link rel="icon" href="{{ asset('images/favicon-svs.png') }}?v=2" type="image/png">
 <link rel="apple-touch-icon" href="{{ asset('images/favicon-svs.png') }}?v=2">
 <meta name="theme-color" content="#020617">
+@include('partials.school-font')
