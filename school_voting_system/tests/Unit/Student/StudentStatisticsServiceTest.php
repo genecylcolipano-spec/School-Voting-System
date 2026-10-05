@@ -80,6 +80,32 @@ class StudentStatisticsServiceTest extends TestCase
         $this->assertSame(now()->format('F Y'), $afterVote['achievements']['most_active_month']);
     }
 
+    public function test_votes_cast_counts_one_ballot_not_each_position(): void
+    {
+        $student = User::factory()->create(['created_at' => now()->subDay()]);
+        $fixture = $this->createElectionBallot(2);
+
+        Vote::withoutEvents(function () use ($student, $fixture) {
+            foreach ($fixture['candidates'] as $index => $candidate) {
+                Vote::query()->create([
+                    'user_id' => $student->id,
+                    'election_id' => $fixture['election']->id,
+                    'election_category_id' => $fixture['categories'][$index]->id,
+                    'candidate_id' => $candidate->id,
+                    'voted_at' => now(),
+                ]);
+            }
+        });
+
+        $stats = app(StudentStatisticsService::class)->forStudent($student->fresh());
+
+        $this->assertSame(1, $stats['overview']['votes_cast']);
+        $this->assertSame(1, $stats['overview']['elections_joined']);
+        $this->assertSame(2, $stats['votingAnalytics']['positions_voted']);
+        $this->assertArrayNotHasKey('events', $stats['engagement']);
+        $this->assertArrayNotHasKey('last_event', $stats['activitySummary']);
+    }
+
     public function test_fundraising_engagement_ignores_draft_and_hidden_drives(): void
     {
         $student = User::factory()->create();
@@ -176,6 +202,23 @@ class StudentStatisticsServiceTest extends TestCase
         $this->assertSame(0, $stats['engagement']['competitions']);
     }
 
+    public function test_deleted_competitions_are_excluded_from_joined_and_last_competition(): void
+    {
+        $student = User::factory()->create();
+        $kept = $this->makeTalentEvent('Campus Idol');
+        $deleted = $this->makeTalentEvent('Deleted Showcase');
+
+        $this->makeTalentEntry($kept, $student, now()->subDay());
+        $this->makeTalentEntry($deleted, $student, now());
+
+        $deleted->delete();
+
+        $stats = app(StudentStatisticsService::class)->forStudent($student);
+
+        $this->assertSame(1, $stats['overview']['competitions_joined']);
+        $this->assertSame('Campus Idol', $stats['activitySummary']['last_competition']);
+    }
+
     /**
      * @param  array<string, mixed>  $overrides
      */
@@ -194,5 +237,39 @@ class StudentStatisticsServiceTest extends TestCase
             'ends_on' => now()->addDays(10)->toDateString(),
             'created_by' => $admin->id,
         ], $overrides));
+    }
+
+    protected function makeTalentEvent(string $title): TalentEvent
+    {
+        return TalentEvent::query()->create([
+            'election_id' => Election::factory()->active()->create()->id,
+            'title' => $title,
+            'slug' => Str::slug($title).'-'.Str::random(6),
+            'event_date' => now()->addDay(),
+            'venue' => 'Hall',
+            'status' => TalentEventStatus::VotingOpen,
+            'voting_method' => TalentVotingMethod::StudentOnly->value,
+            'voting_starts_at' => now()->subHour(),
+            'voting_ends_at' => now()->addDay(),
+            'published_to_students' => true,
+            'published_at' => now()->subHour(),
+            'created_by' => User::factory()->admin()->create()->id,
+        ]);
+    }
+
+    protected function makeTalentEntry(TalentEvent $event, User $student, $createdAt): TalentEventEntry
+    {
+        $entry = TalentEventEntry::query()->create([
+            'talent_event_id' => $event->id,
+            'user_id' => $student->id,
+            'display_name' => $student->name,
+            'performance_title' => 'Solo',
+            'status' => TalentEventEntry::STATUS_APPROVED,
+            'source' => TalentEventEntry::SOURCE_SELF,
+        ]);
+
+        $entry->forceFill(['created_at' => $createdAt, 'updated_at' => $createdAt])->save();
+
+        return $entry;
     }
 }

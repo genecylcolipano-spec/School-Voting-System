@@ -97,14 +97,13 @@ class StudentStatisticsService
 
         return [
             'overview' => [
-                'votes_cast' => (int) $student->votes_count,
+                'votes_cast' => $electionsJoined,
                 'elections_joined' => $electionsJoined,
                 'competitions_joined' => $competitionsJoined,
                 'fundraisers_supported' => $fundraisersSupported,
             ],
             'activitySummary' => [
                 'recent_vote' => $lastVote?->election?->title,
-                'last_event' => null,
                 'last_competition' => $lastCompetition?->talentEvent?->title,
                 'last_donation' => $lastDonation?->fundraiser?->title,
                 'passkeys' => (int) $student->passkeys_count,
@@ -134,7 +133,6 @@ class StudentStatisticsService
             ],
             'engagement' => [
                 'voting' => $lifetimeVotingPercent,
-                'events' => null,
                 'competitions' => $this->percent($competitionsJoined, $eligibleCompetitions),
                 'fundraising' => $this->percent($fundraisersSupported, $visibleFundraisers),
             ],
@@ -236,7 +234,8 @@ class StudentStatisticsService
             ->whereNotIn('status', [
                 TalentEventEntry::STATUS_WITHDRAWN,
                 TalentEventEntry::STATUS_ARCHIVED,
-            ]);
+            ])
+            ->whereHas('talentEvent');
     }
 
     /**

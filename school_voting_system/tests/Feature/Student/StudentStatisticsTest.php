@@ -29,6 +29,10 @@ class StudentStatisticsTest extends TestCase
             ->assertDontSee('Campaigns Supported')
             ->assertDontSee('Most Active Semester')
             ->assertDontSee('Certificates Earned')
-            ->assertDontSee('Completed Votes');
+            ->assertDontSee('Completed Votes')
+            ->assertDontSee('Event Participation')
+            ->assertDontSee('Last Event Joined')
+            ->assertDontSee('Event registration is not available yet')
+            ->assertSee('elections, talent competitions, and fundraising campaigns');
     }
 }
