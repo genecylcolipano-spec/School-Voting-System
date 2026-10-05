@@ -45,7 +45,12 @@ class SuperAdminDashboardController extends Controller
             ->orderByRaw("CASE role WHEN 'super_admin' THEN 0 WHEN 'admin' THEN 1 WHEN 'faculty' THEN 2 WHEN 'student' THEN 3 ELSE 4 END")
             ->orderBy('account_id');
 
-        $elections = Election::query()->withCount(['votes', 'candidates'])->latest()->limit(10)->get();
+        $elections = Election::query()
+            ->withCount(['votes', 'candidates'])
+            ->withUniqueVoterCount()
+            ->latest()
+            ->limit(10)
+            ->get();
         $elections->each(function (Election $election) {
             $election->setAttribute('dashboard_actions', $this->elections->availableActions($election));
             $election->setAttribute('can_schedule', $this->elections->canSchedule($election));

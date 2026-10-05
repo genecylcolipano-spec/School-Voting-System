@@ -52,7 +52,7 @@ class SuperAdminDashboardService
         }
 
         $votedStudents = (clone $voteQuery)->distinct('user_id')->count('user_id');
-        $totalVotes = (clone $voteQuery)->count();
+        $totalVotes = $liveElections->sum(fn (Election $election) => $election->uniqueVoterCount());
         $electionScope = match ($liveElections->count()) {
             0 => 'No live election',
             1 => (string) $liveElections->first()?->title,

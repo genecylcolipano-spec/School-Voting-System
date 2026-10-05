@@ -71,6 +71,7 @@ class AdminLiveVotingService
                 : $this->windowClosedMessage($election),
             'election_title' => $election->title,
             'total_votes' => $stats['votes_cast'],
+            'position_votes' => (int) $election->votes()->count(),
             'unique_voters' => $breakdown['voted'],
             'eligible_voters' => $breakdown['eligible'],
             'registered_students' => $breakdown['eligible'],

@@ -171,6 +171,59 @@ class AdminLiveMonitoringServiceTest extends TestCase
         $this->assertStringContainsString(' +1', $card['position_leaders'][1]['display']);
     }
 
+    public function test_election_card_votes_cast_counts_unique_students_not_position_rows(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $election = Election::factory()->active()->create(['title' => 'Unique Ballot Council']);
+        $president = ElectionCategory::factory()->create([
+            'election_id' => $election->id,
+            'name' => 'President',
+            'sort_order' => 1,
+        ]);
+        $secretary = ElectionCategory::factory()->create([
+            'election_id' => $election->id,
+            'name' => 'Secretary',
+            'sort_order' => 3,
+        ]);
+        $maria = Candidate::factory()->create([
+            'election_id' => $election->id,
+            'election_category_id' => $president->id,
+            'display_name' => 'Maria Santos',
+        ]);
+        $juan = Candidate::factory()->create([
+            'election_id' => $election->id,
+            'election_category_id' => $secretary->id,
+            'display_name' => 'Juan Dela Cruz',
+        ]);
+        $voter = User::factory()->create();
+
+        Vote::withoutEvents(function () use ($voter, $election, $president, $maria, $secretary, $juan) {
+            Vote::query()->create([
+                'user_id' => $voter->id,
+                'election_id' => $election->id,
+                'election_category_id' => $president->id,
+                'candidate_id' => $maria->id,
+                'voted_at' => now(),
+            ]);
+            Vote::query()->create([
+                'user_id' => $voter->id,
+                'election_id' => $election->id,
+                'election_category_id' => $secretary->id,
+                'candidate_id' => $juan->id,
+                'voted_at' => now(),
+            ]);
+        });
+
+        $card = app(AdminLiveMonitoringService::class)
+            ->electionCards($super)
+            ->firstWhere('name', 'Unique Ballot Council');
+
+        $this->assertSame(1, $card['votes_cast']);
+        $this->assertSame(1, $card['position_leaders'][0]['votes']);
+        $this->assertSame(1, $card['position_leaders'][1]['votes']);
+        $this->assertSame(2, $election->votes()->count());
+    }
+
     public function test_paused_election_still_shows_position_leaders(): void
     {
         $super = User::factory()->superAdmin()->create();

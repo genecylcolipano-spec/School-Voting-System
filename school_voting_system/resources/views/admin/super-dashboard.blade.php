@@ -223,7 +223,7 @@
                                     <p class="font-semibold text-white">{{ $election->title }}</p>
                                     <a href="{{ route('admin.elections.edit', $election) }}" class="text-xs font-semibold text-violet-300 hover:text-violet-200">Manage</a>
                                 </div>
-                                <p class="text-xs text-slate-400">{{ $election->status?->label() }} · {{ $election->votes_count }} votes · {{ $election->candidates_count }} candidates
+                                <p class="text-xs text-slate-400">{{ $election->status?->label() }} · {{ $election->uniqueVoterCount() }} votes · {{ $election->candidates_count }} candidates
                                     @if ($election->results_locked) · <span class="text-amber-300">Results Locked</span> @endif
                                     @if ($election->public_results_published) · <span class="text-emerald-300">Results Published</span> @endif
                                     @if ($election->is_paused) · <span class="text-rose-300">Paused</span> @endif

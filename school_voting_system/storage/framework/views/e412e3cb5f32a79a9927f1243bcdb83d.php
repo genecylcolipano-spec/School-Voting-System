@@ -58,7 +58,7 @@
                 ['Positions', $election->categories_count],
                 ['Candidates', $election->candidates_count],
                 ['Campaigns', $election->partylists_count],
-                ['Votes', $election->votes_count],
+                ['Votes', $election->uniqueVoterCount()],
             ]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as [$label, $value]): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-4">
                     <p class="text-[10px] uppercase tracking-wide text-slate-500"><?php echo e($label); ?></p>

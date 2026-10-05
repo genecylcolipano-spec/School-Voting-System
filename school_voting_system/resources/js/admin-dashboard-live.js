@@ -1268,7 +1268,7 @@ function applyLiveVoting(voting) {
     updateLiveCountdown(voting);
     const allCandidates = voting.leading_candidates ?? [];
     const chartLeaders = leadersPerPosition(allCandidates);
-    renderVoteDistributionChart(chart, chartLeaders, voting.total_votes ?? 0);
+    renderVoteDistributionChart(chart, chartLeaders, voting.position_votes ?? voting.total_votes ?? 0);
     renderRecentActivity(activity, voting.recent_activity ?? []);
     renderLeadingCandidates(leaders, allCandidates);
     renderPartylistComparison(partylists, voting.partylist_comparison ?? [], allCandidates);

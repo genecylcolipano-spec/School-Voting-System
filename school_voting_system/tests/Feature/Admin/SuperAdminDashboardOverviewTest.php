@@ -168,6 +168,63 @@ class SuperAdminDashboardOverviewTest extends TestCase
         $this->assertSame(100.0, $stats['voter_turnout']);
     }
 
+    public function test_live_votes_count_unique_students_per_election_not_position_rows(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $voter = User::factory()->create(['student_status' => StudentStatus::Enrolled]);
+        User::factory()->create(['student_status' => StudentStatus::Enrolled]);
+
+        $live = Election::factory()->active()->create([
+            'title' => 'Multi Office Council',
+            'created_by' => $super->id,
+        ]);
+        $president = ElectionCategory::factory()->create(['election_id' => $live->id]);
+        $secretary = ElectionCategory::factory()->create(['election_id' => $live->id]);
+        $presidentCandidate = Candidate::factory()->create([
+            'election_id' => $live->id,
+            'election_category_id' => $president->id,
+        ]);
+        $secretaryCandidate = Candidate::factory()->create([
+            'election_id' => $live->id,
+            'election_category_id' => $secretary->id,
+        ]);
+
+        Vote::castBallot($voter, $presidentCandidate);
+        Vote::castBallot($voter, $secretaryCandidate);
+
+        $stats = app(SuperAdminDashboardService::class)->statistics();
+        $this->assertSame(1, $stats['total_votes']);
+        $this->assertSame(1, $stats['voted_students']);
+        $this->assertSame(50.0, $stats['voter_turnout']);
+    }
+
+    public function test_same_student_in_two_live_elections_counts_once_per_election(): void
+    {
+        $super = User::factory()->superAdmin()->create();
+        $voter = User::factory()->create(['student_status' => StudentStatus::Enrolled]);
+        User::factory()->create(['student_status' => StudentStatus::Enrolled]);
+
+        $first = Election::factory()->active()->create(['title' => 'Council A', 'created_by' => $super->id]);
+        $second = Election::factory()->active()->create(['title' => 'Council B', 'created_by' => $super->id]);
+
+        $firstCandidate = Candidate::factory()->create([
+            'election_id' => $first->id,
+            'election_category_id' => ElectionCategory::factory()->create(['election_id' => $first->id])->id,
+        ]);
+        $secondCandidate = Candidate::factory()->create([
+            'election_id' => $second->id,
+            'election_category_id' => ElectionCategory::factory()->create(['election_id' => $second->id])->id,
+        ]);
+
+        Vote::castBallot($voter, $firstCandidate);
+        Vote::castBallot($voter, $secondCandidate);
+
+        $stats = app(SuperAdminDashboardService::class)->statistics();
+        $this->assertSame(2, $stats['total_votes']);
+        $this->assertSame(1, $stats['voted_students']);
+        $this->assertSame(50.0, $stats['voter_turnout']);
+    }
+
     public function test_portal_account_search_matches_phone(): void
     {
         $super = User::factory()->superAdmin()->create();

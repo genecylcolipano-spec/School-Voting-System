@@ -471,7 +471,7 @@ class StudentResultsService
     {
         return [
             'turnout_percent' => $election->turnoutPercent(),
-            'total_votes' => (int) $election->votes()->count(),
+            'total_votes' => $election->uniqueVoterCount(),
             'participants' => $election->eligibleVoterCount(),
         ];
     }

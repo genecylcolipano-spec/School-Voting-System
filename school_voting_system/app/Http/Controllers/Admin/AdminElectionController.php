@@ -40,6 +40,7 @@ class AdminElectionController extends Controller
 
         $query = Election::query()
             ->withCount(['categories', 'candidates', 'partylists', 'votes'])
+            ->withUniqueVoterCount()
             ->latest();
 
         if (! $request->user()->isSuperAdmin()) {

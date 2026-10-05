@@ -262,7 +262,7 @@ class AdminLiveMonitoringService
         $isLive = $phase['key'] === 'voting_open';
         $showPositionLeaders = in_array($phase['key'], ['voting_open', 'voting_paused'], true);
         $eligible = $election->eligibleVoterCount();
-        $votesCast = (int) ($election->votes_count ?? 0);
+        $votesCast = $uniqueVoters;
         $turnout = $eligible > 0 ? round(($uniqueVoters / $eligible) * 100, 1) : 0.0;
         $lastAt = $lastVoteAt ? Carbon::parse($lastVoteAt) : null;
         $canManageLive = $this->scope->canPauseElection($viewer)

@@ -106,13 +106,12 @@ class AdminResultsService
         $rankings = $this->electionRankings($election);
         $winners = $this->electionWinners($rankings);
         $eligible = $election->eligibleVoterCount();
-        $votesCast = (int) $election->votes()->count();
-        $voted = (int) $election->votes()->distinct('user_id')->count('user_id');
+        $voted = $election->uniqueVoterCount();
 
         return [
             'name' => $election->title,
             'summary' => [
-                'total_votes' => $votesCast,
+                'total_votes' => $voted,
                 'turnout_percent' => $eligible > 0 ? round(($voted / $eligible) * 100, 1) : 0.0,
                 'participants' => $eligible,
             ],
@@ -472,10 +471,10 @@ class AdminResultsService
         }
 
         $participants = $election->eligibleVoterCount();
-        $uniqueVoters = (int) $election->votes()->distinct('user_id')->count('user_id');
+        $uniqueVoters = $election->uniqueVoterCount();
 
         return [
-            'total_votes' => (int) $election->votes()->count(),
+            'total_votes' => $uniqueVoters,
             'turnout_percent' => $participants > 0
                 ? round(($uniqueVoters / $participants) * 100, 1)
                 : 0.0,

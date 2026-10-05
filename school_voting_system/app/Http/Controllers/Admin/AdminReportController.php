@@ -389,13 +389,12 @@ class AdminReportController extends Controller
     protected function electionStatistics(Election $election): array
     {
         $eligible = $election->eligibleVoterCount();
-        $voted = (int) $election->votes()->distinct('user_id')->count('user_id');
-        $votesCast = (int) $election->votes()->count();
+        $voted = $election->uniqueVoterCount();
 
         return [
             'eligible_voters' => $eligible,
             'voted_students' => $voted,
-            'votes_cast' => $votesCast,
+            'votes_cast' => $voted,
             'turnout_percent' => $eligible > 0 ? round(($voted / $eligible) * 100, 1) : 0.0,
         ];
     }

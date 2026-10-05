@@ -99,7 +99,7 @@ class ComplianceReportService
             return $this->shell('Election Summary Report', $this->electionDetailTable($election));
         }
 
-        $elections = Election::query()->withCount('votes')->latest('id')->get();
+        $elections = Election::query()->withUniqueVoterCount()->latest('id')->get();
 
         if ($elections->isEmpty()) {
             return $this->shell('Election Summary Report', '<p>No elections have been created yet.</p>');
@@ -110,7 +110,7 @@ class ComplianceReportService
                 .$this->td($election->title)
                 .$this->td($election->status?->label() ?? '—')
                 .$this->td($election->public_results_published ? 'Published' : 'Not published')
-                .$this->td((string) $election->votes_count)
+                .$this->td((string) $election->uniqueVoterCount())
                 .$this->td($election->integrity_hash ?: '—')
                 .'</tr>';
         })->join('');
@@ -140,8 +140,8 @@ class ComplianceReportService
     protected function electionDetailTable(Election $election, bool $turnoutOnly = false): string
     {
         $eligible = $election->eligibleVoterCount();
-        $voted = (int) $election->votes()->distinct('user_id')->count('user_id');
-        $ballots = $election->votes()->count();
+        $voted = $election->uniqueVoterCount();
+        $ballots = $voted;
         $turnout = $eligible > 0 ? round(($voted / $eligible) * 100, 1) : 0.0;
         $window = ($election->voting_starts_at?->format('M d, Y g:i A') ?? '—')
             .' – '

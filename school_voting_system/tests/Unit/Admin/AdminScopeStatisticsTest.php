@@ -150,6 +150,96 @@ class AdminScopeStatisticsTest extends TestCase
         $this->assertNotNull($otherEligible->id);
     }
 
+    public function test_headline_vote_count_is_one_per_student_not_per_position(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $election = Election::factory()->active()->create([
+            'created_by' => $admin->id,
+        ]);
+
+        AdminAssignment::query()->create([
+            'user_id' => $admin->id,
+            'election_id' => $election->id,
+            'assigned_by' => $admin->id,
+        ]);
+
+        $voter = User::factory()->create([
+            'role' => UserRole::Student,
+            'is_active' => true,
+            'student_status' => StudentStatus::Enrolled,
+        ]);
+        User::factory()->create([
+            'role' => UserRole::Student,
+            'is_active' => true,
+            'student_status' => StudentStatus::Enrolled,
+        ]);
+
+        $president = ElectionCategory::query()->create([
+            'election_id' => $election->id,
+            'name' => 'President',
+            'slug' => 'president-unique',
+            'sort_order' => 1,
+            'max_selections' => 1,
+        ]);
+        $secretary = ElectionCategory::query()->create([
+            'election_id' => $election->id,
+            'name' => 'Secretary',
+            'slug' => 'secretary-unique',
+            'sort_order' => 2,
+            'max_selections' => 1,
+        ]);
+        $presidentCandidate = Candidate::query()->create([
+            'election_id' => $election->id,
+            'election_category_id' => $president->id,
+            'display_name' => 'President Candidate',
+            'position' => 'President',
+            'eligibility_status' => 'verified',
+            'is_active' => true,
+        ]);
+        $secretaryCandidate = Candidate::query()->create([
+            'election_id' => $election->id,
+            'election_category_id' => $secretary->id,
+            'display_name' => 'Secretary Candidate',
+            'position' => 'Secretary',
+            'eligibility_status' => 'verified',
+            'is_active' => true,
+        ]);
+
+        Vote::withoutEvents(function () use ($voter, $election, $president, $presidentCandidate, $secretary, $secretaryCandidate) {
+            Vote::query()->create([
+                'user_id' => $voter->id,
+                'election_id' => $election->id,
+                'election_category_id' => $president->id,
+                'candidate_id' => $presidentCandidate->id,
+                'voted_at' => now(),
+            ]);
+            Vote::query()->create([
+                'user_id' => $voter->id,
+                'election_id' => $election->id,
+                'election_category_id' => $secretary->id,
+                'candidate_id' => $secretaryCandidate->id,
+                'voted_at' => now(),
+            ]);
+        });
+
+        $this->assertSame(2, $election->votes()->count());
+        $this->assertSame(1, $election->uniqueVoterCount());
+        $this->assertSame(1, Election::query()->withUniqueVoterCount()->find($election->id)?->uniqueVoterCount());
+
+        $stats = app(AdminScopeService::class)->statistics($admin);
+        $breakdown = app(AdminScopeService::class)->voterBreakdown($admin);
+        $progress = app(\App\Services\Admin\AdminLiveVotingService::class)->progress($admin);
+        $report = app(\App\Services\Admin\AdminResultsService::class)->electionReportOverview($election, $admin);
+
+        $this->assertSame(1, $stats['votes_cast']);
+        $this->assertSame(1, $breakdown['voted']);
+        $this->assertSame(1, $progress['total_votes']);
+        $this->assertSame(2, $progress['position_votes']);
+        $this->assertSame(1, $report['summary']['total_votes']);
+        $this->assertSame(1, $presidentCandidate->fresh()->votes()->count());
+        $this->assertSame(1, $secretaryCandidate->fresh()->votes()->count());
+    }
+
     public function test_turnout_by_section_is_election_wide_and_exposes_grade_keys(): void
     {
         $admin = User::factory()->admin()->create();

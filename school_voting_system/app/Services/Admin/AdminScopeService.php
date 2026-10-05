@@ -369,12 +369,12 @@ class AdminScopeService
     {
         $election = $this->assignedElection($admin);
 
-        // Election monitors use school-wide eligible + all ballots for that election
-        // so assigned grade/section filters cannot hide real votes from the dashboard.
+        // Election monitors use school-wide eligible students and unique voters
+        // for that election so assigned grade/section filters cannot hide turnout.
         if ($election) {
             $eligible = $election->eligibleVoterCount();
-            $votesCast = (int) $election->votes()->count();
-            $voted = (int) $election->votes()->distinct('user_id')->count('user_id');
+            $voted = $election->uniqueVoterCount();
+            $votesCast = $voted;
         } else {
             $eligible = $this->scopedStudentsQuery($admin)
                 ->where('student_status', StudentStatus::Enrolled)
@@ -502,7 +502,7 @@ class AdminScopeService
 
         if ($election) {
             $eligible = $election->eligibleVoterCount();
-            $voted = (int) $election->votes()->distinct('user_id')->count('user_id');
+            $voted = $election->uniqueVoterCount();
             $notVoted = max(0, $eligible - $voted);
             $ineligible = User::query()
                 ->where('role', UserRole::Student)
@@ -571,7 +571,7 @@ class AdminScopeService
                 ->where('election_id', $election->id)
                 ->whereIn('user_id', $eligibleIds)
                 ->where('voted_at', '>=', $barDays->first()->copy()->startOfDay())
-                ->selectRaw('DATE(voted_at) as vote_date, COUNT(*) as total')
+                ->selectRaw('DATE(voted_at) as vote_date, COUNT(DISTINCT user_id) as total')
                 ->groupBy('vote_date')
                 ->pluck('total', 'vote_date');
 
@@ -1199,7 +1199,7 @@ class AdminScopeService
                 ->count();
 
         $votes = $election
-            ? (int) $election->votes()->count()
+            ? $election->uniqueVoterCount()
             : 0;
 
         $duplicateAttempts = AuditLog::query()

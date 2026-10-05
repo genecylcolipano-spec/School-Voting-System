@@ -104,7 +104,7 @@
                             </div>
                             <div>
                                 <dt class="text-[10px] uppercase tracking-wide text-slate-500">Votes</dt>
-                                <dd class="font-semibold text-white"><?php echo e($election->votes_count); ?></dd>
+                                <dd class="font-semibold text-white"><?php echo e($election->uniqueVoterCount()); ?></dd>
                             </div>
                         </dl>
                         <div class="mt-4">
@@ -181,7 +181,7 @@
                                 <td class="px-4 py-3"><?php echo e($election->categories_count); ?></td>
                                 <td class="px-4 py-3"><?php echo e($election->candidates_count); ?></td>
                                 <td class="px-4 py-3"><?php echo e($election->partylists_count); ?></td>
-                                <td class="px-4 py-3"><?php echo e($election->votes_count); ?></td>
+                                <td class="px-4 py-3"><?php echo e($election->uniqueVoterCount()); ?></td>
                                 <td class="px-4 py-3">
                                     <?php echo $__env->make('admin.elections.partials.row-actions', [
                                         'election' => $election,

@@ -97,6 +97,31 @@ class Election extends Model
         return $this->hasMany(BallotSubmission::class);
     }
 
+    public function uniqueVoterCount(): int
+    {
+        if (array_key_exists('unique_voters_count', $this->attributes) && $this->attributes['unique_voters_count'] !== null) {
+            return (int) $this->attributes['unique_voters_count'];
+        }
+
+        return (int) $this->votes()->distinct('user_id')->count('user_id');
+    }
+
+    public function scopeWithUniqueVoterCount(Builder $query): Builder
+    {
+        $votesTable = (new Vote)->getTable();
+        $electionsTable = $query->getModel()->getTable();
+
+        if ($query->getQuery()->columns === null) {
+            $query->select($electionsTable.'.*');
+        }
+
+        return $query->addSelect([
+            'unique_voters_count' => Vote::query()
+                ->selectRaw("count(distinct {$votesTable}.user_id)")
+                ->whereColumn("{$votesTable}.election_id", "{$electionsTable}.id"),
+        ]);
+    }
+
     public function eligibleVoterCount(): int
     {
         return User::query()
@@ -114,9 +139,7 @@ class Election extends Model
             return 0.0;
         }
 
-        $voted = $this->votes()->distinct('user_id')->count('user_id');
-
-        return round(($voted / $eligible) * 100, 1);
+        return round(($this->uniqueVoterCount() / $eligible) * 100, 1);
     }
 
     public function creator(): BelongsTo

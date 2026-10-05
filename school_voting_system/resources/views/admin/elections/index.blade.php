@@ -67,7 +67,7 @@
                             </div>
                             <div>
                                 <dt class="text-[10px] uppercase tracking-wide text-slate-500">Votes</dt>
-                                <dd class="font-semibold text-white">{{ $election->votes_count }}</dd>
+                                <dd class="font-semibold text-white">{{ $election->uniqueVoterCount() }}</dd>
                             </div>
                         </dl>
                         <div class="mt-4">
@@ -125,7 +125,7 @@
                                 <td class="px-4 py-3">{{ $election->categories_count }}</td>
                                 <td class="px-4 py-3">{{ $election->candidates_count }}</td>
                                 <td class="px-4 py-3">{{ $election->partylists_count }}</td>
-                                <td class="px-4 py-3">{{ $election->votes_count }}</td>
+                                <td class="px-4 py-3">{{ $election->uniqueVoterCount() }}</td>
                                 <td class="px-4 py-3">
                                     @include('admin.elections.partials.row-actions', [
                                         'election' => $election,

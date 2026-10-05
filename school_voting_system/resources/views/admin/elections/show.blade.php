@@ -21,7 +21,7 @@
                 ['Positions', $election->categories_count],
                 ['Candidates', $election->candidates_count],
                 ['Campaigns', $election->partylists_count],
-                ['Votes', $election->votes_count],
+                ['Votes', $election->uniqueVoterCount()],
             ] as [$label, $value])
                 <div class="rounded-2xl border border-violet-500/15 bg-slate-900/70 p-4">
                     <p class="text-[10px] uppercase tracking-wide text-slate-500">{{ $label }}</p>
