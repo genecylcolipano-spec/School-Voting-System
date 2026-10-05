@@ -234,13 +234,16 @@ class Election extends Model
 
     /**
      * Positions with at least one active candidate (required for a complete ballot).
+     * Pass a student to exclude course-restricted races that do not match.
      *
      * @return list<int>
      */
-    public function votableCategoryIds(): array
+    public function votableCategoryIds(?User $student = null): array
     {
         return $this->categories()
             ->whereHas('candidates', fn ($query) => $query->where('is_active', true))
+            ->get(['id', 'audience_course'])
+            ->filter(fn (ElectionCategory $category) => $category->isVisibleToVoter($student))
             ->pluck('id')
             ->map(fn ($id) => (int) $id)
             ->values()
@@ -300,11 +303,9 @@ class Election extends Model
 
     public function hasStudentCompletedBallot(User $user): bool
     {
-        $categoryIds = $this->categories()
-            ->whereHas('candidates', fn ($query) => $query->where('is_active', true))
-            ->pluck('id');
+        $categoryIds = $this->votableCategoryIds($user);
 
-        if ($categoryIds->isEmpty()) {
+        if ($categoryIds === []) {
             return $user->votes()->where('election_id', $this->id)->exists();
         }
 
@@ -314,7 +315,7 @@ class Election extends Model
             ->distinct('election_category_id')
             ->count('election_category_id');
 
-        return $votedCategories >= $categoryIds->count();
+        return $votedCategories >= count($categoryIds);
     }
 
     public function isAfterVotingEnd(?Carbon $at = null): bool

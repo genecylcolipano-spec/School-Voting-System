@@ -126,7 +126,12 @@
             <div class="mt-4 space-y-4">
                 @forelse ($election->categories as $category)
                     <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                        <p class="font-semibold text-white">{{ $category->name }}</p>
+                        <p class="font-semibold text-white">
+                            {{ $category->name }}
+                            @if ($category->audienceCourse())
+                                <span class="ml-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200">{{ $category->audienceCourse() }} only</span>
+                            @endif
+                        </p>
                         <ul class="mt-2 space-y-1 text-sm text-slate-300">
                             @forelse ($category->candidates as $candidate)
                                 <li>{{ $candidate->display_name }}@if ($candidate->party_or_group) <span class="text-slate-500">· {{ $candidate->party_or_group }}</span>@endif</li>

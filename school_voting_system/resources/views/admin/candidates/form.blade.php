@@ -34,7 +34,7 @@
                             value="{{ $category->id }}"
                             data-election-id="{{ $category->election_id }}"
                             @selected(old('election_category_id', optional($candidate)->election_category_id) == $category->id)
-                        >{{ $category->name }}</option>
+                        >{{ $category->name }}@if ($category->audienceCourse()) ({{ $category->audienceCourse() }} only)@endif</option>
                     @endforeach
                 </select>
                 @if ($categories->isEmpty())

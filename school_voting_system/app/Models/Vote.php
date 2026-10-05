@@ -128,7 +128,13 @@ class Vote extends Model
             throw new VoteIntegrityException('This election is not currently accepting votes.');
         }
 
-        if ($voter->hasVotedInCategory($candidate->category)) {
+        $category = $candidate->category ?? ElectionCategory::query()->find($candidate->election_category_id);
+
+        if ($category && ! $category->isVisibleToVoter($voter)) {
+            throw new VoteIntegrityException('This position is not available for your course.');
+        }
+
+        if ($category && $voter->hasVotedInCategory($category)) {
             throw new VoteIntegrityException('You have already voted in this category.');
         }
     }

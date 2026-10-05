@@ -82,6 +82,23 @@ function refreshPositionOptions() {
     });
 }
 
+function courseSelectMarkup(prefix, index) {
+    const list = document.getElementById('positions-list');
+    let courses = {};
+
+    try {
+        courses = JSON.parse(list?.dataset.courses || '{}');
+    } catch (error) {
+        courses = {};
+    }
+
+    const options = Object.entries(courses)
+        .map(([code, label]) => `<option value="${code}">${label} only</option>`)
+        .join('');
+
+    return `<select name="${prefix}[${index}][audience_course]" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-100"><option value="">All students</option>${options}</select>`;
+}
+
 function addPositionRow() {
     const list = document.getElementById('positions-list');
     if (!list) {
@@ -91,10 +108,11 @@ function addPositionRow() {
     const prefix = list.dataset.prefix;
     const index = nextIndex(list, '.position-row');
     const row = document.createElement('div');
-    row.className = 'position-row grid gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-4 md:grid-cols-[1fr_auto]';
+    row.className = 'position-row grid gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-4 md:grid-cols-[minmax(0,1fr)_12rem_auto]';
     row.dataset.index = String(index);
     row.innerHTML = `
         <input type="text" name="${prefix}[${index}][name]" placeholder="e.g. Vice President" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" />
+        ${courseSelectMarkup(prefix, index)}
         <button type="button" data-remove-row class="rounded-lg border border-rose-500/30 px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/10">Remove</button>
     `;
 

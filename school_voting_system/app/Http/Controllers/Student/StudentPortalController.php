@@ -191,7 +191,7 @@ class StudentPortalController extends Controller
             ->pluck('candidate_id', 'election_category_id');
 
         $votedCategoryIds = $existingVotes->keys()->map(fn ($id) => (int) $id)->all();
-        $ballotCategories = $this->ballotCatalog->categoriesFor($election, $existingVotes);
+        $ballotCategories = $this->ballotCatalog->categoriesFor($election, $existingVotes, $student);
 
         $ballotReceipt = null;
         $submittedAt = null;

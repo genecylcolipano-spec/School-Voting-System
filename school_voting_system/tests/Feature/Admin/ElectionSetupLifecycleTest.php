@@ -154,6 +154,29 @@ class ElectionSetupLifecycleTest extends TestCase
         $this->assertDatabaseHas('votes', ['election_category_id' => $categories[0]->id]);
     }
 
+    public function test_positions_can_be_restricted_to_a_school_course(): void
+    {
+        $election = Election::factory()->draft()->create();
+
+        app(ElectionSetupService::class)->syncOnCreate($election, [
+            'positions' => [
+                ['name' => 'President', 'audience_course' => ''],
+                ['name' => 'BSIT Representative', 'audience_course' => 'BSIT'],
+            ],
+        ]);
+
+        $this->assertDatabaseHas('election_categories', [
+            'election_id' => $election->id,
+            'name' => 'President',
+            'audience_course' => null,
+        ]);
+        $this->assertDatabaseHas('election_categories', [
+            'election_id' => $election->id,
+            'name' => 'BSIT Representative',
+            'audience_course' => 'BSIT',
+        ]);
+    }
+
     public function test_scheduler_opens_drafts_when_voting_start_has_elapsed(): void
     {
         User::factory()->superAdmin()->create();

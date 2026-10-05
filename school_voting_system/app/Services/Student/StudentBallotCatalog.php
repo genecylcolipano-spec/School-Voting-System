@@ -3,7 +3,9 @@
 namespace App\Services\Student;
 
 use App\Models\Election;
+use App\Models\User;
 use App\Support\EventImageUrl;
+use App\Support\SchoolCourses;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -26,12 +28,12 @@ class StudentBallotCatalog
     }
 
     /**
-     * Shared ballot cards for an election. Vote locks are applied per student.
+     * Shared ballot cards for an election. Course filters and vote locks are applied per student.
      *
      * @param  array<int|string, mixed>  $existingVotes
      * @return list<array<string, mixed>>
      */
-    public function categoriesFor(Election $election, $existingVotes = []): array
+    public function categoriesFor(Election $election, $existingVotes = [], ?User $student = null): array
     {
         $categories = Cache::remember(
             self::cacheKey((int) $election->id),
@@ -42,6 +44,7 @@ class StudentBallotCatalog
         $votes = collect($existingVotes);
 
         return collect($categories)
+            ->filter(fn (array $category) => $this->isVisibleToStudent($category, $student))
             ->map(function (array $category) use ($votes) {
                 $lockedCandidate = $votes->get($category['id']) ?? $votes->get((string) $category['id']);
                 $category['locked'] = $lockedCandidate !== null;
@@ -51,6 +54,20 @@ class StudentBallotCatalog
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $category
+     */
+    protected function isVisibleToStudent(array $category, ?User $student): bool
+    {
+        $required = SchoolCourses::normalize($category['audience_course'] ?? null);
+
+        if ($required === null) {
+            return true;
+        }
+
+        return SchoolCourses::normalize($student?->course) === $required;
     }
 
     /**
@@ -102,6 +119,7 @@ class StudentBallotCatalog
                 'id' => $category->id,
                 'name' => $category->name,
                 'description' => $category->description ?? null,
+                'audience_course' => $category->audienceCourse(),
                 'votable' => $candidates !== [],
                 'candidates' => $candidates,
             ];

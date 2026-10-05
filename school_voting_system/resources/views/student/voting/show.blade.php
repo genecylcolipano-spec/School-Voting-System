@@ -183,6 +183,10 @@
                                             <div class="min-w-0">
                                                 <h2 class="text-lg font-semibold text-white">{{ $category['name'] }}</h2>
                                                 <p class="text-xs text-slate-400">
+                                                    @if (! empty($category['audience_course']))
+                                                        {{ $category['audience_course'] }} students only
+                                                        <span class="text-slate-600">·</span>
+                                                    @endif
                                                     @if ($category['votable']) Select ONE (1) candidate @else No candidates available @endif
                                                 </p>
                                             </div>

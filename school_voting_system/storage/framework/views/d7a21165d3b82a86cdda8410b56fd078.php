@@ -195,6 +195,10 @@
                                             <div class="min-w-0">
                                                 <h2 class="text-lg font-semibold text-white"><?php echo e($category['name']); ?></h2>
                                                 <p class="text-xs text-slate-400">
+                                                    <?php if(! empty($category['audience_course'])): ?>
+                                                        <?php echo e($category['audience_course']); ?> students only
+                                                        <span class="text-slate-600">·</span>
+                                                    <?php endif; ?>
                                                     <?php if($category['votable']): ?> Select ONE (1) candidate <?php else: ?> No candidates available <?php endif; ?>
                                                 </p>
                                             </div>

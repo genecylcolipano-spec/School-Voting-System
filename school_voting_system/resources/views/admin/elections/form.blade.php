@@ -57,7 +57,7 @@
                         <span class="flex h-8 w-8 items-center justify-center rounded-full bg-violet-600 text-sm font-bold text-white">2</span>
                         <div>
                             <h2 class="text-lg font-semibold text-white">Positions</h2>
-                            <p class="text-sm text-slate-400">Define offices students will vote for</p>
+                            <p class="text-sm text-slate-400">Define offices students will vote for. Course representatives can be limited to BSIT, BSCRIM, BEED, or BSOA.</p>
                         </div>
                     </div>
                     <button type="button" data-add-position class="rounded-lg border border-violet-500/30 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">+ Add position</button>
@@ -70,14 +70,26 @@
                         @foreach ($election->categories as $category)
                             @php
                                 $hasVotes = (int) ($category->votes_count ?? 0) > 0;
+                                $courseValue = old("existing_positions.{$category->id}.audience_course", $category->audience_course);
                             @endphp
-                            <div class="grid gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-4 md:grid-cols-[1fr_auto]">
+                            <div class="grid gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-4 md:grid-cols-[minmax(0,1fr)_12rem_auto]">
                                 <input
                                     type="text"
                                     name="existing_positions[{{ $category->id }}][name]"
                                     value="{{ old("existing_positions.{$category->id}.name", $category->name) }}"
                                     class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100"
                                 />
+                                @if ($hasVotes)
+                                    <input type="hidden" name="existing_positions[{{ $category->id }}][audience_course]" value="{{ $category->audience_course }}">
+                                    <p class="self-center text-xs text-slate-500">{{ $category->audienceCourse() ? $category->audienceCourse().' students only' : 'All students' }}</p>
+                                @else
+                                    <select name="existing_positions[{{ $category->id }}][audience_course]" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-100">
+                                        <option value="">All students</option>
+                                        @foreach (\App\Support\SchoolCourses::options() as $code => $label)
+                                            <option value="{{ $code }}" @selected($courseValue === $code)>{{ $label }} only</option>
+                                        @endforeach
+                                    </select>
+                                @endif
                                 @if ($hasVotes)
                                     <p class="self-center text-xs text-slate-500">Has votes — cannot remove</p>
                                 @else
@@ -97,10 +109,21 @@
                     </div>
                 @endif
 
-                <div id="positions-list" class="space-y-3" data-prefix="{{ $isEdit ? 'new_positions' : 'positions' }}">
+                <div
+                    id="positions-list"
+                    class="space-y-3"
+                    data-prefix="{{ $isEdit ? 'new_positions' : 'positions' }}"
+                    data-courses="{{ json_encode(\App\Support\SchoolCourses::options()) }}"
+                >
                     @if (! $isEdit)
-                        <div class="position-row grid gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-4 md:grid-cols-[1fr_auto]" data-index="0">
+                        <div class="position-row grid gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-4 md:grid-cols-[minmax(0,1fr)_12rem_auto]" data-index="0">
                             <input type="text" name="positions[0][name]" placeholder="e.g. President" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" />
+                            <select name="positions[0][audience_course]" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-sm text-slate-100">
+                                <option value="">All students</option>
+                                @foreach (\App\Support\SchoolCourses::options() as $code => $label)
+                                    <option value="{{ $code }}">{{ $label }} only</option>
+                                @endforeach
+                            </select>
                             <button type="button" data-remove-row class="rounded-lg border border-rose-500/30 px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/10">Remove</button>
                         </div>
                     @endif
@@ -187,7 +210,7 @@
                                 <input type="text" name="existing_candidates[{{ $candidate->id }}][display_name]" value="{{ old("existing_candidates.{$candidate->id}.display_name", $candidate->display_name) }}" placeholder="Display name" autocapitalize="words" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100" />
                                 <select name="existing_candidates[{{ $candidate->id }}][election_category_id]" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
                                     @foreach ($election->categories as $category)
-                                        <option value="{{ $category->id }}" @selected(old("existing_candidates.{$candidate->id}.election_category_id", $candidate->election_category_id) == $category->id)>{{ $category->name }}</option>
+                                        <option value="{{ $category->id }}" @selected(old("existing_candidates.{$candidate->id}.election_category_id", $candidate->election_category_id) == $category->id)>{{ $category->name }}@if ($category->audienceCourse()) ({{ $category->audienceCourse() }} only)@endif</option>
                                     @endforeach
                                 </select>
                                 <select name="existing_candidates[{{ $candidate->id }}][partylist_id]" class="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
@@ -211,7 +234,7 @@
                     class="space-y-3"
                     data-prefix="{{ $isEdit ? 'new_candidates' : 'candidates' }}"
                     data-is-edit="{{ $isEdit ? '1' : '0' }}"
-                    data-categories="{{ $isEdit ? $election->categories->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->toJson() : '[]' }}"
+                    data-categories="{{ $isEdit ? $election->categories->map(fn ($c) => ['id' => $c->id, 'name' => $c->audienceCourse() ? $c->name.' ('.$c->audienceCourse().' only)' : $c->name])->toJson() : '[]' }}"
                 ></div>
             </section>
 

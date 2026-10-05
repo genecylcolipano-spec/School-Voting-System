@@ -4,10 +4,33 @@ namespace App\Http\Requests\Admin\Election;
 
 use App\Enums\ElectionStatus;
 use App\Http\Requests\Admin\AdminFormRequest;
+use App\Support\SchoolCourses;
 use Illuminate\Validation\Rule;
 
 abstract class ElectionFormRequest extends AdminFormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        foreach (['positions', 'new_positions', 'existing_positions'] as $key) {
+            $rows = $this->input($key);
+
+            if (! is_array($rows)) {
+                continue;
+            }
+
+            foreach ($rows as $index => $row) {
+                if (! is_array($row) || ! array_key_exists('audience_course', $row)) {
+                    continue;
+                }
+
+                $course = trim((string) $row['audience_course']);
+                $rows[$index]['audience_course'] = $course === '' ? null : strtoupper($course);
+            }
+
+            $this->merge([$key => $rows]);
+        }
+    }
+
     protected function electionDetailRules(): array
     {
         return [
@@ -24,6 +47,7 @@ abstract class ElectionFormRequest extends AdminFormRequest
         return [
             $prefix => ['nullable', 'array'],
             "{$prefix}.*.name" => ['nullable', 'string', 'max:255'],
+            "{$prefix}.*.audience_course" => ['nullable', 'string', Rule::in(SchoolCourses::codes())],
         ];
     }
 

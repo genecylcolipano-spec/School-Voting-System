@@ -17,7 +17,7 @@ class BallotSubmissionService
      */
     public function pendingCategoryIds(Election $election, User $student): array
     {
-        $votable = $election->votableCategoryIds();
+        $votable = $election->votableCategoryIds($student);
 
         if ($votable === []) {
             return [];

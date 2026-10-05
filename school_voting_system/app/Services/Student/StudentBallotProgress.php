@@ -38,9 +38,15 @@ class StudentBallotProgress
         $categoryIdsByElection = ElectionCategory::query()
             ->whereIn('election_id', $electionIds)
             ->whereHas('candidates', fn ($query) => $query->where('is_active', true))
-            ->get(['id', 'election_id'])
+            ->get(['id', 'election_id', 'audience_course'])
             ->groupBy('election_id')
-            ->map(fn (Collection $rows) => $rows->pluck('id')->map(fn ($id) => (int) $id)->values());
+            ->map(function (Collection $rows) use ($student) {
+                return $rows
+                    ->filter(fn (ElectionCategory $category) => $category->isVisibleToVoter($student))
+                    ->pluck('id')
+                    ->map(fn ($id) => (int) $id)
+                    ->values();
+            });
 
         $votedCategoryIdsByElection = Vote::query()
             ->where('user_id', $student->id)

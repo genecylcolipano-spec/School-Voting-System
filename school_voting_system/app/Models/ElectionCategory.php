@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\Student\StudentBallotCatalog;
+use App\Support\SchoolCourses;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,7 @@ class ElectionCategory extends Model
         'slug',
         'sort_order',
         'max_selections',
+        'audience_course',
     ];
 
     protected function casts(): array
@@ -57,5 +59,21 @@ class ElectionCategory extends Model
     public function votes(): HasMany
     {
         return $this->hasMany(Vote::class);
+    }
+
+    public function audienceCourse(): ?string
+    {
+        return SchoolCourses::normalize($this->audience_course);
+    }
+
+    public function isVisibleToVoter(?User $student): bool
+    {
+        $required = $this->audienceCourse();
+
+        if ($required === null) {
+            return true;
+        }
+
+        return SchoolCourses::normalize($student?->course) === $required;
     }
 }

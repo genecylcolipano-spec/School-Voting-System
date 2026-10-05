@@ -10,6 +10,7 @@ use App\Models\Partylist;
 use App\Models\User;
 use App\Services\Media\ImageCompressionService;
 use App\Support\SlugGenerator;
+use App\Support\SchoolCourses;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -191,15 +192,24 @@ class ElectionSetupService
             }
 
             $name = trim((string) ($row['name'] ?? ''));
+            $updates = [];
 
-            if ($name === '' || $name === $category->name) {
-                continue;
+            if ($name !== '' && $name !== $category->name) {
+                $updates['name'] = $name;
+                $updates['slug'] = $this->uniqueCategorySlug($election->id, $name, $category->id);
             }
 
-            $category->update([
-                'name' => $name,
-                'slug' => $this->uniqueCategorySlug($election->id, $name, $category->id),
-            ]);
+            if (array_key_exists('audience_course', $row)) {
+                $audienceCourse = SchoolCourses::normalize($row['audience_course'] ?? null);
+
+                if ($audienceCourse !== $category->audienceCourse()) {
+                    $updates['audience_course'] = $audienceCourse;
+                }
+            }
+
+            if ($updates !== []) {
+                $category->update($updates);
+            }
         }
     }
 
@@ -223,6 +233,7 @@ class ElectionSetupService
                 'name' => $name,
                 'slug' => $this->uniqueCategorySlug($election->id, $name),
                 'sort_order' => $sortOrder++,
+                'audience_course' => SchoolCourses::normalize($position['audience_course'] ?? null),
             ]);
 
             $map[$index] = $category->id;

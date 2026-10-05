@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Election;
 
 use App\Models\Election;
+use App\Support\SchoolCourses;
 use Illuminate\Validation\Rule;
 
 class UpdateElectionRequest extends ElectionFormRequest
@@ -25,6 +26,7 @@ class UpdateElectionRequest extends ElectionFormRequest
             [
                 'existing_positions' => ['nullable', 'array'],
                 'existing_positions.*.name' => ['nullable', 'string', 'max:255'],
+                'existing_positions.*.audience_course' => ['nullable', 'string', Rule::in(SchoolCourses::codes())],
                 'existing_positions.*.remove' => ['nullable', 'boolean'],
                 'existing_candidates' => ['nullable', 'array'],
                 'existing_candidates.*.display_name' => ['nullable', 'string', 'max:255'],
