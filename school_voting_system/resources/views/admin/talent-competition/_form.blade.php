@@ -354,6 +354,16 @@
                 <input type="number" name="winners_count_custom" min="1" max="50" value="{{ $winnersCountCustom }}"
                     class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
             </div>
+            @if (! $isEdit || $talentEvent?->usesPaidSupport())
+                <div>
+                    <label class="block text-sm font-medium text-slate-300">Support vote price (₱)</label>
+                    <input type="number" name="vote_price" min="20" max="10000" step="0.01"
+                        value="{{ old('vote_price', $talentEvent?->vote_price ?? 20) }}"
+                        class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
+                    <p class="mt-1 text-xs text-slate-500">Default ₱20. Each support vote uses QR Ph. Existing competitions stay on one free vote.</p>
+                    @error('vote_price')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
+                </div>
+            @endif
             <div class="sm:col-span-2">
                 <label class="inline-flex items-center gap-2 text-sm text-slate-300">
                     <input type="checkbox" name="auto_status_updates" value="1" @checked(old('auto_status_updates', $talentEvent?->auto_status_updates ?? true))

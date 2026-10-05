@@ -24,6 +24,7 @@ use App\Models\PortalNotification;
 use App\Models\TalentEvent;
 use App\Models\TalentEventEntry;
 use App\Models\TalentEventVote;
+use App\Models\TalentVoteOrder;
 use App\Models\Vote;
 use App\Support\EventImageUrl;
 use App\Services\Campaign\StudentCampaignService;
@@ -37,6 +38,7 @@ use App\Services\Student\StudentStatisticsService;
 use App\Services\SuperAdmin\AuditLogService;
 use App\Services\Talent\StudentTalentHeroActionResolver;
 use App\Services\Talent\StudentTalentService;
+use App\Services\Talent\TalentSupportCheckoutService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,6 +60,7 @@ class StudentPortalController extends Controller
         protected AnnouncementService $announcements,
         protected AuditLogService $audit,
         protected DonationCheckoutService $donationCheckout,
+        protected TalentSupportCheckoutService $talentSupport,
         protected StudentStatisticsService $statistics,
         protected StudentBallotCatalog $ballotCatalog,
     ) {}
@@ -357,6 +360,7 @@ class StudentPortalController extends Controller
             'talentEvent' => $talentEvent,
             'hasVoted' => $hasVoted,
             'votedEntryId' => $votedEntryId,
+            'studentSupportCounts' => $this->talentService->supportVoteCounts($student, $talentEvent),
             'watchedEntryIds' => $this->talentService->watchedEntryIds($student, $talentEvent),
             'canViewStandings' => $canViewStandings,
             'studentEntry' => $studentEntry,
@@ -379,17 +383,96 @@ class StudentPortalController extends Controller
 
     public function castTalentVote(Request $request, TalentEventEntry $entry): RedirectResponse
     {
+        $entry->loadMissing('talentEvent');
+
+        if ($entry->talentEvent?->usesPaidSupport()) {
+            return back()->with('error', 'Support this contestant with a paid QR vote.');
+        }
+
         try {
             TalentEventVote::castVote($request->user(), $entry);
         } catch (VoteIntegrityException $exception) {
             return back()->with('error', $exception->getMessage());
         }
 
-        $entry->loadMissing('talentEvent');
-
         return redirect()
             ->route('student.talent-voting.show', $entry->talentEvent)
             ->with('success', 'Your vote has been recorded successfully.');
+    }
+
+    public function startTalentSupport(Request $request, TalentEventEntry $entry): RedirectResponse
+    {
+        $request->validate([
+            'quantity' => ['required', 'integer', 'min:1', 'max:10000'],
+        ]);
+
+        try {
+            $result = $this->talentSupport->start(
+                $request->user(),
+                $entry,
+                (int) $request->input('quantity'),
+            );
+        } catch (VoteIntegrityException $exception) {
+            return back()->with('error', $exception->getMessage())->withInput();
+        } catch (PayMongoException $exception) {
+            return back()->with('error', $exception->getMessage())->withInput();
+        }
+
+        return redirect()->away($result['checkout_url']);
+    }
+
+    public function talentSupportReturn(Request $request, TalentEvent $talentEvent): RedirectResponse
+    {
+        $this->talentService->assertVisibleToStudents($talentEvent);
+        $order = $this->ownedSupportOrder($request, $talentEvent, $request->query('order'));
+
+        if ($order) {
+            $this->talentSupport->syncFromPayMongo($order);
+            $order->refresh();
+        }
+
+        if ($order?->votesWereCredited()) {
+            return redirect()
+                ->route('student.talent-voting.show', $talentEvent)
+                ->with('success', $order->quantity.' support vote(s) of ₱'.number_format((float) $order->amount, 2).' were added.');
+        }
+
+        if ($order?->cancelled_at) {
+            return redirect()
+                ->route('student.talent-voting.show', $talentEvent)
+                ->with('error', 'Voting had already closed, so this payment was not counted as votes.');
+        }
+
+        return redirect()
+            ->route('student.talent-voting.show', $talentEvent)
+            ->with('success', 'If your QR payment went through, the votes will appear after PayMongo confirms it.');
+    }
+
+    public function talentSupportCancel(Request $request, TalentEvent $talentEvent): RedirectResponse
+    {
+        $this->talentService->assertVisibleToStudents($talentEvent);
+        $order = $this->ownedSupportOrder($request, $talentEvent, $request->query('order'));
+
+        if ($order?->isPending()) {
+            $this->talentSupport->cancelUnpaidOrder($order);
+        }
+
+        return redirect()
+            ->route('student.talent-voting.show', $talentEvent)
+            ->with('error', 'Payment was cancelled. No votes were added.');
+    }
+
+    protected function ownedSupportOrder(Request $request, TalentEvent $talentEvent, mixed $orderId): ?TalentVoteOrder
+    {
+        if (! is_numeric($orderId)) {
+            return null;
+        }
+
+        return TalentVoteOrder::query()
+            ->whereKey((int) $orderId)
+            ->where('talent_event_id', $talentEvent->id)
+            ->where('user_id', $request->user()->id)
+            ->first();
     }
 
     public function recordTalentView(Request $request, TalentEventEntry $entry): JsonResponse

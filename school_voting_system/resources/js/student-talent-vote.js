@@ -1,6 +1,9 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('talentVoteConfirm', (options = {}) => ({
         confirmOpen: false,
+        confirmIsPaid: false,
+        confirmQty: 1,
+        confirmAmount: '0.00',
         entryName: '',
         formEl: null,
         watchedIds: Object.fromEntries(
@@ -34,9 +37,12 @@ document.addEventListener('alpine:init', () => {
             this.watchedIds[String(id)] = true;
         },
 
-        openConfirm(form, name) {
+        openConfirm(form, name, meta = {}) {
             this.formEl = form;
             this.entryName = name;
+            this.confirmIsPaid = Boolean(meta.paid);
+            this.confirmQty = Number(meta.qty) || 1;
+            this.confirmAmount = meta.amount || '0.00';
             this.confirmOpen = true;
         },
 

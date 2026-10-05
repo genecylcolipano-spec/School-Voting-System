@@ -14,6 +14,7 @@ class TalentEventVote extends Model
         'talent_event_id',
         'talent_event_entry_id',
         'user_id',
+        'talent_vote_order_id',
         'voted_at',
     ];
 
@@ -66,6 +67,17 @@ class TalentEventVote extends Model
                 ->where('talent_event_entry_id', $entry->id)
                 ->exists()) {
                 throw new VoteIntegrityException('Watch the performance before voting for this entry.');
+            }
+
+            if (! $event->usesPaidSupport() && static::query()
+                ->where('user_id', $voter->id)
+                ->where('talent_event_id', $event->id)
+                ->exists()) {
+                throw new VoteIntegrityException('You have already voted in this talent event.');
+            }
+
+            if ($event->usesPaidSupport()) {
+                throw new VoteIntegrityException('Support this contestant with a paid QR vote.');
             }
 
             try {

@@ -48,6 +48,10 @@ class StudentTalentHeroActionResolver
         }
 
         if ($votingOpen) {
+            if ($event->usesPaidSupport()) {
+                return $this->result('voting_open', $this->action('Support Now', $voteHref));
+            }
+
             if ($hasVoted) {
                 return $this->result(
                     'voting_open_voted',

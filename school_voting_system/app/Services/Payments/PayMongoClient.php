@@ -38,6 +38,34 @@ class PayMongoClient
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function expireCheckoutSession(string $sessionId): array
+    {
+        $response = $this->request('post', '/v1/checkout_sessions/'.$sessionId.'/expire');
+
+        return $this->resource($response);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function createRefund(string $paymentId, int $amountCentavos, string $reason = 'requested_by_customer'): array
+    {
+        $response = $this->request('post', '/v1/refunds', [
+            'data' => [
+                'attributes' => [
+                    'amount' => $amountCentavos,
+                    'payment_id' => $paymentId,
+                    'reason' => $reason,
+                ],
+            ],
+        ]);
+
+        return $this->resource($response);
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      */
     protected function request(string $method, string $path, array $payload = []): Response

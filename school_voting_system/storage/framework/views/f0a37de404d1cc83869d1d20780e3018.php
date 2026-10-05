@@ -86,7 +86,7 @@ unset($__errorArgs, $__bag); ?>
         <div class="mt-4 grid gap-4 sm:grid-cols-2">
             <div class="sm:col-span-2">
                 <label class="block text-sm font-medium text-slate-300">Competition Title</label>
-                <input type="text" name="title" value="<?php echo e(old('title', $talentEvent?->title)); ?>" required
+                <input type="text" name="title" value="<?php echo e(old('title', $talentEvent?->title)); ?>" required autocapitalize="none"
                     class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30">
                 <?php $__errorArgs = ['title'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -162,7 +162,7 @@ unset($__errorArgs, $__bag); ?>
 
             <div class="sm:col-span-2">
                 <label class="block text-sm font-medium text-slate-300">Description <span class="text-slate-500">(optional)</span></label>
-                <textarea name="description" rows="3" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100"><?php echo e(old('description', $talentEvent?->description)); ?></textarea>
+                <textarea name="description" rows="3" autocapitalize="sentences" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100"><?php echo e(old('description', $talentEvent?->description)); ?></textarea>
             </div>
 
             <div class="sm:col-span-2">
@@ -472,6 +472,23 @@ unset($__errorArgs, $__bag); ?>
                 <input type="number" name="winners_count_custom" min="1" max="50" value="<?php echo e($winnersCountCustom); ?>"
                     class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
             </div>
+            <?php if(! $isEdit || $talentEvent?->usesPaidSupport()): ?>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300">Support vote price (₱)</label>
+                    <input type="number" name="vote_price" min="20" max="10000" step="0.01"
+                        value="<?php echo e(old('vote_price', $talentEvent?->vote_price ?? 20)); ?>"
+                        class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
+                    <p class="mt-1 text-xs text-slate-500">Default ₱20. Each support vote uses QR Ph. Existing competitions stay on one free vote.</p>
+                    <?php $__errorArgs = ['vote_price'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><p class="mt-1 text-sm text-rose-300"><?php echo e($message); ?></p><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                </div>
+            <?php endif; ?>
             <div class="sm:col-span-2">
                 <label class="inline-flex items-center gap-2 text-sm text-slate-300">
                     <input type="checkbox" name="auto_status_updates" value="1" <?php if(old('auto_status_updates', $talentEvent?->auto_status_updates ?? true)): echo 'checked'; endif; ?>

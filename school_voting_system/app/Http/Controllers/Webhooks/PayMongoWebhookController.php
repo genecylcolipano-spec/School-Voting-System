@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Webhooks;
 use App\Http\Controllers\Controller;
 use App\Services\Payments\DonationCheckoutService;
 use App\Services\Payments\PayMongoWebhookVerifier;
+use App\Services\Talent\TalentSupportCheckoutService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -15,6 +16,7 @@ class PayMongoWebhookController extends Controller
         Request $request,
         PayMongoWebhookVerifier $verifier,
         DonationCheckoutService $checkout,
+        TalentSupportCheckoutService $talentCheckout,
     ): Response {
         $raw = $request->getContent();
 
@@ -33,6 +35,7 @@ class PayMongoWebhookController extends Controller
 
         try {
             $checkout->handleWebhookEvent($payload);
+            $talentCheckout->handleWebhookEvent($payload);
         } catch (\Throwable $exception) {
             Log::error('PayMongo webhook processing failed.', [
                 'message' => $exception->getMessage(),

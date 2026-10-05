@@ -64,6 +64,7 @@ class StoreTalentCompetitionRequest extends AdminFormRequest
             'winners_count_custom' => ['required_if:winners_count,custom', 'nullable', 'integer', 'min:1', 'max:50'],
             'auto_status_updates' => ['nullable', 'boolean'],
             'published_to_students' => ['nullable', 'boolean'],
+            'vote_price' => ['nullable', 'numeric', 'min:20', 'max:10000'],
             // Participants optional — managed via Participants module.
             'participants' => ['nullable', 'array'],
             'participants.*.id' => ['nullable', 'integer', 'exists:talent_event_entries,id'],
@@ -178,6 +179,9 @@ class StoreTalentCompetitionRequest extends AdminFormRequest
             'max_upload_size_mb' => max(1, (int) $this->input('max_upload_size_mb')),
             'accepted_video_formats' => implode(',', (array) $this->input('accepted_video_formats', ['mp4'])),
             'auto_status_updates' => $this->boolean('auto_status_updates', true),
+            'paid_support_enabled' => true,
+            'vote_price' => round(max(20, (float) ($this->input('vote_price') ?: 20)), 2),
+            'support_amount_raised' => 0,
         ];
     }
 }

@@ -15,6 +15,9 @@
         $resultsPublished = $talentEvent->hasPublishedResults();
         $votingClosed = $talentEvent->votingHasClosed() && ! $resultsPublished;
         $officialResultsUrl = route('student.results.talent.show', $talentEvent);
+        $paidSupport = $talentEvent->usesPaidSupport();
+        $studentSupportCounts = $studentSupportCounts ?? [];
+        $supportPrice = $paidSupport ? $talentEvent->supportVotePrice() : 0;
 
         $votedEntry = ($hasVoted && $votedEntryId)
             ? $talentEvent->approvedEntries->firstWhere('id', $votedEntryId)
@@ -252,7 +255,15 @@
                     </section>
                 @endif
 
-                @if ($votingOpen && ! $hasVoted)
+                @if ($votingOpen && $paidSupport)
+                    <div class="flex items-start gap-3 rounded-xl border border-cyan-500/15 bg-cyan-500/5 px-4 py-3">
+                        <svg class="mt-0.5 h-5 w-5 shrink-0 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+                        <div>
+                            <p class="text-sm font-semibold text-cyan-100">Support votes are ₱{{ number_format($supportPrice, 2) }} each via QR Ph.</p>
+                            <p class="mt-0.5 text-sm text-slate-400">Watch the performance first, then buy as many votes as you want for any contestant — including yourself.</p>
+                        </div>
+                    </div>
+                @elseif ($votingOpen && ! $hasVoted)
                     <div class="flex items-start gap-3 rounded-xl border border-cyan-500/15 bg-cyan-500/5 px-4 py-3">
                         <svg class="mt-0.5 h-5 w-5 shrink-0 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
                         <div>
@@ -336,8 +347,55 @@
                                             class="inline-flex items-center gap-1 rounded-lg border border-slate-700 px-2.5 py-1.5 text-[11px] font-semibold text-slate-300 hover:bg-slate-800">
                                             View Profile
                                         </button>
-                                        @if ($isSelected)
+                                        @if ($isSelected && ! $paidSupport)
                                             <span class="inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-[11px] font-semibold text-slate-950">Selected</span>
+                                        @elseif ($votingOpen && $paidSupport)
+                                            @php
+                                                $mustWatch = $entry->hasVideo();
+                                                $mySupportVotes = (int) ($studentSupportCounts[$entry->id] ?? 0);
+                                            @endphp
+                                            <div class="flex w-full flex-col gap-1" x-data="{ qty: 1, price: {{ json_encode($supportPrice) }} }">
+                                                @if ($mySupportVotes > 0)
+                                                    <p class="text-[10px] font-medium text-cyan-200">You supported this participant: {{ $mySupportVotes }} {{ \Illuminate\Support\Str::plural('vote', $mySupportVotes) }}</p>
+                                                @endif
+                                                @if ($mustWatch)
+                                                    <p
+                                                        class="text-[10px] font-medium text-amber-200/90"
+                                                        x-show="!hasWatched({{ (int) $entry->id }})"
+                                                    >Watch the performance first</p>
+                                                @endif
+                                                <form
+                                                    method="POST"
+                                                    action="{{ route('student.talent-voting.support', $entry) }}"
+                                                    class="flex flex-col gap-1.5"
+                                                    @if ($mustWatch)
+                                                        x-show="hasWatched({{ (int) $entry->id }})"
+                                                        x-cloak
+                                                    @endif
+                                                >
+                                                    @csrf
+                                                    <div class="flex items-center gap-1.5">
+                                                        <input type="number" name="quantity" min="1" max="10000" x-model.number="qty"
+                                                            class="w-16 rounded-lg border border-slate-700 bg-slate-950/70 px-2 py-1.5 text-[11px] text-white [color-scheme:dark]">
+                                                        <button type="button"
+                                                            @click="openConfirm($event.target.closest('form'), @js($entry->display_name), { paid: true, qty: qty, amount: (Number(qty) * Number(price)).toFixed(2) })"
+                                                            class="rounded-lg bg-gradient-to-r from-cyan-500 to-sky-400 px-2.5 py-1.5 text-[11px] font-semibold text-slate-950">
+                                                            Support
+                                                        </button>
+                                                    </div>
+                                                    <p class="text-[10px] text-slate-400" x-text="`${Number(qty) || 0} vote(s) = ₱${((Number(qty) || 0) * Number(price)).toFixed(2)}`"></p>
+                                                </form>
+                                                @if ($mustWatch)
+                                                    <button
+                                                        type="button"
+                                                        disabled
+                                                        x-show="!hasWatched({{ (int) $entry->id }})"
+                                                        class="cursor-not-allowed rounded-lg border border-slate-600 bg-slate-800/80 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500"
+                                                    >
+                                                        Support
+                                                    </button>
+                                                @endif
+                                            </div>
                                         @elseif ($votingOpen && ! $hasVoted)
                                             @php $mustWatch = $entry->hasVideo(); @endphp
                                             <div class="flex w-full flex-col gap-1">
@@ -548,9 +606,12 @@
              role="dialog" aria-modal="true" aria-labelledby="talent-vote-confirm-title">
             <div class="absolute inset-0 bg-slate-950/80" @click="confirmOpen = false"></div>
             <div class="relative w-full max-w-md rounded-2xl border border-violet-500/20 bg-slate-900 p-6 shadow-2xl">
-                <h3 id="talent-vote-confirm-title" class="text-lg font-bold text-white">Confirm Your Vote</h3>
-                <p class="mt-2 text-sm text-slate-300">
+                <h3 id="talent-vote-confirm-title" class="text-lg font-bold text-white" x-text="confirmIsPaid ? 'Confirm Support Votes' : 'Confirm Your Vote'"></h3>
+                <p class="mt-2 text-sm text-slate-300" x-show="!confirmIsPaid">
                     You are about to vote for <span class="font-semibold text-white" x-text="entryName"></span>. You cannot change your vote after submission.
+                </p>
+                <p class="mt-2 text-sm text-slate-300" x-show="confirmIsPaid" x-cloak>
+                    Pay <span class="font-semibold text-white" x-text="'₱' + confirmAmount"></span> via QR Ph for <span class="font-semibold text-white" x-text="confirmQty"></span> support vote(s) for <span class="font-semibold text-white" x-text="entryName"></span>. Votes are added only after payment succeeds.
                 </p>
                 <div class="mt-6 flex gap-3">
                     <button type="button" @click="confirmOpen = false"
@@ -558,7 +619,8 @@
                         Cancel
                     </button>
                     <button type="button" @click="submitVote()"
-                        class="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90">
+                        class="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                        x-text="confirmIsPaid ? 'Continue to QR' : 'Submit Vote'">
                         Submit Vote
                     </button>
                 </div>

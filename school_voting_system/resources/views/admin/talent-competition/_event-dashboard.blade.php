@@ -213,7 +213,13 @@
                     <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Total Votes</p>
                 </div>
                 <p class="tc-stat-card__value">{{ $showVotes ? number_format($totalVotes) : '—' }}</p>
-                <p class="mt-1 text-[10px] text-slate-500">{{ $showVotes ? 'Scoped vote total' : 'Hidden until close' }}</p>
+                <p class="mt-1 text-[10px] text-slate-500">
+                    @if ($event->usesPaidSupport())
+                        ₱{{ number_format((float) $event->support_amount_raised, 2) }} raised · ₱{{ number_format($event->supportVotePrice(), 2) }}/vote
+                    @else
+                        {{ $showVotes ? 'Scoped vote total' : 'Hidden until close' }}
+                    @endif
+                </p>
             </article>
             <article class="tc-stat-card">
                 <div class="flex items-center gap-2">
@@ -268,6 +274,7 @@
                     :action="route('admin.talent-competition.destroy', $event)"
                     button-class="tc-btn tc-btn--danger"
                     label="Delete Event"
+                    :warning="$event->hasPaidSupport() ? 'Paid support votes cannot be deleted. Archive or close this competition. Refunds are not automatic.' : null"
                 />
             @endif
         </div>

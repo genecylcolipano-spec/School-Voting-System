@@ -11,6 +11,7 @@ use App\Services\Admin\AdminResultsService;
 use App\Services\Admin\AdminScopeService;
 use App\Services\Portal\PortalNotificationService;
 use App\Services\SuperAdmin\AuditLogService;
+use App\Services\Talent\TalentSupportCheckoutService;
 use App\Support\AdminPortal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,7 @@ class AdminLiveMonitoringController extends Controller
         protected AdminScopeService $scope,
         protected AuditLogService $audit,
         protected PortalNotificationService $notifications,
+        protected TalentSupportCheckoutService $talentSupport,
     ) {}
 
     public function election(Request $request): View
@@ -169,6 +171,8 @@ class AdminLiveMonitoringController extends Controller
             'voting_ends_at' => now(),
             'is_paused' => false,
         ])->save();
+
+        $this->talentSupport->cancelUnpaidOrders($talentEvent);
 
         $actor = $request->user();
         $this->audit->record(

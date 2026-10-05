@@ -23,6 +23,7 @@ use App\Services\Portal\AnnouncementService;
 use App\Services\Portal\PortalNotificationService;
 use App\Services\SuperAdmin\AuditLogService;
 use App\Services\Talent\TalentEventPublishingService;
+use App\Services\Talent\TalentSupportCheckoutService;
 use App\Support\AdminPortal;
 use App\Support\SlugGenerator;
 use Illuminate\Http\RedirectResponse;
@@ -41,6 +42,7 @@ class AdminTalentCompetitionController extends Controller
         protected ImageCompressionService $images,
         protected PortalNotificationService $notifications,
         protected AnnouncementService $announcements,
+        protected TalentSupportCheckoutService $talentSupport,
     ) {}
 
     public function index(Request $request): View
@@ -366,6 +368,9 @@ class AdminTalentCompetitionController extends Controller
         $copy->results_published_at = null;
         $copy->results_published_by = null;
         $copy->is_paused = false;
+        $copy->paid_support_enabled = true;
+        $copy->support_amount_raised = 0;
+        $copy->vote_price = $copy->vote_price ?: 20;
         $copy->created_by = $request->user()->id;
         $copy->save();
 
@@ -490,6 +495,8 @@ class AdminTalentCompetitionController extends Controller
             'is_paused' => false,
         ])->save();
 
+        $this->talentSupport->cancelUnpaidOrders($talentEvent);
+
         $this->notifications->talentVotingClosed($talentEvent->fresh(), $request->user());
 
         return back()->with('success', 'Voting closed.');
@@ -497,6 +504,12 @@ class AdminTalentCompetitionController extends Controller
 
     public function destroy(DeleteTalentCompetitionRequest $request, TalentEvent $talentEvent): RedirectResponse
     {
+        if ($talentEvent->hasPaidSupport()) {
+            return back()->with('error', 'This competition has paid support votes. Archive or close it instead of deleting. Refunds are not automatic.');
+        }
+
+        $this->talentSupport->cancelUnpaidOrders($talentEvent);
+
         $title = $talentEvent->title;
         $eventId = $talentEvent->id;
 

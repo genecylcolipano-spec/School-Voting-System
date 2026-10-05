@@ -113,6 +113,11 @@ class DonationCheckoutService
         $donation = $this->donationFromCheckoutSession($resource);
 
         if (! $donation) {
+            if (filled(data_get($resource, 'attributes.metadata.talent_vote_order_id'))
+                || str_starts_with((string) data_get($resource, 'attributes.reference_number'), 'TVS-')) {
+                return null;
+            }
+
             Log::warning('PayMongo checkout could not be matched to a donation.', [
                 'checkout_session_id' => $resource['id'] ?? null,
                 'reference' => data_get($resource, 'attributes.reference_number'),

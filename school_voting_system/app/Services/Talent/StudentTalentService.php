@@ -66,6 +66,7 @@ class StudentTalentService
                 ->where('user_id', $student->id)
                 ->whereIn('talent_event_id', $eventIds)
                 ->pluck('talent_event_id')
+                ->unique()
                 ->flip();
 
             $entryStatuses = TalentEventEntry::query()
@@ -109,6 +110,21 @@ class StudentTalentService
             ->where('talent_event_id', $event->id)
             ->where('user_id', $student->id)
             ->value('talent_event_entry_id');
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function supportVoteCounts(User $student, TalentEvent $event): array
+    {
+        return TalentEventVote::query()
+            ->where('talent_event_id', $event->id)
+            ->where('user_id', $student->id)
+            ->selectRaw('talent_event_entry_id, COUNT(*) as total')
+            ->groupBy('talent_event_entry_id')
+            ->pluck('total', 'talent_event_entry_id')
+            ->map(fn ($total) => (int) $total)
+            ->all();
     }
 
     /**

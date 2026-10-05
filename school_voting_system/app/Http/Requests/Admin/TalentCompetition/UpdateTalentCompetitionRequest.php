@@ -32,4 +32,19 @@ class UpdateTalentCompetitionRequest extends StoreTalentCompetitionRequest
 
         return $rules;
     }
+
+    public function competitionSettings(): array
+    {
+        $settings = parent::competitionSettings();
+        unset($settings['paid_support_enabled'], $settings['support_amount_raised']);
+
+        $talentEvent = $this->route('talentEvent');
+        if ($talentEvent instanceof TalentEvent && $talentEvent->usesPaidSupport()) {
+            $settings['vote_price'] = round(max(20, (float) ($this->input('vote_price') ?: $talentEvent->vote_price ?: 20)), 2);
+        } else {
+            unset($settings['vote_price']);
+        }
+
+        return $settings;
+    }
 }

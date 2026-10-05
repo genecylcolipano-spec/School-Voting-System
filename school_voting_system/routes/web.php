@@ -227,6 +227,13 @@ Route::middleware(['web', 'auth', 'passkey.secure', 'session.inactivity', 'admin
         Route::post('/talent-voting/entries/{entry}/vote', [StudentPortalController::class, 'castTalentVote'])
             ->middleware('throttle:20,1')
             ->name('talent-voting.vote');
+        Route::post('/talent-voting/entries/{entry}/support', [StudentPortalController::class, 'startTalentSupport'])
+            ->middleware('throttle:20,1')
+            ->name('talent-voting.support');
+        Route::get('/talent-voting/{talentEvent:slug}/support/return', [StudentPortalController::class, 'talentSupportReturn'])
+            ->name('talent-voting.support.return');
+        Route::get('/talent-voting/{talentEvent:slug}/support/cancel', [StudentPortalController::class, 'talentSupportCancel'])
+            ->name('talent-voting.support.cancel');
         Route::post('/talent-voting/entries/{entry}/view', [StudentPortalController::class, 'recordTalentView'])
             ->middleware('throttle:120,1')
             ->name('talent-voting.view');

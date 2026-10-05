@@ -64,6 +64,9 @@ class TalentEvent extends Model
         'published_to_students',
         'published_at',
         'created_by',
+        'paid_support_enabled',
+        'vote_price',
+        'support_amount_raised',
     ];
 
     protected function casts(): array
@@ -91,6 +94,9 @@ class TalentEvent extends Model
             'is_paused' => 'boolean',
             'auto_status_updates' => 'boolean',
             'image_variants' => 'array',
+            'paid_support_enabled' => 'boolean',
+            'vote_price' => 'decimal:2',
+            'support_amount_raised' => 'decimal:2',
         ];
     }
 
@@ -175,6 +181,32 @@ class TalentEvent extends Model
     public function votes(): HasMany
     {
         return $this->hasMany(TalentEventVote::class);
+    }
+
+    public function supportOrders(): HasMany
+    {
+        return $this->hasMany(TalentVoteOrder::class);
+    }
+
+    public function usesPaidSupport(): bool
+    {
+        return (bool) $this->paid_support_enabled;
+    }
+
+    public function supportVotePrice(): float
+    {
+        return max(20.0, (float) ($this->vote_price ?? 20));
+    }
+
+    public function hasPaidSupport(): bool
+    {
+        if ((float) $this->support_amount_raised > 0) {
+            return true;
+        }
+
+        return $this->supportOrders()
+            ->where('status', \App\Enums\DonationStatus::Paid)
+            ->exists();
     }
 
     public function judges(): HasMany
@@ -913,7 +945,7 @@ class TalentEvent extends Model
             ];
         }
 
-        if ($hasVoted) {
+        if ($hasVoted && ! $this->usesPaidSupport()) {
             return [
                 'phase' => 'you_have_voted',
                 'badge' => 'You Have Voted',
@@ -926,7 +958,7 @@ class TalentEvent extends Model
             return [
                 'phase' => 'voting_open',
                 'badge' => 'Voting Open',
-                'cta' => 'Vote Now',
+                'cta' => $this->usesPaidSupport() ? 'Support Contestants' : 'Vote Now',
                 'href' => $showHref,
             ];
         }
