@@ -22,7 +22,7 @@
                             <h3 class="min-w-0 text-base font-semibold text-white">{{ $event->title }}</h3>
                             <x-admin-status-badge :status="$event->displayStatus()->value" :label="$event->displayStatusLabel()" />
                         </div>
-                        <p class="mt-2 text-sm text-slate-300">{{ optional($event->event_date)->format('M d, Y · g:i A') }}</p>
+                        <p class="mt-2 text-sm text-slate-300">{{ $event->scheduleLabel() }}</p>
                         <p class="mt-1 text-sm text-slate-400">{{ $event->venue }}</p>
                         <div class="mt-4">
                             @include('admin.events._actions', ['event' => $event])
@@ -36,7 +36,7 @@
                     <thead>
                         <tr class="border-b border-slate-800 text-left text-slate-400">
                             <th class="px-4 py-3 font-medium">Title</th>
-                            <th class="px-4 py-3 font-medium">Date</th>
+                            <th class="px-4 py-3 font-medium">Schedule</th>
                             <th class="px-4 py-3 font-medium">Venue</th>
                             <th class="px-4 py-3 font-medium">Status</th>
                             <th class="px-4 py-3 font-medium">Actions</th>
@@ -46,7 +46,7 @@
                         @foreach ($events as $event)
                             <tr class="border-b border-slate-800/80 text-slate-200">
                                 <td class="px-4 py-3">{{ $event->title }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap">{{ optional($event->event_date)->format('M d, Y g:i A') }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap">{{ $event->scheduleLabel() }}</td>
                                 <td class="px-4 py-3">{{ $event->venue }}</td>
                                 <td class="px-4 py-3">
                                     <x-admin-status-badge :status="$event->displayStatus()->value" :label="$event->displayStatusLabel()" />

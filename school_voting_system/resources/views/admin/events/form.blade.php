@@ -27,7 +27,10 @@
                     <p class="mt-1 text-sm text-rose-400">{{ $message }}</p>
                 @enderror
             </x-event-image-field>
-            @include('admin.partials.form-input', ['label' => 'Event date', 'name' => 'event_date', 'type' => 'datetime-local', 'value' => optional(optional($event)->event_date)->format('Y-m-d\TH:i'), 'required' => true])
+            <div class="grid gap-4 sm:grid-cols-2">
+                @include('admin.partials.form-input', ['label' => 'Event starts', 'name' => 'starts_at', 'type' => 'datetime-local', 'value' => optional(optional($event)->starts_at)->format('Y-m-d\TH:i'), 'required' => true])
+                @include('admin.partials.form-input', ['label' => 'Event ends', 'name' => 'ends_at', 'type' => 'datetime-local', 'value' => optional(optional($event)->ends_at)->format('Y-m-d\TH:i'), 'required' => true])
+            </div>
             @include('admin.partials.form-input', ['label' => 'Venue', 'name' => 'venue', 'value' => optional($event)->venue, 'required' => true])
 
             <div>

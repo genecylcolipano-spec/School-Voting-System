@@ -5,9 +5,11 @@ namespace App\Models;
 use App\Enums\EventStatus;
 use App\Models\Concerns\HasEventImage;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 class Event extends Model
 {
@@ -20,6 +22,8 @@ class Event extends Model
         'description',
         'image_path',
         'image_variants',
+        'starts_at',
+        'ends_at',
         'event_date',
         'venue',
         'status',
@@ -29,10 +33,35 @@ class Event extends Model
     protected function casts(): array
     {
         return [
-            'event_date' => 'datetime',
+            'starts_at' => 'datetime',
+            'ends_at' => 'datetime',
             'status' => EventStatus::class,
             'image_variants' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Event $event): void {
+            if ($event->starts_at && ! $event->ends_at) {
+                $event->ends_at = $event->starts_at->copy()->endOfDay();
+            }
+        });
+    }
+
+    /**
+     * Legacy alias for starts_at so mixed talent/school listings keep working.
+     */
+    protected function eventDate(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->starts_at,
+            set: function (mixed $value): array {
+                return [
+                    'starts_at' => $value ? Carbon::parse($value) : null,
+                ];
+            },
+        );
     }
 
     public function creator(): BelongsTo
@@ -51,9 +80,8 @@ class Event extends Model
         }
 
         $now = now();
-        $startOfToday = $now->copy()->startOfDay();
 
-        if ($this->event_date?->lt($startOfToday)) {
+        if ($this->ends_at?->lt($now)) {
             return EventStatus::Completed;
         }
 
@@ -61,7 +89,7 @@ class Event extends Model
             return EventStatus::Ongoing;
         }
 
-        if ($this->event_date?->lte($now)) {
+        if ($this->starts_at?->lte($now) && ($this->ends_at === null || $this->ends_at->gte($now))) {
             return EventStatus::Ongoing;
         }
 
@@ -75,7 +103,36 @@ class Event extends Model
 
     public function scheduleLabel(): string
     {
-        return $this->event_date?->format('M d, Y · g:i A') ?? 'TBA';
+        if (! $this->starts_at) {
+            return 'TBA';
+        }
+
+        if (! $this->ends_at || $this->ends_at->equalTo($this->starts_at)) {
+            return $this->starts_at->format('M d, Y · g:i A');
+        }
+
+        if ($this->starts_at->isSameDay($this->ends_at)) {
+            return $this->starts_at->format('M d, Y · g:i A').' – '.$this->ends_at->format('g:i A');
+        }
+
+        return $this->starts_at->format('M d, Y · g:i A').' – '.$this->ends_at->format('M d, Y · g:i A');
+    }
+
+    public function scheduleDateLabel(): string
+    {
+        if (! $this->starts_at) {
+            return '—';
+        }
+
+        if (! $this->ends_at || $this->starts_at->isSameDay($this->ends_at)) {
+            return $this->starts_at->format('M d, Y');
+        }
+
+        if ($this->starts_at->isSameYear($this->ends_at) && $this->starts_at->isSameMonth($this->ends_at)) {
+            return $this->starts_at->format('M d').' – '.$this->ends_at->format('d, Y');
+        }
+
+        return $this->starts_at->format('M d, Y').' – '.$this->ends_at->format('M d, Y');
     }
 
     public function campusStatusKey(): string
@@ -111,35 +168,33 @@ class Event extends Model
     public function scopeCampusListing(Builder $query): Builder
     {
         $now = now();
-        $startOfToday = $now->copy()->startOfDay();
 
         return $query
             ->visibleToCampus()
             ->orderByRaw(
-                'case when event_date >= ? and event_date <= ? then 0 when event_date > ? then 1 else 2 end',
-                [$startOfToday, $now, $now]
+                'case when starts_at <= ? and ends_at >= ? then 0 when starts_at > ? then 1 else 2 end',
+                [$now, $now, $now]
             )
-            ->orderByRaw('case when event_date > ? then event_date end asc', [$now])
-            ->orderByRaw('case when event_date <= ? then event_date end desc', [$now]);
+            ->orderByRaw('case when starts_at > ? then starts_at end asc', [$now])
+            ->orderByRaw('case when ends_at < ? then starts_at end desc', [$now]);
     }
 
     /**
-     * Persist schedule-driven status: past days become Completed, started-today become Ongoing.
+     * Persist schedule-driven status: past windows become Completed, current windows Ongoing.
      */
     public static function markOverdueAsCompleted(): int
     {
         $now = now();
-        $startOfToday = $now->copy()->startOfDay();
 
         $completed = static::query()
             ->whereIn('status', [EventStatus::Scheduled, EventStatus::Ongoing])
-            ->where('event_date', '<', $startOfToday)
+            ->where('ends_at', '<', $now)
             ->update(['status' => EventStatus::Completed]);
 
         $ongoing = static::query()
             ->where('status', EventStatus::Scheduled)
-            ->where('event_date', '<=', $now)
-            ->where('event_date', '>=', $startOfToday)
+            ->where('starts_at', '<=', $now)
+            ->where('ends_at', '>=', $now)
             ->update(['status' => EventStatus::Ongoing]);
 
         return $completed + $ongoing;
@@ -151,6 +206,6 @@ class Event extends Model
 
         return $query
             ->where('status', EventStatus::Scheduled)
-            ->where('event_date', '>=', now());
+            ->where('starts_at', '>=', now());
     }
 }

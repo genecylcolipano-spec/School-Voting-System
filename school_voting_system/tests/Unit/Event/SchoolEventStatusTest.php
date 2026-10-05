@@ -91,6 +91,52 @@ class SchoolEventStatusTest extends TestCase
         $this->assertSame(EventStatus::Ongoing, $event->fresh()->status);
     }
 
+    public function test_event_completes_after_end_time_on_the_same_day(): void
+    {
+        $this->travelTo(now()->setTime(16, 0));
+
+        $event = $this->makeEvent([
+            'starts_at' => now()->setTime(8, 0),
+            'ends_at' => now()->setTime(12, 0),
+            'status' => EventStatus::Scheduled,
+        ]);
+
+        $this->assertSame(EventStatus::Completed, $event->displayStatus());
+        $this->assertSame(1, Event::markOverdueAsCompleted());
+        $this->assertSame(EventStatus::Completed, $event->fresh()->status);
+    }
+
+    public function test_multiday_event_stays_ongoing_until_end(): void
+    {
+        $this->travelTo(now()->setTime(10, 0));
+
+        $event = $this->makeEvent([
+            'starts_at' => now()->subDay()->setTime(8, 0),
+            'ends_at' => now()->addDay()->setTime(17, 0),
+            'status' => EventStatus::Scheduled,
+        ]);
+
+        $this->assertSame(EventStatus::Ongoing, $event->displayStatus());
+        Event::markOverdueAsCompleted();
+        $this->assertSame(EventStatus::Ongoing, $event->fresh()->status);
+    }
+
+    public function test_schedule_label_shows_start_and_end(): void
+    {
+        $startsAt = now()->addDays(2)->setTime(8, 0);
+        $endsAt = $startsAt->copy()->setTime(17, 0);
+
+        $event = $this->makeEvent([
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
+        ]);
+
+        $this->assertSame(
+            $startsAt->format('M d, Y · g:i A').' – '.$endsAt->format('g:i A'),
+            $event->scheduleLabel()
+        );
+    }
+
     /**
      * @param  array<string, mixed>  $overrides
      */
@@ -99,7 +145,7 @@ class SchoolEventStatusTest extends TestCase
         return Event::query()->create(array_merge([
             'title' => 'Campus Orientation',
             'slug' => 'campus-orientation',
-            'event_date' => now()->addDays(3),
+            'starts_at' => now()->addDays(3)->setTime(8, 0),
             'venue' => 'Online',
             'status' => EventStatus::Scheduled,
             'created_by' => User::factory()->admin()->create()->id,

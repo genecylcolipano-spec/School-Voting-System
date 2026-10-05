@@ -191,7 +191,7 @@ class StudentUpcomingActivitiesServiceTest extends TestCase
         $this->assertSame('upcoming', $row['status_key']);
         $this->assertSame('Upcoming', $row['status_label']);
         $this->assertSame('View details', $row['action_label']);
-        $this->assertSame($startsAt->format('M d, Y · g:i A'), $row['schedule_label']);
+        $this->assertStringContainsString($startsAt->format('M d, Y · g:i A'), $row['schedule_label']);
         $this->assertStringContainsString(route('student.events.show', 'tonight-assembly'), $row['action_url']);
     }
 

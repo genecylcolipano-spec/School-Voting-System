@@ -84,7 +84,7 @@ class FacultyPortalController extends Controller
         $events = Event::query()
             ->when(
                 $showUpcomingOnly,
-                fn ($query) => $query->upcoming()->orderBy('event_date'),
+                fn ($query) => $query->upcoming()->orderBy('starts_at'),
                 fn ($query) => $query->campusListing(),
             )
             ->paginate(12)

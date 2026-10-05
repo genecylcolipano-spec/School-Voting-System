@@ -291,9 +291,9 @@ class AdminAnalyticsService
 
         $schoolEventsByMonth = $this->scope->schoolEventsQuery($admin)
             ->where('status', '!=', EventStatus::Cancelled)
-            ->whereBetween('event_date', [$yearStart, $yearEnd])
-            ->selectRaw($monthExpr.' as month, COUNT(*) as total')
-            ->groupByRaw($monthExpr)
+            ->whereBetween('starts_at', [$yearStart, $yearEnd])
+            ->selectRaw($this->monthExpression('starts_at').' as month, COUNT(*) as total')
+            ->groupByRaw($this->monthExpression('starts_at'))
             ->pluck('total', 'month');
 
         $talentQuery = TalentEvent::query()->whereBetween('event_date', [$yearStart, $yearEnd]);

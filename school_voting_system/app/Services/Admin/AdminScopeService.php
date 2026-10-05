@@ -1166,7 +1166,7 @@ class AdminScopeService
         Event::markOverdueAsCompleted();
 
         return $this->schoolEventsQuery($admin)
-            ->latest('event_date')
+            ->latest('starts_at')
             ->get();
     }
 

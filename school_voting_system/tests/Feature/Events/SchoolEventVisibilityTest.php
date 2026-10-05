@@ -200,13 +200,11 @@ class SchoolEventVisibilityTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->put(route('admin.events.update', $event), [
+            ->put(route('admin.events.update', $event), $this->eventForm([
                 'title' => 'Sports Fest',
                 'description' => 'Updated details',
-                'event_date' => now()->addDays(4)->format('Y-m-d\TH:i'),
                 'venue' => 'Main Gym',
-                'status' => EventStatus::Scheduled->value,
-            ])
+            ]))
             ->assertRedirect(route('admin.events.index'));
 
         $this->assertSame('sports-fest', $event->fresh()->slug);
@@ -221,13 +219,11 @@ class SchoolEventVisibilityTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->put(route('admin.events.update', $event), [
+            ->put(route('admin.events.update', $event), $this->eventForm([
                 'title' => 'Hijacked Title',
                 'description' => 'Nope',
-                'event_date' => now()->addDays(4)->format('Y-m-d\TH:i'),
                 'venue' => 'Main Gym',
-                'status' => EventStatus::Scheduled->value,
-            ])
+            ]))
             ->assertForbidden();
 
         $this->assertSame('Other Admin Event', $event->fresh()->title);
@@ -241,12 +237,10 @@ class SchoolEventVisibilityTest extends TestCase
         $student = User::factory()->create();
 
         $this->actingAs($admin)
-            ->post(route('admin.events.store'), [
+            ->post(route('admin.events.store'), $this->eventForm([
                 'title' => 'Storm Advisory Assembly',
-                'event_date' => now()->addDay()->format('Y-m-d\TH:i'),
-                'venue' => 'Covered Court',
                 'status' => EventStatus::Cancelled->value,
-            ])
+            ]))
             ->assertRedirect(route('admin.events.index'));
 
         $this->assertDatabaseHas('events', [
@@ -289,12 +283,9 @@ class SchoolEventVisibilityTest extends TestCase
         $student = User::factory()->create();
 
         $this->actingAs($admin)
-            ->post(route('admin.events.store'), [
+            ->post(route('admin.events.store'), $this->eventForm([
                 'title' => 'Foundation Day',
-                'event_date' => now()->addDays(3)->format('Y-m-d\TH:i'),
-                'venue' => 'Covered Court',
-                'status' => EventStatus::Scheduled->value,
-            ])
+            ]))
             ->assertRedirect(route('admin.events.index'));
 
         $event = Event::query()->where('title', 'Foundation Day')->first();
@@ -333,13 +324,16 @@ class SchoolEventVisibilityTest extends TestCase
         $faculty = User::factory()->faculty()->create();
         $student = User::factory()->create();
 
+        $startsAt = now()->subDays(2)->setTime(8, 0);
+
         $this->actingAs($admin)
-            ->post(route('admin.events.store'), [
+            ->post(route('admin.events.store'), $this->eventForm([
                 'title' => 'Last Week Recollection',
-                'event_date' => now()->subDays(2)->format('Y-m-d\TH:i'),
+                'starts_at' => $startsAt->format('Y-m-d\TH:i'),
+                'ends_at' => $startsAt->copy()->addHours(3)->format('Y-m-d\TH:i'),
                 'venue' => 'Chapel',
                 'status' => EventStatus::Completed->value,
-            ])
+            ]))
             ->assertRedirect(route('admin.events.index'));
 
         $event = Event::query()->where('title', 'Last Week Recollection')->first();
@@ -379,12 +373,13 @@ class SchoolEventVisibilityTest extends TestCase
         $student = User::factory()->create();
 
         $this->actingAs($admin)
-            ->post(route('admin.events.store'), [
+            ->post(route('admin.events.store'), $this->eventForm([
                 'title' => 'Intramurals Opening',
-                'event_date' => now()->subHour()->format('Y-m-d\TH:i'),
+                'starts_at' => now()->subHour()->format('Y-m-d\TH:i'),
+                'ends_at' => now()->addHours(3)->format('Y-m-d\TH:i'),
                 'venue' => 'Main Gym',
                 'status' => EventStatus::Ongoing->value,
-            ])
+            ]))
             ->assertRedirect(route('admin.events.index'));
 
         $event = Event::query()->where('title', 'Intramurals Opening')->first();
@@ -415,6 +410,73 @@ class SchoolEventVisibilityTest extends TestCase
                 ->where('related_id', $event->id)
                 ->exists()
         );
+    }
+
+    public function test_create_form_uses_event_start_and_end_fields(): void
+    {
+        $this->withoutVite();
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('admin.events.create'))
+            ->assertOk()
+            ->assertSee('Event starts')
+            ->assertSee('Event ends')
+            ->assertDontSee('name="event_date"', false);
+    }
+
+    public function test_creating_event_stores_start_and_end(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $startsAt = now()->addDays(2)->setTime(8, 0);
+        $endsAt = $startsAt->copy()->addDays(1)->setTime(17, 0);
+
+        $this->actingAs($admin)
+            ->post(route('admin.events.store'), $this->eventForm([
+                'title' => 'Foundation Week',
+                'starts_at' => $startsAt->format('Y-m-d\TH:i'),
+                'ends_at' => $endsAt->format('Y-m-d\TH:i'),
+                'venue' => 'Campus Grounds',
+            ]))
+            ->assertRedirect(route('admin.events.index'));
+
+        $event = Event::query()->where('title', 'Foundation Week')->first();
+        $this->assertNotNull($event);
+        $this->assertSame($startsAt->format('Y-m-d H:i'), $event->starts_at->format('Y-m-d H:i'));
+        $this->assertSame($endsAt->format('Y-m-d H:i'), $event->ends_at->format('Y-m-d H:i'));
+    }
+
+    public function test_create_rejects_end_before_start(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $startsAt = now()->addDays(2)->setTime(17, 0);
+
+        $this->actingAs($admin)
+            ->from(route('admin.events.create'))
+            ->post(route('admin.events.store'), $this->eventForm([
+                'title' => 'Broken Window',
+                'starts_at' => $startsAt->format('Y-m-d\TH:i'),
+                'ends_at' => $startsAt->copy()->subHours(2)->format('Y-m-d\TH:i'),
+            ]))
+            ->assertRedirect(route('admin.events.create'))
+            ->assertSessionHasErrors('ends_at');
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    protected function eventForm(array $overrides = []): array
+    {
+        $startsAt = now()->addDays(3)->setTime(8, 0);
+
+        return array_merge([
+            'title' => 'School Event',
+            'starts_at' => $startsAt->format('Y-m-d\TH:i'),
+            'ends_at' => $startsAt->copy()->addHours(4)->format('Y-m-d\TH:i'),
+            'venue' => 'Covered Court',
+            'status' => EventStatus::Scheduled->value,
+        ], $overrides);
     }
 
     /**

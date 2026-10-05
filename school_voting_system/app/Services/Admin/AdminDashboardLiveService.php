@@ -116,14 +116,14 @@ class AdminDashboardLiveService
             'id' => $event->id,
             'title' => $event->title,
             'category' => 'School Event',
-            'schedule' => $event->event_date?->format('M d, Y') ?? '—',
+            'schedule' => $event->scheduleDateLabel(),
             'status' => $event->displayStatus()->value,
             'status_label' => $event->displayStatusLabel(),
             'image_url' => $event->image_url,
             'edit_url' => route('admin.events.edit', $event),
             'can_delete' => $canManage && $admin->can('delete', $event),
             'delete_url' => route('admin.events.destroy', $event),
-            'sort_ts' => $event->event_date?->timestamp ?? 0,
+            'sort_ts' => $event->starts_at?->timestamp ?? 0,
         ];
     }
 }

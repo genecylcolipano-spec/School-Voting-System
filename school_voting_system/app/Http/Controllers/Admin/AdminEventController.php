@@ -40,7 +40,7 @@ class AdminEventController extends Controller
 
         $user = $request->user();
         $events = $this->scope->schoolEventsQuery($user)
-            ->orderByDesc('event_date')
+            ->orderByDesc('starts_at')
             ->paginate(15);
 
         return view('admin.events.index', [
@@ -71,7 +71,8 @@ class AdminEventController extends Controller
             'description' => $validated['description'] ?? null,
             'image_path' => $this->storeEventImage($request->file('image')),
             'image_variants' => $this->lastStoredImageVariants,
-            'event_date' => $validated['event_date'],
+            'starts_at' => $validated['starts_at'],
+            'ends_at' => $validated['ends_at'],
             'venue' => $validated['venue'],
             'status' => $validated['status'],
             'created_by' => $request->user()->id,
@@ -126,7 +127,8 @@ class AdminEventController extends Controller
             'description' => $validated['description'] ?? null,
             'image_path' => $imagePath,
             'image_variants' => $imageVariants,
-            'event_date' => $validated['event_date'],
+            'starts_at' => $validated['starts_at'],
+            'ends_at' => $validated['ends_at'],
             'venue' => $validated['venue'],
             'status' => $validated['status'],
         ]);

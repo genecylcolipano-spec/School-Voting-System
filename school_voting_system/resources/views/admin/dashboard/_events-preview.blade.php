@@ -2,7 +2,11 @@
     $previewEvents = collect()
         ->merge($talentEvents->map(fn ($event) => ['kind' => 'talent', 'event' => $event]))
         ->merge($schoolEvents->map(fn ($event) => ['kind' => 'school', 'event' => $event]))
-        ->sortByDesc(fn ($row) => $row['event']->event_date?->timestamp ?? 0)
+        ->sortByDesc(fn ($row) => (
+            $row['kind'] === 'school'
+                ? $row['event']->starts_at
+                : $row['event']->event_date
+        )?->timestamp ?? 0)
         ->take(5);
 @endphp
 
@@ -60,7 +64,7 @@
                             <p class="font-medium text-white">{{ $event->title }}</p>
                             <p class="mt-0.5 text-xs text-slate-400">
                                 {{ $isTalent ? ($event->type?->label() ?? 'Talent') : 'School Event' }}
-                                · {{ $event->event_date?->format('M d, Y') ?? '—' }}
+                                · {{ $isTalent ? ($event->event_date?->format('M d, Y') ?? '—') : $event->scheduleDateLabel() }}
                             </p>
                             <div class="mt-2">
                                 <x-admin-status-badge
@@ -110,7 +114,7 @@
                             <td class="px-2 py-3 text-slate-400">
                                 {{ $isTalent ? ($event->type?->label() ?? 'Talent') : 'School Event' }}
                             </td>
-                            <td class="px-2 py-3 whitespace-nowrap text-slate-400">{{ $event->event_date?->format('M d, Y') ?? '—' }}</td>
+                            <td class="px-2 py-3 whitespace-nowrap text-slate-400">{{ $isTalent ? ($event->event_date?->format('M d, Y') ?? '—') : $event->scheduleDateLabel() }}</td>
                             <td class="px-2 py-3">
                                 <x-admin-status-badge
                                     :status="$isTalent ? $event->currentStatusKey() : $event->displayStatus()->value"

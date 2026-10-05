@@ -261,18 +261,18 @@ class StudentUpcomingActivitiesService
             ->where(function ($query) {
                 $query->where(function ($upcoming) {
                     $upcoming->whereIn('status', [EventStatus::Scheduled, EventStatus::Ongoing])
-                        ->whereDate('event_date', '>=', now()->toDateString());
+                        ->where('ends_at', '>=', now());
                 })->orWhere(function ($completed) {
                     $completed->where('status', EventStatus::Completed)
-                        ->where('event_date', '>=', now()->subDays(30));
+                        ->where('ends_at', '>=', now()->subDays(30));
                 });
             })
-            ->orderBy('event_date')
+            ->orderBy('starts_at')
             ->limit(20)
-            ->get(['id', 'title', 'slug', 'event_date', 'status', 'image_path', 'image_variants'])
+            ->get(['id', 'title', 'slug', 'starts_at', 'ends_at', 'status', 'image_path', 'image_variants'])
             ->each(function (Event $event) use ($items) {
                 $mapped = $this->mapSchoolEventAction($event);
-                $sortAt = $event->event_date ?? now();
+                $sortAt = $event->starts_at ?? now();
 
                 $items->push($this->row(
                     category: 'School Event',

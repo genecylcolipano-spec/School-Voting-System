@@ -20,9 +20,17 @@ class StoreSchoolEventRequest extends AdminFormRequest
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:2048'],
-            'event_date' => ['required', 'date'],
+            'starts_at' => ['required', 'date'],
+            'ends_at' => ['required', 'date', 'after:starts_at'],
             'venue' => ['required', 'string', 'max:255'],
             'status' => ['required', Rule::enum(EventStatus::class)],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'ends_at.after' => 'Event ends must be after event starts.',
         ];
     }
 }

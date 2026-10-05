@@ -41,7 +41,7 @@ class AdminEventsTalentController extends Controller
             ->get();
 
         $schoolEvents = (clone $schoolQuery)
-            ->latest('event_date')
+            ->latest('starts_at')
             ->limit(6)
             ->get();
 
@@ -56,7 +56,7 @@ class AdminEventsTalentController extends Controller
                 'competitions_total' => (clone $talentQuery)->count(),
                 'school_events_upcoming' => (clone $schoolQuery)
                     ->where('status', EventStatus::Scheduled)
-                    ->where('event_date', '>=', now())
+                    ->where('starts_at', '>=', now())
                     ->count(),
                 'school_events_total' => (clone $schoolQuery)->count(),
             ],

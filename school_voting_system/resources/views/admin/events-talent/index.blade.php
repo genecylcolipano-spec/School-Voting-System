@@ -97,7 +97,7 @@
                                         <span class="font-medium text-white">{{ $event->title }}</span>
                                         <x-admin-status-badge :status="$event->displayStatus()->value" :label="$event->displayStatusLabel()" />
                                     </div>
-                                    <p class="mt-1 text-xs text-slate-500">{{ $event->event_date?->format('M d, Y') }} · {{ $event->venue }}</p>
+                                    <p class="mt-1 text-xs text-slate-500">{{ $event->scheduleDateLabel() }} · {{ $event->venue }}</p>
                                 </div>
                                 @include('admin.events._actions', ['event' => $event])
                             </div>
