@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Enums\ElectionStatus;
 use App\Enums\StudentStatus;
 use App\Enums\TalentEventStatus;
+use App\Enums\TalentEventType;
 use App\Enums\TalentVotingMethod;
 use App\Enums\UserRole;
 use App\Models\Candidate;
@@ -15,8 +16,10 @@ use App\Models\PortalNotification;
 use App\Models\StaffRole;
 use App\Models\TalentEvent;
 use App\Models\TalentEventEntry;
+use App\Models\TalentEventVote;
 use App\Models\User;
 use App\Models\Vote;
+use App\Services\Admin\AdminResultsService;
 use App\Services\Admin\AdminScopeService;
 use App\Support\SchoolBranding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -176,6 +179,48 @@ class ResultsPagesTest extends TestCase
         $this->assertStringContainsString(SchoolBranding::academicYear(), $excelBody);
         $this->assertStringContainsString('Official Talent Competition Results', $excelBody);
         $this->assertStringContainsString('Closed Idol', $excelBody);
+    }
+
+    public function test_talent_export_counts_actual_placement_winners_not_top_ten_copies(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $event = $this->makeCompetition([
+            'title' => 'Two Contestant Gala',
+            'created_by' => $admin->id,
+            'type' => TalentEventType::TalentCompetition->value,
+            'number_of_winners' => 3,
+            'voting_starts_at' => now()->subDays(2),
+            'voting_ends_at' => now()->subHour(),
+            'status' => TalentEventStatus::ResultsPublished,
+            'results_published_at' => now()->subHour(),
+        ]);
+        $champion = $this->makeEntry($event, 'Genecyl Colipano');
+        $this->makeEntry($event, 'Second Contestant');
+        TalentEventVote::query()->create([
+            'talent_event_id' => $event->id,
+            'talent_event_entry_id' => $champion->id,
+            'user_id' => User::factory()->create()->id,
+            'voted_at' => now()->subHours(2),
+        ]);
+
+        $results = app(AdminResultsService::class);
+        $detail = $results->talentDetail($event, $admin);
+        $presentation = $results->buildExportPresentation($detail, $admin, $event);
+
+        $this->assertSame(2, $detail['summary']['participants']);
+        $this->assertSame(2, $detail['summary']['winners_count']);
+        $this->assertGreaterThan(2, count($detail['winners']));
+        $this->assertSame(2, $presentation['extended_summary']['total_winners']);
+        $this->assertCount(2, $presentation['winning_candidates']);
+        $this->assertSame('Champion', $presentation['winning_candidates'][0]['position']);
+        $this->assertSame('Genecyl Colipano', $presentation['winning_candidates'][0]['name']);
+        $this->assertSame('1st Runner-up', $presentation['winning_candidates'][1]['position']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.results.talent.export', ['talentEvent' => $event, 'format' => 'print']))
+            ->assertOk()
+            ->assertSee('<tr><th>Total Winners</th><td>2</td></tr>', false)
+            ->assertDontSee('<tr><th>Total Winners</th><td>4</td></tr>', false);
     }
 
     public function test_operations_admin_sees_talent_competitions_created_by_super_admin(): void
@@ -474,6 +519,17 @@ class ResultsPagesTest extends TestCase
             'published_to_students' => true,
             'created_by' => User::factory()->admin()->create()->id,
         ], $overrides));
+    }
+
+    protected function makeEntry(TalentEvent $event, string $name): TalentEventEntry
+    {
+        return TalentEventEntry::query()->create([
+            'talent_event_id' => $event->id,
+            'display_name' => $name,
+            'performance_title' => $name.' Act',
+            'status' => TalentEventEntry::STATUS_APPROVED,
+            'source' => TalentEventEntry::SOURCE_ADMIN,
+        ]);
     }
 
     protected function makeOperationsAdmin(array $permissionKeys = ['export_reports', 'create_talent_events', 'modify_elections']): User

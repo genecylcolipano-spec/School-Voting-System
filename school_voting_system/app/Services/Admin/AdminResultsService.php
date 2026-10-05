@@ -307,7 +307,7 @@ class AdminResultsService
             'summary' => [
                 'total_votes' => $stats['total_votes'],
                 'turnout_percent' => $stats['turnout_percent'],
-                'winners_count' => count(array_filter($winners, fn ($w) => ($w['name'] ?? '') !== '')),
+                'winners_count' => $this->declaredWinners($winners)->count(),
                 'participants' => $stats['participants'],
                 'total_entries' => $stats['total_entries'],
                 'pending_entries' => $stats['pending_entries'],
@@ -1341,6 +1341,30 @@ class AdminResultsService
     }
 
     /**
+     * Placement winners only. The Top 10 copies are display extras, not extra winners.
+     *
+     * @param  array<int, array<string, mixed>>  $winners
+     * @return Collection<int, array<string, mixed>>
+     */
+    protected function declaredWinners(array $winners): Collection
+    {
+        return collect($winners)
+            ->reject(fn (array $winner) => ($winner['group'] ?? null) === 'top_ten')
+            ->filter(fn (array $winner) => $this->hasDeclaredWinnerName($winner))
+            ->values();
+    }
+
+    /**
+     * @param  array<string, mixed>  $winner
+     */
+    protected function hasDeclaredWinnerName(array $winner): bool
+    {
+        $name = trim((string) ($winner['name'] ?? ''));
+
+        return $name !== '' && $name !== '—';
+    }
+
+    /**
      * Supplemental presentation data for HTML/PDF export views only.
      *
      * @return array<string, mixed>
@@ -1362,7 +1386,7 @@ class AdminResultsService
                 : $turnoutPercent;
         }
 
-        $winners = collect($detail['winners'] ?? [])->reject(fn ($w) => ($w['group'] ?? null) === 'top_ten')->values();
+        $winners = $this->declaredWinners($detail['winners'] ?? []);
         $rankings = $detail['rankings'] ?? [];
         $charts = $detail['charts'] ?? [];
 
@@ -1389,7 +1413,7 @@ class AdminResultsService
                 'turnout_percent' => $turnoutPercent,
                 'valid_votes' => $totalVotes,
                 'invalid_votes' => 0,
-                'total_winners' => (int) ($summary['winners_count'] ?? $winners->count()),
+                'total_winners' => $winners->count(),
             ],
             'party_performance' => ($detail['type'] ?? '') === 'election'
                 ? $this->partyPerformanceFromRankings($rankings, $winners->all())
