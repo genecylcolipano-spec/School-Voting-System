@@ -34,12 +34,13 @@
             @include('admin.partials.form-input', ['label' => 'Venue', 'name' => 'venue', 'value' => optional($event)->venue, 'required' => true])
 
             <div>
-                <label class="block text-sm font-medium text-slate-300">Status</label>
-                <select name="status" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
+                <label for="event-status" class="block text-sm font-medium text-slate-300">Status</label>
+                <select id="event-status" name="status" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100 [color-scheme:dark]">
                     @foreach ($statuses as $status)
                         <option value="{{ $status->value }}" @selected(old('status', optional($event)->status?->value) === $status->value)>{{ $status->label() }}</option>
                     @endforeach
                 </select>
+                <p class="mt-1 text-xs text-slate-500">Follows the event dates automatically. Choose Cancelled to keep it cancelled.</p>
             </div>
 
             <div class="flex flex-col gap-3 sm:flex-row">
@@ -62,4 +63,51 @@
     </x-admin-portal>
 
     @vite('resources/js/event-image-preview.js')
+    <script>
+        (() => {
+            const start = document.getElementById('starts_at');
+            const end = document.getElementById('ends_at');
+            const status = document.getElementById('event-status');
+            if (!start || !end || !status) {
+                return;
+            }
+
+            const parseLocal = (value) => {
+                if (!value) {
+                    return null;
+                }
+                const date = new Date(value);
+                return Number.isNaN(date.getTime()) ? null : date;
+            };
+
+            const syncStatusFromDates = () => {
+                if (status.value === 'cancelled') {
+                    return;
+                }
+
+                const startsAt = parseLocal(start.value);
+                const endsAt = parseLocal(end.value);
+                if (!startsAt) {
+                    return;
+                }
+
+                const now = new Date();
+                let next = 'scheduled';
+                if (endsAt && endsAt < now) {
+                    next = 'completed';
+                } else if (startsAt <= now && (!endsAt || endsAt >= now)) {
+                    next = 'ongoing';
+                }
+
+                if (status.value !== next) {
+                    status.value = next;
+                }
+            };
+
+            start.addEventListener('change', syncStatusFromDates);
+            end.addEventListener('change', syncStatusFromDates);
+            start.addEventListener('input', syncStatusFromDates);
+            end.addEventListener('input', syncStatusFromDates);
+        })();
+    </script>
 </x-app-layout>

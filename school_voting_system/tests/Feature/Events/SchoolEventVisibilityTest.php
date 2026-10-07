@@ -422,7 +422,59 @@ class SchoolEventVisibilityTest extends TestCase
             ->assertOk()
             ->assertSee('Event starts')
             ->assertSee('Event ends')
+            ->assertSee('id="event-status"', false)
             ->assertDontSee('name="event_date"', false);
+    }
+
+    public function test_rescheduling_completed_event_saves_scheduled_status(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $event = $this->makeEvent([
+            'title' => 'Intramurals',
+            'slug' => 'intramurals',
+            'created_by' => $admin->id,
+            'starts_at' => now()->subDays(2)->setTime(8, 0),
+            'ends_at' => now()->subDays(2)->setTime(12, 0),
+            'status' => EventStatus::Completed,
+        ]);
+
+        $startsAt = now()->addDays(3)->setTime(8, 0);
+        $endsAt = $startsAt->copy()->addHours(4);
+
+        $this->actingAs($admin)
+            ->put(route('admin.events.update', $event), $this->eventForm([
+                'title' => 'Intramurals',
+                'starts_at' => $startsAt->format('Y-m-d\TH:i'),
+                'ends_at' => $endsAt->format('Y-m-d\TH:i'),
+                'status' => EventStatus::Completed->value,
+            ]))
+            ->assertRedirect(route('admin.events.index'));
+
+        $this->assertSame(EventStatus::Scheduled, $event->fresh()->status);
+    }
+
+    public function test_cancelled_status_is_kept_when_dates_change(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $event = $this->makeEvent([
+            'title' => 'Cancelled Assembly',
+            'slug' => 'cancelled-assembly',
+            'created_by' => $admin->id,
+            'status' => EventStatus::Cancelled,
+        ]);
+
+        $startsAt = now()->addDays(5)->setTime(9, 0);
+
+        $this->actingAs($admin)
+            ->put(route('admin.events.update', $event), $this->eventForm([
+                'title' => 'Cancelled Assembly',
+                'starts_at' => $startsAt->format('Y-m-d\TH:i'),
+                'ends_at' => $startsAt->copy()->addHours(2)->format('Y-m-d\TH:i'),
+                'status' => EventStatus::Cancelled->value,
+            ]))
+            ->assertRedirect(route('admin.events.index'));
+
+        $this->assertSame(EventStatus::Cancelled, $event->fresh()->status);
     }
 
     public function test_creating_event_stores_start_and_end(): void

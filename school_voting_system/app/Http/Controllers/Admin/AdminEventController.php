@@ -74,7 +74,11 @@ class AdminEventController extends Controller
             'starts_at' => $validated['starts_at'],
             'ends_at' => $validated['ends_at'],
             'venue' => $validated['venue'],
-            'status' => $validated['status'],
+            'status' => EventStatus::fromSchedule(
+                $validated['starts_at'],
+                $validated['ends_at'],
+                $validated['status'],
+            ),
             'created_by' => $request->user()->id,
         ]);
 
@@ -130,7 +134,11 @@ class AdminEventController extends Controller
             'starts_at' => $validated['starts_at'],
             'ends_at' => $validated['ends_at'],
             'venue' => $validated['venue'],
-            'status' => $validated['status'],
+            'status' => EventStatus::fromSchedule(
+                $validated['starts_at'],
+                $validated['ends_at'],
+                $validated['status'],
+            ),
         ]);
 
         $this->logAdminAction('Updated school event: '.$event->title, AuditActionType::Election, 'event', $event->id);

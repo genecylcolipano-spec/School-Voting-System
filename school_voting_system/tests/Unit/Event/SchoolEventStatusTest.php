@@ -121,6 +121,28 @@ class SchoolEventStatusTest extends TestCase
         $this->assertSame(EventStatus::Ongoing, $event->fresh()->status);
     }
 
+    public function test_from_schedule_follows_dates_and_keeps_cancelled(): void
+    {
+        $this->travelTo(now()->setTime(10, 0));
+
+        $this->assertSame(
+            EventStatus::Scheduled,
+            EventStatus::fromSchedule(now()->addDay(), now()->addDay()->addHours(2), EventStatus::Completed),
+        );
+        $this->assertSame(
+            EventStatus::Ongoing,
+            EventStatus::fromSchedule(now()->subHour(), now()->addHour(), EventStatus::Scheduled),
+        );
+        $this->assertSame(
+            EventStatus::Completed,
+            EventStatus::fromSchedule(now()->subHours(3), now()->subHour(), EventStatus::Scheduled),
+        );
+        $this->assertSame(
+            EventStatus::Cancelled,
+            EventStatus::fromSchedule(now()->addDay(), now()->addDay()->addHours(2), EventStatus::Cancelled),
+        );
+    }
+
     public function test_schedule_label_shows_start_and_end(): void
     {
         $startsAt = now()->addDays(2)->setTime(8, 0);
