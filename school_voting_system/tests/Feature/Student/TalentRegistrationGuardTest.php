@@ -67,6 +67,45 @@ class TalentRegistrationGuardTest extends TestCase
             ->assertSee('compressed automatically');
     }
 
+    public function test_registration_form_prefills_school_record_and_ignores_posted_identity(): void
+    {
+        $student = User::factory()->create([
+            'name' => 'Genecyl Colipano',
+            'account_id' => '2026-00421',
+            'grade_level' => '12',
+            'section' => 'A',
+            'course' => 'BSIT',
+        ]);
+        $event = $this->makeOpenCompetition();
+
+        $this->actingAs($student)
+            ->get(route('student.talent-registration.register', $event))
+            ->assertOk()
+            ->assertSee('value="Genecyl Colipano"', false)
+            ->assertSee('value="2026-00421"', false)
+            ->assertSee('value="12"', false)
+            ->assertSee('value="A"', false)
+            ->assertSee('value="BSIT"', false);
+
+        $this->actingAs($student)
+            ->from(route('student.talent-registration.register', $event))
+            ->post(route('student.talent-registration.review.store', $event), $this->validPayload([
+                'display_name' => 'Someone Else',
+                'student_id_number' => 'FAKE-ID',
+                'grade_level' => '11',
+                'section' => 'Z',
+                'course_strand' => 'STEM',
+            ]))
+            ->assertRedirect(route('student.talent-registration.review', $event));
+
+        $fields = session('talent_registration_draft.'.$event->id)['fields'] ?? [];
+        $this->assertSame('Genecyl Colipano', $fields['display_name'] ?? null);
+        $this->assertSame('2026-00421', $fields['student_id_number'] ?? null);
+        $this->assertSame('12', $fields['grade_level'] ?? null);
+        $this->assertSame('A', $fields['section'] ?? null);
+        $this->assertSame('BSIT', $fields['course_strand'] ?? null);
+    }
+
     public function test_closed_registration_blocks_the_form_review_and_final_submit(): void
     {
         $student = User::factory()->create();

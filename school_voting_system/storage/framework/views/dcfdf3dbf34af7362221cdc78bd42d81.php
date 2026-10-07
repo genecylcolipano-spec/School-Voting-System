@@ -11,6 +11,11 @@
     <?php
         $fields = $draft['fields'] ?? [];
         $old = fn (string $key, $default = '') => old($key, $fields[$key] ?? $default);
+        $identity = auth()->user()?->talentRegistrationIdentity() ?? [];
+        $locked = fn (string $key) => filled($identity[$key] ?? null);
+        $identityValue = fn (string $key) => $locked($key) ? $identity[$key] : $old($key, $identity[$key] ?? '');
+        $lockedClass = 'mt-1 w-full cursor-not-allowed rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-2 text-slate-300';
+        $openClass = 'mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100';
     ?>
 
     <div class="mx-auto max-w-3xl px-4 py-8 sm:px-6" x-data="{ mode: '<?php echo e(old('video_url', $fields['video_url'] ?? '') ? 'url' : 'upload'); ?>' }">
@@ -55,23 +60,23 @@
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Full Name</label>
-                    <input type="text" name="display_name" value="<?php echo e($old('display_name', auth()->user()->name ?? '')); ?>" required autocapitalize="words" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    <input type="text" name="display_name" value="<?php echo e($identityValue('display_name')); ?>" required autocapitalize="words" <?php if($locked('display_name')): echo 'readonly'; endif; ?> class="<?php echo e($locked('display_name') ? $lockedClass : $openClass); ?>">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Student ID</label>
-                    <input type="text" name="student_id_number" value="<?php echo e($old('student_id_number')); ?>" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    <input type="text" name="student_id_number" value="<?php echo e($identityValue('student_id_number')); ?>" required <?php if($locked('student_id_number')): echo 'readonly'; endif; ?> class="<?php echo e($locked('student_id_number') ? $lockedClass : $openClass); ?>">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Grade</label>
-                    <input type="text" name="grade_level" value="<?php echo e($old('grade_level')); ?>" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    <input type="text" name="grade_level" value="<?php echo e($identityValue('grade_level')); ?>" required <?php if($locked('grade_level')): echo 'readonly'; endif; ?> class="<?php echo e($locked('grade_level') ? $lockedClass : $openClass); ?>">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Section</label>
-                    <input type="text" name="section" value="<?php echo e($old('section')); ?>" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    <input type="text" name="section" value="<?php echo e($identityValue('section')); ?>" required <?php if($locked('section')): echo 'readonly'; endif; ?> class="<?php echo e($locked('section') ? $lockedClass : $openClass); ?>">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Course / Strand</label>
-                    <input type="text" name="course_strand" value="<?php echo e($old('course_strand', auth()->user()->course ?? '')); ?>" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2 text-slate-100">
+                    <input type="text" name="course_strand" value="<?php echo e($identityValue('course_strand')); ?>" <?php if($locked('course_strand')): echo 'readonly'; endif; ?> class="<?php echo e($locked('course_strand') ? $lockedClass : $openClass); ?>">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Talent Category</label>
@@ -81,6 +86,7 @@
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </div>
+                <p class="sm:col-span-2 text-xs text-slate-500">Student ID, grade, section, name, and course come from your school record.</p>
             </div>
 
             <div>

@@ -19,6 +19,25 @@ class SubmitTalentEntryRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $user = $this->user();
+        if ($user === null) {
+            return;
+        }
+
+        $merged = [];
+        foreach ($user->talentRegistrationIdentity() as $key => $value) {
+            if ($value !== '') {
+                $merged[$key] = $value;
+            }
+        }
+
+        if ($merged !== []) {
+            $this->merge($merged);
+        }
+    }
+
     protected function event(): TalentEvent
     {
         return $this->route('talentEvent');

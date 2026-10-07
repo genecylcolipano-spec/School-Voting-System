@@ -296,6 +296,22 @@ class User extends Authenticatable implements PasskeyUser
         return $this->name;
     }
 
+    /**
+     * School-managed identity used on student talent registration.
+     *
+     * @return array{display_name: string, student_id_number: string, grade_level: string, section: string, course_strand: string}
+     */
+    public function talentRegistrationIdentity(): array
+    {
+        return [
+            'display_name' => trim((string) $this->name),
+            'student_id_number' => trim((string) $this->account_id),
+            'grade_level' => trim((string) $this->grade_level),
+            'section' => trim((string) $this->section),
+            'course_strand' => trim((string) $this->course),
+        ];
+    }
+
     /** @return HasMany<Passkey> */
     public function registeredPasskeys(): HasMany
     {
