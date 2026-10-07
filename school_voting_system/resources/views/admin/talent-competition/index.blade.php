@@ -111,23 +111,22 @@
                                                 <button type="submit" class="rounded-lg border border-amber-500/40 px-2 py-1 text-xs font-semibold text-amber-200 hover:bg-amber-500/10">Archive</button>
                                             </form>
                                         @endunless
-                                        @php
-                                            $talentDeps = collect([
-                                                $event->entries_count > 0 ? 'participants' : null,
-                                                $event->votes_count > 0 ? 'votes' : null,
-                                                $event->hasPaidSupport() ? 'paid support' : null,
-                                            ])->filter()->values();
-                                            $talentWarning = $event->hasPaidSupport()
-                                                ? 'Paid support votes cannot be deleted. Archive or close this competition. Refunds are not automatic.'
-                                                : ($talentDeps->isNotEmpty()
+                                        @if ($event->canBeDeleted())
+                                            @php
+                                                $talentDeps = collect([
+                                                    $event->entries_count > 0 ? 'participants' : null,
+                                                    $event->votes_count > 0 ? 'votes' : null,
+                                                ])->filter()->values();
+                                                $talentWarning = $talentDeps->isNotEmpty()
                                                     ? 'This talent competition contains related data: '.$talentDeps->join(', ').'. Related judges, scores, and videos may also be linked.'
-                                                    : null);
-                                        @endphp
-                                        <x-admin.delete-action
-                                            :action="route('admin.talent-competition.destroy', $event)"
-                                            :warning="$talentWarning"
-                                            button-class="rounded-lg border border-rose-500/40 px-2 py-1 text-xs font-semibold text-rose-200 hover:bg-rose-500/10"
-                                        />
+                                                    : null;
+                                            @endphp
+                                            <x-admin.delete-action
+                                                :action="route('admin.talent-competition.destroy', $event)"
+                                                :warning="$talentWarning"
+                                                button-class="rounded-lg border border-rose-500/40 px-2 py-1 text-xs font-semibold text-rose-200 hover:bg-rose-500/10"
+                                            />
+                                        @endif
                                     @endif
                                 </div>
                             </td>

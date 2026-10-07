@@ -504,8 +504,8 @@ class AdminTalentCompetitionController extends Controller
 
     public function destroy(DeleteTalentCompetitionRequest $request, TalentEvent $talentEvent): RedirectResponse
     {
-        if ($talentEvent->hasPaidSupport()) {
-            return back()->with('error', 'This competition has paid support votes. Archive or close it instead of deleting. Refunds are not automatic.');
+        if (! $talentEvent->canBeDeleted()) {
+            return back()->with('error', $talentEvent->deletionBlockReason());
         }
 
         $this->talentSupport->cancelUnpaidOrders($talentEvent);

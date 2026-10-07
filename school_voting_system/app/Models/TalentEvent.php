@@ -209,6 +209,47 @@ class TalentEvent extends Model
             ->exists();
     }
 
+    /**
+     * Delete is only for unused/setup competitions.
+     * After voting starts, results publish, archive, or paid support, archive instead.
+     */
+    public function canBeDeleted(): bool
+    {
+        return $this->deletionBlockReason() === null;
+    }
+
+    public function deletionBlockReason(): ?string
+    {
+        if ($this->hasPaidSupport()) {
+            return 'This competition has paid support votes. Archive or close it instead of deleting. Refunds are not automatic.';
+        }
+
+        if ($this->isLockedFromDeletion()) {
+            return 'This competition cannot be deleted after voting has started or results are published. Archive it instead.';
+        }
+
+        return null;
+    }
+
+    protected function isLockedFromDeletion(): bool
+    {
+        if ($this->isArchived() || $this->hasPublishedResults() || $this->is_paused) {
+            return true;
+        }
+
+        if ($this->isAcceptingVotes() || $this->votingHasClosed()) {
+            return true;
+        }
+
+        return in_array($this->currentStatusKey(), [
+            'voting_open',
+            'voting_paused',
+            'voting_closed',
+            'results_published',
+            'archived',
+        ], true);
+    }
+
     public function judges(): HasMany
     {
         return $this->hasMany(TalentEventJudge::class)->active();

@@ -269,12 +269,11 @@
                 <a href="{{ route('admin.results.talent.export', ['talentEvent' => $event, 'format' => 'print']) }}" target="_blank" rel="noopener" class="tc-btn tc-btn--ghost">🖨 Print Results</a>
             @endif
 
-            @if ($canManageTalentEvents)
+            @if ($canManageTalentEvents && $event->canBeDeleted())
                 <x-admin.delete-action
                     :action="route('admin.talent-competition.destroy', $event)"
                     button-class="tc-btn tc-btn--danger"
                     label="Delete Event"
-                    :warning="$event->hasPaidSupport() ? 'Paid support votes cannot be deleted. Archive or close this competition. Refunds are not automatic.' : null"
                 />
             @endif
         </div>

@@ -48,7 +48,7 @@
                                     @if ($canCreateTalent)
                                         <a href="{{ route('admin.talent-competition.edit', $event) }}" class="inline-flex min-h-10 items-center rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800">Edit</a>
                                     @endif
-                                    @if ($canCreateTalent && (auth()->user()->isSuperAdmin() || (int) $event->created_by === (int) auth()->id()))
+                                    @if ($canCreateTalent && $event->canBeDeleted() && (auth()->user()->isSuperAdmin() || (int) $event->created_by === (int) auth()->id()))
                                         @php
                                             $talentWarning = $event->entries_count > 0
                                                 ? 'This talent competition contains related data: participants. Related judges, scores, and videos may also be linked.'

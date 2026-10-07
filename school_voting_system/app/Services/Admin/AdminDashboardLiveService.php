@@ -100,7 +100,7 @@ class AdminDashboardLiveService
             'status_label' => $event->displayStatusLabel(),
             'image_url' => $event->image_url,
             'edit_url' => route('admin.talent-competition.edit', $event),
-            'can_delete' => $canDelete,
+            'can_delete' => $canDelete && $event->canBeDeleted(),
             'delete_url' => route('admin.talent-competition.destroy', $event),
             'sort_ts' => $event->event_date?->timestamp ?? 0,
         ];

@@ -259,7 +259,14 @@ class TalentPaidSupportVotesTest extends TestCase
 
         $this->assertFalse($event->fresh()->trashed());
 
-        $pendingEvent = $this->makePaidCompetition(['created_by' => $admin->id, 'title' => 'Pending Only']);
+        $pendingEvent = $this->makePaidCompetition([
+            'created_by' => $admin->id,
+            'title' => 'Pending Only',
+            'status' => TalentEventStatus::Scheduled,
+            'published_to_students' => false,
+            'voting_starts_at' => now()->addDays(2),
+            'voting_ends_at' => now()->addDays(4),
+        ]);
         $pendingEntry = $this->makeEntry($pendingEvent, 'Ben', withVideo: false);
         TalentVoteOrder::query()->create([
             'talent_event_id' => $pendingEvent->id,
