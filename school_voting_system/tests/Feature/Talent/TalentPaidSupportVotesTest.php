@@ -230,7 +230,7 @@ class TalentPaidSupportVotesTest extends TestCase
         $this->assertFalse($event->fresh()->isAcceptingVotes());
     }
 
-    public function test_delete_is_blocked_after_paid_support_and_allowed_when_only_pending(): void
+    public function test_delete_is_blocked_while_paid_support_voting_is_open_and_allowed_when_only_pending(): void
     {
         $admin = User::factory()->superAdmin()->create();
         $student = User::factory()->create();

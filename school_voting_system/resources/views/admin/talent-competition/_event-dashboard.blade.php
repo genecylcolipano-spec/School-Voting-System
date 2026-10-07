@@ -274,6 +274,7 @@
                     :action="route('admin.talent-competition.destroy', $event)"
                     button-class="tc-btn tc-btn--danger"
                     label="Delete Event"
+                    :warning="$event->hasPaidSupport() ? 'This competition has paid support. Deleting it will not issue refunds.' : null"
                 />
             @endif
         </div>

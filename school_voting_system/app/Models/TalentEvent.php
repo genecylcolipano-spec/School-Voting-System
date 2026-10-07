@@ -210,8 +210,8 @@ class TalentEvent extends Model
     }
 
     /**
-     * Delete is only for unused/setup competitions.
-     * After voting starts, results publish, archive, or paid support, archive instead.
+     * Delete is blocked only while voting is live, or while unpublished votes exist.
+     * After results are published, delete is allowed (including paid support; refunds are not automatic).
      */
     public function canBeDeleted(): bool
     {
@@ -220,34 +220,37 @@ class TalentEvent extends Model
 
     public function deletionBlockReason(): ?string
     {
-        if ($this->hasPaidSupport()) {
-            return 'This competition has paid support votes. Archive or close it instead of deleting. Refunds are not automatic.';
+        if ($this->hasPublishedResults()) {
+            return null;
         }
 
-        if ($this->isLockedFromDeletion()) {
-            return 'This competition cannot be deleted after voting has started or results are published. Archive it instead.';
+        if ($this->isVotingLockedFromDeletion()) {
+            return 'This competition cannot be deleted while voting is open. Archive it instead.';
+        }
+
+        if ($this->hasUnpublishedVotes()) {
+            return 'This competition cannot be deleted while votes have already been cast. Publish results first.';
         }
 
         return null;
     }
 
-    protected function isLockedFromDeletion(): bool
+    protected function isVotingLockedFromDeletion(): bool
     {
-        if ($this->isArchived() || $this->hasPublishedResults() || $this->is_paused) {
+        if ($this->is_paused || $this->isAcceptingVotes()) {
             return true;
         }
 
-        if ($this->isAcceptingVotes() || $this->votingHasClosed()) {
+        return in_array($this->currentStatusKey(), ['voting_open', 'voting_paused'], true);
+    }
+
+    protected function hasUnpublishedVotes(): bool
+    {
+        if ($this->votes()->exists()) {
             return true;
         }
 
-        return in_array($this->currentStatusKey(), [
-            'voting_open',
-            'voting_paused',
-            'voting_closed',
-            'results_published',
-            'archived',
-        ], true);
+        return $this->hasPaidSupport();
     }
 
     public function judges(): HasMany

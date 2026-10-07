@@ -117,9 +117,11 @@
                                                     $event->entries_count > 0 ? 'participants' : null,
                                                     $event->votes_count > 0 ? 'votes' : null,
                                                 ])->filter()->values();
-                                                $talentWarning = $talentDeps->isNotEmpty()
-                                                    ? 'This talent competition contains related data: '.$talentDeps->join(', ').'. Related judges, scores, and videos may also be linked.'
-                                                    : null;
+                                                $talentWarning = $event->hasPaidSupport()
+                                                    ? 'This competition has paid support. Deleting it will not issue refunds.'
+                                                    : ($talentDeps->isNotEmpty()
+                                                        ? 'This talent competition contains related data: '.$talentDeps->join(', ').'. Related judges, scores, and videos may also be linked.'
+                                                        : null);
                                             @endphp
                                             <x-admin.delete-action
                                                 :action="route('admin.talent-competition.destroy', $event)"
