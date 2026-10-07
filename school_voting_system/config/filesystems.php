@@ -71,8 +71,9 @@ return [
 
         /*
          * Talent videos. Local XAMPP uses storage/app/private.
-         * On Cloud, CloudObjectStorage scopes this disk onto the injected bucket
-         * under a private/ prefix. Stream only via /media/talent-video/{entry}.
+         * On Cloud, CloudObjectStorage copies the injected S3 disk and sets
+         * root=private (S3 key prefix, not the scoped driver). Stream only
+         * via /media/talent-video/{entry}.
          */
         'private' => filled(env('AWS_BUCKET'))
             ? array_merge($objectStorage, ['root' => 'private'])

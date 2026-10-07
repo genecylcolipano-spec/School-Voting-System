@@ -73,12 +73,12 @@ class CloudObjectStorageTest extends TestCase
 
         $this->assertSame('s3', config('filesystems.disks.public.driver'));
         $this->assertSame('svs-uploads', config('filesystems.disks.public.bucket'));
-        $this->assertSame('scoped', config('filesystems.disks.private.driver'));
-        $this->assertSame('r2', config('filesystems.disks.private.disk'));
-        $this->assertSame('private', config('filesystems.disks.private.prefix'));
+        $this->assertSame('s3', config('filesystems.disks.private.driver'));
+        $this->assertSame('svs-uploads', config('filesystems.disks.private.bucket'));
+        $this->assertSame('private', config('filesystems.disks.private.root'));
     }
 
-    public function test_cloud_disk_named_public_is_cloned_before_scoping_private(): void
+    public function test_cloud_disk_named_public_still_prefixes_private_videos(): void
     {
         config()->set('filesystems.disks.public', [
             'driver' => 's3',
@@ -98,10 +98,8 @@ class CloudObjectStorageTest extends TestCase
 
         CloudObjectStorage::bindAppDisks();
 
-        $this->assertSame('s3', config('filesystems.disks.cloud.driver'));
         $this->assertSame('s3', config('filesystems.disks.public.driver'));
-        $this->assertSame('scoped', config('filesystems.disks.private.driver'));
-        $this->assertSame('cloud', config('filesystems.disks.private.disk'));
-        $this->assertSame('private', config('filesystems.disks.private.prefix'));
+        $this->assertSame('s3', config('filesystems.disks.private.driver'));
+        $this->assertSame('private', config('filesystems.disks.private.root'));
     }
 }

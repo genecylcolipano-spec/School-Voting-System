@@ -48,19 +48,14 @@ class CloudObjectStorage
             return;
         }
 
-        $rootName = $sourceName;
-        if (in_array($rootName, ['public', 'private'], true)) {
-            $rootName = 'cloud';
-            config(['filesystems.disks.cloud' => $source]);
-        }
+        $privateRoot = trim((string) ($source['root'] ?? ''), '/');
+        $privateRoot = $privateRoot === '' ? 'private' : $privateRoot.'/private';
 
         config([
             'filesystems.disks.public' => $source,
-            'filesystems.disks.private' => [
-                'driver' => 'scoped',
-                'disk' => $rootName,
-                'prefix' => 'private',
-            ],
+            'filesystems.disks.private' => array_merge($source, [
+                'root' => $privateRoot,
+            ]),
         ]);
     }
 }
