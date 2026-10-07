@@ -20,6 +20,7 @@ use App\Actions\Passkeys\GeneratePlatformVerificationOptions;
 use App\Actions\Passkeys\StorePasskeyCredential;
 use App\Actions\Passkeys\VerifyPasskeyCredential;
 use App\Http\Responses\PasskeyLoginJsonResponse;
+use App\Support\CloudObjectStorage;
 use App\Models\Passkey;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -49,6 +50,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        CloudObjectStorage::bindAppDisks();
+
         Passkeys::useUserModel(User::class);
         Passkeys::usePasskeyModel(Passkey::class);
 

@@ -53,10 +53,10 @@ return [
 
         /*
          * Local XAMPP: files in storage/app/public + /storage URLs.
-         * Laravel Cloud: when AWS_BUCKET is set, the same "public" disk writes
-         * to the attached bucket so uploads survive deploys. Do not set ACL
-         * visibility=public — Cloud buckets often disable ACLs; make the
-         * bucket itself public and set AWS_URL.
+         * Laravel Cloud injects FILESYSTEM_DISK + LARAVEL_CLOUD_DISK_CONFIG (not
+         * AWS_BUCKET). App\Support\CloudObjectStorage remaps this "public" disk
+         * onto that bucket after boot. AWS_BUCKET remains a fallback if Cloud
+         * ever injects the older AWS_* variables.
          */
         'public' => filled(env('AWS_BUCKET'))
             ? $objectStorage
@@ -70,10 +70,9 @@ return [
             ],
 
         /*
-         * Talent videos and other non-public uploads. On Cloud this is the same
-         * bucket as "public", under a private/ prefix, so files survive deploys.
-         * They are served only through authorized routes (never Storage::url()).
-         * Local XAMPP uses storage/app/private — the same root as "local".
+         * Talent videos. Local XAMPP uses storage/app/private.
+         * On Cloud, CloudObjectStorage scopes this disk onto the injected bucket
+         * under a private/ prefix. Stream only via /media/talent-video/{entry}.
          */
         'private' => filled(env('AWS_BUCKET'))
             ? array_merge($objectStorage, ['root' => 'private'])
